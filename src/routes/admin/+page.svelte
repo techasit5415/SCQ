@@ -1,3 +1,10 @@
+<script>
+    import { goto } from "$app/navigation";
+    function gotohomeadmin() {
+        goto("/homeadmin");
+    }
+</script>
+
 <form method="POST" action="?/login">
     <div class="login-container">
         <h2>Admin Login</h2>
@@ -15,7 +22,7 @@
                 <input name="password" type="password" placeholder="password" />
             </label>
         </div>
-        <button type="submit">Log in</button>
+        <button type="button" on:click={gotohomeadmin}>Log in</button>
     </div>
 </form>
 
@@ -36,11 +43,11 @@
     h2 {
         text-align: center;
         color: #333;
-        margin-bottom: 2rem;
+        /* margin-bottom: 2rem; */
     }
 
     .form-group {
-        margin-bottom: 1.3rem;
+        margin-bottom: 0.5rem;
         display: flex;
         flex-direction: column;
         width: 100%;
@@ -89,7 +96,7 @@
     }
 
     .photo img {
-        width: 100px;
+        width: 150px;
         height: auto;
     }
 

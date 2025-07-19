@@ -1,7 +1,4 @@
-<h1>Welcome to your library project</h1>
-<p>Create your package using @sveltejs/package and preview/showcase your work with SvelteKit</p>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-<div style="text-align: center;">
-    <img src="/SCQ_logo.png" alt="SCQ Logo" width="400" height="400">
-    <p>Admin Login</p>
-</div>
+<h1>Hello form User</h1>
+<a href="/homeadmin">
+  <img src="https://media1.tenor.com/m/ue7Q8JmP_0MAAAAd/oiia-oiiaoiia.gif" alt="Admin GIF" style="width:200px;" />
+</a>
