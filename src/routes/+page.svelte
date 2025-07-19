@@ -1,4 +1,7 @@
 <h1>Welcome to your library project</h1>
 <p>Create your package using @sveltejs/package and preview/showcase your work with SvelteKit</p>
 <p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-<img src="/SCQ_logo.png" alt="SCQ Logo" />
+<div style="text-align: center;">
+    <img src="/SCQ_logo.png" alt="SCQ Logo" width="400" height="400">
+    <p>Admin Login</p>
+</div>
