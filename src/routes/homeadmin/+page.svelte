@@ -1,10 +1,12 @@
 <script>
     function restaurantMenu() {
         var x = document.getElementById("hiddenbar-container");
-        if (x.style.display === "none" || x.style.display === "") {
-            x.style.display = "block";
-        } else {
-            x.style.display = "none";
+        if(x) {
+            if (x.style.display === "none" || x.style.display === "") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
         }
     }
 </script>
@@ -30,6 +32,7 @@
     <div class="headtext">
         <h1>SCQ</h1>
     </div>
+
 </div>
 
 <style>
@@ -44,10 +47,6 @@
         left: 0;
         align-items: center;
     }
-    .photo img {
-        width: 100px;
-        height: 100px;
-    }
     .menubar {
         height: 100%;
         width: 200px;
@@ -55,7 +54,6 @@
         background: white;
         position: fixed;
         top: 10%;
-       
         left: 0;
     }
     label {
@@ -73,5 +71,9 @@
     }
     button:hover {
         background-color: darkgrey;
+    }
+    .photo img {
+        width: 100px;
+        height: 100px;
     }
 </style>
