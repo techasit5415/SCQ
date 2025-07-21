@@ -12,17 +12,17 @@
 </script>
 
 <div id="menubar" class="menubar">
-    <button type="button">Dashbord</button>
-    <button type="button">Manage Users</button>
-    <button type="button" on:click={restaurantMenu}>Manage Restaurant</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Dashbord</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Users</button>
+    <button type="button" on:click={restaurantMenu}><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Restaurant</button>
     <label id="hiddenbar-container">
-        <button type="button">Restaurant1</button>
-        <button type="button">Restaurant2</button>
-        <button type="button">Restaurant3</button>
+        <button type="button" class="restaurant">Restaurant1</button>
+        <button type="button" class="restaurant">Restaurant2</button>
+        <button type="button" class="restaurant">Restaurant3</button>
     </label>
-    <button type="button">Reports</button>
-    <button type="button">System Log</button>
-    <button type="button">Setting</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Reports</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>System Log</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Setting</button>
 </div>
 
 <div class="header">
@@ -32,7 +32,6 @@
     <div class="headtext">
         <h1>SCQ</h1>
     </div>
-
 </div>
 
 <style>
@@ -40,26 +39,42 @@
         display: flex;
         height: 10%;
         width: 100%;
-        border-bottom: 1px solid #7f7f7f;
+        border-bottom: 2px solid rgb(221, 221, 221);
         background: white;
         position: fixed;
         top: 0;
         left: 0;
         align-items: center;
     }
+
+    .icon-menu {
+        width: 50px;
+        height: 50px;
+    }
+
     .menubar {
         height: 100%;
-        width: 200px;
+        width: 250px;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         background: white;
         position: fixed;
         top: 10%;
         left: 0;
     }
+
+    .restaurant {
+        background-color: rgb(221, 221, 221);
+    }
+
     label {
         display: none;
     }
+
     button {
+        display: flex;
+        align-items: center;
+        text-align: left;
+        height: 60px;
         width: 100%;
         padding: 1rem;
         background-color: rgb(255, 255, 255);
@@ -67,11 +82,16 @@
         font-size: 1rem;
         cursor: pointer;
         transition: background-color 0.3s ease;
-        text-align: left;
     }
+
+    h1 {
+        color: #333;
+    }
+
     button:hover {
         background-color: darkgrey;
     }
+
     .photo img {
         width: 100px;
         height: 100px;
