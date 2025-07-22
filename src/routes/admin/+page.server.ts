@@ -21,22 +21,22 @@ export const actions: Actions = {
       [username]
     );
 
-    console.log('DB rows:', rows); // ดูผล query ใน console
+    // console.log('DB rows:', rows); // ดูผล query ใน console
 
     if (rows.length === 0) {
       return fail(401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     const user = rows[0];
-    console.log('Password input:', password);
+    // console.log('Password input:', password);
     const match = await bcrypt.compare(password, user.password);
-    console.log('Password match result:', match);
+    // console.log('Password match result:', match);
     if (!match) {
       return fail(401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    // ถ้าตรวจสอบผ่าน ให้ redirect ไปหน้า /homeadmin
-    throw redirect(303, '/homeadmin');
+    // ถ้าตรวจสอบผ่าน ให้ redirect ไปหน้า /homeadmina
+    return { success: true };
 
   }
 };
