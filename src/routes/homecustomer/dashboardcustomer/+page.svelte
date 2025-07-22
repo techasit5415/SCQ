@@ -1,4 +1,5 @@
 <script>
+    import { goto } from "$app/navigation";
     function hiddenMenu() {
         var x = document.getElementById("hiddenbar-container");
         if(x) {
@@ -13,16 +14,16 @@
 
 <div id="menubar" class="menubar">
     <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Dashbord</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Users</button>
-    <button type="button" on:click={hiddenMenu}><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Restaurant</button>
+    <button type="button" on:click={hiddenMenu}><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Order</button>
         <label id="hiddenbar-container">
-            <button type="button" class="restaurant">Restaurant1</button>
-            <button type="button" class="restaurant">Restaurant2</button>
-            <button type="button" class="restaurant">Restaurant3</button>
+            <button type="button" class="restaurant">New</button>
+            <button type="button" class="restaurant">In Progress</button>
+            <button type="button" class="restaurant">Completed</button>
         </label>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Menu</button>
     <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Reports</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>System Log</button>
     <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Settings</button>
+    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Logout</button>
 </div>
 
 <div class="header">
