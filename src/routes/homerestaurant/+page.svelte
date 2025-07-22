@@ -27,10 +27,19 @@
     <button
         type="button"
         class="menu-btn"
+        class:active={activeMenu === "manageUsers"}
+        on:click={() => (activeMenu = "manageUsers")}
+        ><span class="material-symbols-outlined"> person </span><span
+            class="btn-text">Manage Users</span
+        ></button
+    >
+    <button
+        type="button"
+        class="menu-btn"
         on:click={restaurantMenu}
-        class:active={activeMenu === "order"}
+        class:active={activeMenu === "manageRestaurant"}
         ><span class="material-symbols-outlined"> storefront </span><span
-            class="btn-text">Order</span
+            class="btn-text">Manage Restaurant</span
         ></button
     >
     <label id="hiddenbar-container">
@@ -78,7 +87,7 @@
         <img src="/Photo/Icon.png" alt="icon" />
     </div>
     <div class="headtext">
-        <h1>Restaurant panel</h1>
+        <h1>Admin panel</h1>
     </div>
 </div>
 
