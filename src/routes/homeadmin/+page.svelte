@@ -80,6 +80,20 @@
             class="btn-text">setting</span
         ></button
     >
+<script>
+  import { goto } from '$app/navigation';
+  let activeMenu = '';
+</script>
+
+<button
+  type="button"
+  class="menu-btn"
+  class:active={activeMenu === "Logout"}
+  on:click={() => goto('/logout')}
+>
+  <span class="material-symbols-outlined">logout</span>
+  <span class="btn-text">Logout</span>
+</button>
 </div>
 
 <div class="header">

@@ -5,7 +5,7 @@
   let username = "";
   let password = "";
   let showPassword = false;
-  let clickCount = 0;
+  // let clickCount = 0;
 
   onMount(() => {
     console.log("--- Component Loaded in Browser ---");
@@ -81,11 +81,10 @@
       type="submit"
       class="px-4 py-2 rounded bg-blue-600 text-white w-full"
       on:click={() => {
-        clickCount += 1;
-        console.log(`Login button clicked #${clickCount}`);
+        console.log(`Login button clicked #`);
       }}
     >
-      Log in ({clickCount})
+      Log in 
     </button>
   </div>
 </form>
@@ -194,7 +193,7 @@
   .form-group .passwordicon {
     position: absolute;
     right: 10px;
-    top: 45%;
+    top: 44%;
     transform: translateY(-50%);
     cursor: pointer;
     color: #888;

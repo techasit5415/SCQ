@@ -4,7 +4,18 @@ import { fail, redirect } from '@sveltejs/kit';
 import bcrypt from 'bcrypt';
 import { query } from '$lib/server/db';
 import { serialize } from 'cookie';
+import type { PageServerLoad } from './$types';
+export const load: PageServerLoad = async ({ cookies }) => {
+  const session = cookies.get('session');
 
+  if (session) {
+    throw redirect(303, '/homeadmin'); // หรือหน้า login
+  }
+
+  // ถ้าต้องการ ตรวจสอบ session กับฐานข้อมูลก็ทำตรงนี้
+
+ return {};
+};
 export const actions: Actions = {
   default: async ({ request , cookies}) => {
     console.log('Action /admin called');
@@ -45,4 +56,5 @@ export const actions: Actions = {
     return { success: true };
 
   }
+  
 };
