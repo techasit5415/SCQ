@@ -3,9 +3,10 @@ import type { Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import bcrypt from 'bcrypt';
 import { query } from '$lib/server/db';
+import { serialize } from 'cookie';
 
 export const actions: Actions = {
-  default: async ({ request }) => {
+  default: async ({ request , cookies}) => {
     console.log('Action /admin called');
     const form = await request.formData();
     const username = String(form.get('username') ?? '').trim();
@@ -35,7 +36,12 @@ export const actions: Actions = {
       return fail(401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    // ถ้าตรวจสอบผ่าน ให้ redirect ไปหน้า /homeadmina
+      cookies.set('session', String(user.id), {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24 // 1 วัน
+    });
     return { success: true };
 
   }

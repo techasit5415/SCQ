@@ -22,12 +22,14 @@ export const actions: Actions = {
 
     const hash = await bcrypt.hash(password, 12);
 
-    const existing = await query('SELECT id FROM admin LIMIT 1');
-    if (existing.length === 0) {
-      await execute('INSERT INTO admin (username, password) VALUES (?, ?)', [username, hash]);
-    } else {
-      await execute('UPDATE admin SET username=?, password=? WHERE id=?', [username, hash, existing[0].id]);
-    }
+const existingUser = await query('SELECT id FROM admin WHERE username = ?', [username]);
+
+if (existingUser.length > 0) {
+  return fail(400, { error: 'Username นี้มีอยู่แล้ว', values: { username } });
+} else {
+  await execute('INSERT INTO admin (username, password) VALUES (?, ?)', [username, hash]);
+}
+
 
     throw redirect(303, '/admin');
   }

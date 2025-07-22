@@ -13,8 +13,16 @@
     let activeMenu = "dashboard";
 </script>
 
+<div class="header2">
+    <div class="path">
+        <d>Restaurant panel</d>
+    </div>
+    <div class="headtext2">
+        <h2>Restaurant panel</h2>
+    </div>
+</div>
 
-<div id="menubar" class="menubar">
+<!-- <div id="menubar" class="menubar">
     <button
         type="button"
         class="menu-btn"
@@ -27,30 +35,21 @@
     <button
         type="button"
         class="menu-btn"
-        class:active={activeMenu === "manageUsers"}
-        on:click={() => (activeMenu = "manageUsers")}
-        ><span class="material-symbols-outlined"> person </span><span
-            class="btn-text">Manage Users</span
-        ></button
-    >
-    <button
-        type="button"
-        class="menu-btn"
         on:click={restaurantMenu}
         class:active={activeMenu === "manageRestaurant"}
         ><span class="material-symbols-outlined"> storefront </span><span
-            class="btn-text">Manage Restaurant</span
+            class="btn-text">Order</span
         ></button
     >
     <label id="hiddenbar-container">
-        <button type="button" class="restaurant"
-            ><span class="btn-text">Restaurant2</span></button
+        <button type="button" class="order"
+            ><span class="btn-text">New</span></button
         >
-        <button type="button" class="restaurant"
-            ><span class="btn-text">Restaurant2</span></button
+        <button type="button" class="order"
+            ><span class="btn-text">In Progress</span></button
         >
-        <button type="button" class="restaurant"
-            ><span class="btn-text">Restaurant3</span></button
+        <button type="button" class="order"
+            ><span class="btn-text">Completed</span></button
         >
     </label>
     <button
@@ -58,8 +57,8 @@
         class="menu-btn"
         class:active={activeMenu === "report"}
         on:click={() => (activeMenu = "report")}
-        ><span class="material-symbols-outlined"> assignment </span><span
-            class="btn-text">Report</span
+        ><span class="material-symbols-outlined"> fork_spoon </span><span
+            class="btn-text">Menu</span
         ></button
     >
     <button
@@ -67,8 +66,8 @@
         class="menu-btn"
         class:active={activeMenu === "systemLog"}
         on:click={() => (activeMenu = "systemLog")}
-        ><span class="material-symbols-outlined"> history </span><span
-            class="btn-text">System Log</span
+        ><span class="material-symbols-outlined"> assignment </span><span
+            class="btn-text">Reports</span
         ></button
     >
     <button
@@ -77,19 +76,28 @@
         class:active={activeMenu === "setting"}
         on:click={() => (activeMenu = "setting")}
         ><span class="material-symbols-outlined"> settings </span><span
-            class="btn-text">setting</span
+            class="btn-text">Settings</span
         ></button
     >
-</div>
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "logout"}
+        on:click={() => (activeMenu = "logout")}
+        ><span class="material-symbols-outlined"> logout </span><span
+            class="btn-text">Logout</span
+        ></button
+    >
+</div> -->
 
-<div class="header">
+<!-- <div class="header">
     <div class="photo">
         <img src="/Photo/Icon.png" alt="icon" />
     </div>
     <div class="headtext">
-        <h1>Admin panel</h1>
+        <h1>Restaurant panel</h1>
     </div>
-</div>
+</div> -->
 
 <style>
     /* Icon  */
@@ -119,6 +127,16 @@
         left: 0;
         align-items: center;
     }
+    .header2 {
+        display: flex;
+        height: 150px;
+        width: 100%;
+        border-bottom: 2px solid rgb(221, 221, 221);
+        background: white;
+        position: fixed;
+        top: 0;
+
+    }
 
     /* .icon-menu {
         width: 10px;
@@ -136,7 +154,7 @@
         padding-top: 70px;
     }
 
-    .restaurant {
+    .order {
         background-color: rgb(221, 221, 221);
     }
 
@@ -159,6 +177,15 @@
     }
 
     h1 {
+        color: #333;
+        font-family: "Noto Sans Thai";
+        font-size: 16px;
+        font-style: regular;
+        font-weight: 400;
+        line-height: 19.2px;
+    }
+
+    h2 {
         color: #333;
         font-family: "Noto Sans Thai";
         font-size: 16px;
