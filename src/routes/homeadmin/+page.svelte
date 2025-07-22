@@ -1,4 +1,5 @@
 <script>
+    import { goto } from "$app/navigation";
     function restaurantMenu() {
         var x = document.getElementById("hiddenbar-container");
         if (x) {
@@ -9,36 +10,75 @@
             }
         }
     }
+    let activeMenu = "dashboard";
 </script>
 
+
 <div id="menubar" class="menubar">
-    <button type="button">
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "dashboard"}
+        on:click={() => (activeMenu = "dashboard")}
+    >
         <span class="material-symbols-outlined">dashboard</span>
         <span class="btn-text">Dashboard</span>
     </button>
-    <button type="button"
-        ><span class="material-symbols-outlined"> person </span><span class="btn-text">Manage Users</span></button
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "manageUsers"}
+        on:click={() => (activeMenu = "manageUsers")}
+        ><span class="material-symbols-outlined"> person </span><span
+            class="btn-text">Manage Users</span
+        ></button
     >
-    <button type="button" on:click={restaurantMenu}
-        ><span class="material-symbols-outlined"> storefront </span><span class="btn-text">Manage Restaurant</span></button
+    <button
+        type="button"
+        class="menu-btn"
+        on:click={restaurantMenu}
+        class:active={activeMenu === "manageRestaurant"}
+        ><span class="material-symbols-outlined"> storefront </span><span
+            class="btn-text">Manage Restaurant</span
+        ></button
     >
     <label id="hiddenbar-container">
-        <button type="button" class="restaurant"><span class="btn-text">Restaurant2</span></button>
-        <button type="button" class="restaurant"><span class="btn-text">Restaurant2</span></button>
-        <button type="button" class="restaurant"><span class="btn-text">Restaurant3</span></button>
+        <button type="button" class="restaurant"
+            ><span class="btn-text">Restaurant2</span></button
+        >
+        <button type="button" class="restaurant"
+            ><span class="btn-text">Restaurant2</span></button
+        >
+        <button type="button" class="restaurant"
+            ><span class="btn-text">Restaurant3</span></button
+        >
     </label>
-    <button type="button"
-        ><span class="material-symbols-outlined">
-            assignment
-        </span><span class="btn-text">Report</span></button
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "report"}
+        on:click={() => (activeMenu = "report")}
+        ><span class="material-symbols-outlined"> assignment </span><span
+            class="btn-text">Report</span
+        ></button
     >
-    <button type="button"
-        ><span class="material-symbols-outlined"> history </span><span class="btn-text">System Log</span></button
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "systemLog"}
+        on:click={() => (activeMenu = "systemLog")}
+        ><span class="material-symbols-outlined"> history </span><span
+            class="btn-text">System Log</span
+        ></button
     >
-    <button type="button"
-        ><span class="material-symbols-outlined">
-            settings
-        </span><span class="btn-text">setting</span></button
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "setting"}
+        on:click={() => (activeMenu = "setting")}
+        ><span class="material-symbols-outlined"> settings </span><span
+            class="btn-text">setting</span
+        ></button
     >
 </div>
 
@@ -60,13 +100,13 @@
             "GRAD" 0,
             "opsz" 24;
         margin-right: 10px;
-        
     }
     .btn-text {
         font-family: "Noto Sans Thai";
         font-size: 16px;
         font-weight: 400;
         line-height: 19.2px;
+        color: black;
     }
     .header {
         display: flex;
@@ -86,13 +126,14 @@
     }
 
     .menubar {
-        height: 120%;
-        width: 250px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        height: 100vh; /* เต็มความสูงของ viewport */
+        width: 30vh;
+        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
         background: white;
         position: fixed;
-        top: 8%;
+        top: 0;
         left: 0;
+        padding-top: 70px;
     }
 
     .restaurant {
@@ -127,8 +168,12 @@
     }
 
     button:hover {
-        background-color: darkgrey;
+        background-color: #f0f0f0;
     }
+
+    /* button:active { */
+    /* background: orange; ตอนกด */
+    /* } */
 
     .photo img {
         width: 48px;
@@ -140,6 +185,18 @@
             "FILL" 0,
             "wght" 400,
             "GRAD" 0,
-            "opsz" 24;
+            "opsz" ;
+        color: black;
+    }
+    button.active {
+        /* background: orange; */
+        color: white;
+    }
+
+    button.active .material-symbols-outlined {
+        color: orange;
+    }
+    button.active .btn-text {
+        color: orange;
     }
 </style>

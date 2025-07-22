@@ -3,6 +3,8 @@
     function gotohomeadmin() {
         goto("/homeadmin");
     }
+    let activevisable = "visible";
+    let showPassword = false;
 </script>
 
 <form method="POST" action="?/login">
@@ -14,12 +16,26 @@
         <div class="form-group">
             <label>
                 <input name="email" type="email" placeholder="Email" />
+                <span class="icon material-symbols-outlined">
+                    account_circle
+                </span>
             </label>
         </div>
         <div class="form-group">
             <label>
                 <!-- <h3>Password</h3> -->
-                <input name="password" type="password" placeholder="password" />
+                <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="password"
+                />
+                <span class="icon material-symbols-outlined"> lock </span>
+                <span
+                    class="passwordicon material-symbols-outlined"
+                    on:click={() => (showPassword = !showPassword)}
+                >
+                    {showPassword ? "visibility" : "visibility_off"}
+                </span>
             </label>
         </div>
         <button type="button" on:click={gotohomeadmin}>Log in</button>
@@ -43,14 +59,18 @@
     h2 {
         text-align: center;
         color: #333;
+        font-family: "Noto Sans Thai";
+        font-size: 24px;
+        font-weight: 400;
         /* margin-bottom: 2rem; */
     }
 
     .form-group {
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         display: flex;
         flex-direction: column;
         width: 100%;
+        position: relative; /* เพื่อให้ icon อยู่ในตำแหน่งที่ถูกต้อง */
     }
 
     label {
@@ -70,6 +90,9 @@
         font-size: 1rem;
         transition: border-color 0.3s ease;
         box-sizing: border-box;
+        font-family: "Noto Sans Thai";
+        font-size: 14px;
+        font-weight: 400;
     }
 
     input:focus {
@@ -102,5 +125,29 @@
 
     button:hover {
         background-color: #357abd;
+    }
+    .form-group .icon {
+        position: absolute;
+        left: 10px;
+        top: 42%; /* ปรับตำแหน่งให้เหมาะสม */
+        transform: translateY(-50%);
+        color: #888;
+        pointer-events: none; /* กันไม่ให้ icon รับคลิก */
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px 10px 10px 40px; /* padding-left เผื่อที่ให้ icon */
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+        outline: none;
+    }
+    .form-group .passwordicon {
+        position: absolute;
+        left: 85%;
+        top: 42%; /* ปรับตำแหน่งให้เหมาะสม */
+        transform: translateY(-50%);
+        color: #888;
     }
 </style>
