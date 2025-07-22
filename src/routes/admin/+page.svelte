@@ -193,7 +193,7 @@
   .form-group .passwordicon {
     position: absolute;
     right: 10px;
-    top: 45%;
+    top: 44%;
     transform: translateY(-50%);
     cursor: pointer;
     color: #888;
