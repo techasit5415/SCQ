@@ -1,4 +1,4 @@
-import { query } from '$lib/server/db';
+import { query } from '$lib/server/db.js';
 
 export async function load() {
   const rows = await query('SELECT NOW() AS now');
