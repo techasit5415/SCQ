@@ -12,17 +12,30 @@
 </script>
 
 <div id="menubar" class="menubar">
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Dashbord</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Users</button>
-    <button type="button" on:click={restaurantMenu}><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Restaurant</button>
+    <button type="button">
+        <span class="material-symbols-outlined">dashboard</span>
+        Dashboard
+    </button>
+    <button type="button"><span class="material-symbols-outlined">
+person
+</span>Manage Users</button>
+    <button type="button" on:click={restaurantMenu}><span class="material-symbols-outlined">
+storefront
+</span>Manage Restaurant</button>
     <label id="hiddenbar-container">
         <button type="button" class="restaurant">Restaurant1</button>
         <button type="button" class="restaurant">Restaurant2</button>
         <button type="button" class="restaurant">Restaurant3</button>
     </label>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Reports</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>System Log</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Setting</button>
+    <button type="button"><span class="material-symbols-outlined">
+assignment
+</span>Reports</button>
+    <button type="button"><span class="material-symbols-outlined">
+history
+</span>System Log</button>
+    <button type="button"><span class="material-symbols-outlined">
+settings
+</span>Setting</button>
 </div>
 
 <div class="header">
@@ -35,6 +48,16 @@
 </div>
 
 <style>
+    /* Icon  */
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
+  margin-right: 10px;
+}
+
     .header {
         display: flex;
         height: 10%;
@@ -96,4 +119,13 @@
         width: 100px;
         height: 100px;
     }
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+
 </style>
