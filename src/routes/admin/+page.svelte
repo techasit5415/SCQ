@@ -1,30 +1,74 @@
 <script>
-    import { goto } from "$app/navigation";
-    function gotohomeadmin() {
-        goto("/homeadmin");
+  import { goto } from '$app/navigation';
+  let username = '';
+  let password = '';
+  let showPassword = false;
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const res = await fetch('/admin', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      // ถ้าล็อกอินสำเร็จ ไปหน้า admin dashboard
+      goto('/homeadmin');
+    } else {
+      // ถ้าล็อกอินไม่สำเร็จ อ่าน error message มาโชว์
+      const error = await res.json();
+      alert(error.error || 'Login failed');
     }
+  }
 </script>
 
-<form method="POST" action="?/login">
-    <div class="login-container">
-        <h2>Admin Login</h2>
-        <div class="photo">
-            <img src="/Photo/Icon.png" alt="icon" />
-        </div>
-        <div class="form-group">
-            <label>
-                <input name="email" type="email" placeholder="Email" />
-            </label>
-        </div>
-        <div class="form-group">
-            <label>
-                <!-- <h3>Password</h3> -->
-                <input name="password" type="password" placeholder="password" />
-            </label>
-        </div>
-        <button type="button" on:click={gotohomeadmin}>Log in</button>
+<form on:submit={handleSubmit}>
+  <div class="login-container">
+    <h2>Admin Login</h2>
+    <div class="photo">
+      <img src="/Photo/Icon.png" alt="icon" />
     </div>
+
+    <div class="form-group">
+      <label>
+        <input
+          name="username"
+          type="text"
+          placeholder="Username"
+          bind:value={username}
+          required
+          class="border rounded px-2 py-1 w-full"
+        />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Password"
+          bind:value={password}
+          required
+          class="border rounded px-2 py-1 w-full"
+        />
+        <span
+          class="passwordicon material-symbols-outlined"
+          on:click={() => (showPassword = !showPassword)}
+          style="cursor:pointer;"
+          >{showPassword ? 'visibility' : 'visibility_off'}</span
+        >
+      </label>
+    </div>
+
+    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white w-full">
+      Log in
+    </button>
+  </div>
 </form>
+
 
 <style>
     .login-container {
@@ -43,14 +87,18 @@
     h2 {
         text-align: center;
         color: #333;
+        font-family: "Noto Sans Thai";
+        font-size: 24px;
+        font-weight: 400;
         /* margin-bottom: 2rem; */
     }
 
     .form-group {
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         display: flex;
         flex-direction: column;
         width: 100%;
+        position: relative; /* เพื่อให้ icon อยู่ในตำแหน่งที่ถูกต้อง */
     }
 
     label {
@@ -70,6 +118,9 @@
         font-size: 1rem;
         transition: border-color 0.3s ease;
         box-sizing: border-box;
+        font-family: "Noto Sans Thai";
+        font-size: 14px;
+        font-weight: 400;
     }
 
     input:focus {
@@ -102,5 +153,29 @@
 
     button:hover {
         background-color: #357abd;
+    }
+    .form-group .icon {
+        position: absolute;
+        left: 10px;
+        top: 42%; /* ปรับตำแหน่งให้เหมาะสม */
+        transform: translateY(-50%);
+        color: #888;
+        pointer-events: none; /* กันไม่ให้ icon รับคลิก */
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px 10px 10px 40px; /* padding-left เผื่อที่ให้ icon */
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+        outline: none;
+    }
+    .form-group .passwordicon {
+        position: absolute;
+        left: 85%;
+        top: 42%; /* ปรับตำแหน่งให้เหมาะสม */
+        transform: translateY(-50%);
+        color: #888;
     }
 </style>
