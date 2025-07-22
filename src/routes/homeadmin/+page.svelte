@@ -1,10 +1,6 @@
 <script>
-<<<<<<< HEAD
-    function hiddenMenu() {
-=======
     import { goto } from "$app/navigation";
     function restaurantMenu() {
->>>>>>> e7b538dacf30a4c80882e27cea32e3f04db1e98d
         var x = document.getElementById("hiddenbar-container");
         if (x) {
             if (x.style.display === "none" || x.style.display === "") {
@@ -19,19 +15,6 @@
 
 
 <div id="menubar" class="menubar">
-<<<<<<< HEAD
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Dashbord</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Users</button>
-    <button type="button" on:click={hiddenMenu}><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Manage Restaurant</button>
-        <label id="hiddenbar-container">
-            <button type="button" class="restaurant">Restaurant1</button>
-            <button type="button" class="restaurant">Restaurant2</button>
-            <button type="button" class="restaurant">Restaurant3</button>
-        </label>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Reports</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>System Log</button>
-    <button type="button"><img class="icon-menu" src="/Photo/Icon.png" alt="icon-menu"/>Settings</button>
-=======
     <button
         type="button"
         class="menu-btn"
@@ -97,7 +80,6 @@
             class="btn-text">setting</span
         ></button
     >
->>>>>>> e7b538dacf30a4c80882e27cea32e3f04db1e98d
 </div>
 
 <div class="header">
