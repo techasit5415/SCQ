@@ -44,6 +44,7 @@
     </div>
 
     <div class="form-group">
+      <span class="icon material-symbols-outlined"> account_circle </span>
       <label>
         <input
           name="username"
@@ -57,6 +58,7 @@
     </div>
 
     <div class="form-group">
+      <span class="icon material-symbols-outlined"> lock </span>
       <label>
         <input
           name="password"
@@ -192,7 +194,7 @@
   .form-group .passwordicon {
     position: absolute;
     right: 10px;
-    top: 40%;
+    top: 45%;
     transform: translateY(-50%);
     cursor: pointer;
     color: #888;
