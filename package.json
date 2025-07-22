@@ -43,5 +43,10 @@
 	},
 	"keywords": [
 		"svelte"
-	]
+	],
+	"dependencies": {
+		"bcrypt": "^6.0.0",
+		"mariadb": "^3.4.4",
+		"mysql2": "^3.14.2"
+	}
 }

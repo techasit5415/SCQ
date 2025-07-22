@@ -1,46 +1,74 @@
 <script>
-    import { goto } from "$app/navigation";
-    function gotohomeadmin() {
-        goto("/homeadmin");
+  import { goto } from '$app/navigation';
+  let username = '';
+  let password = '';
+  let showPassword = false;
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const res = await fetch('/admin', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      // ถ้าล็อกอินสำเร็จ ไปหน้า admin dashboard
+      goto('/homeadmin');
+    } else {
+      // ถ้าล็อกอินไม่สำเร็จ อ่าน error message มาโชว์
+      const error = await res.json();
+      alert(error.error || 'Login failed');
     }
-    let activevisable = "visible";
-    let showPassword = false;
+  }
 </script>
 
-<form method="POST" action="?/login">
-    <div class="login-container">
-        <h2>Admin Login</h2>
-        <div class="photo">
-            <img src="/Photo/Icon.png" alt="icon" />
-        </div>
-        <div class="form-group">
-            <label>
-                <input name="email" type="email" placeholder="Email" />
-                <span class="icon material-symbols-outlined">
-                    account_circle
-                </span>
-            </label>
-        </div>
-        <div class="form-group">
-            <label>
-                <!-- <h3>Password</h3> -->
-                <input
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="password"
-                />
-                <span class="icon material-symbols-outlined"> lock </span>
-                <span
-                    class="passwordicon material-symbols-outlined"
-                    on:click={() => (showPassword = !showPassword)}
-                >
-                    {showPassword ? "visibility" : "visibility_off"}
-                </span>
-            </label>
-        </div>
-        <button type="button" on:click={gotohomeadmin}>Log in</button>
+<form on:submit={handleSubmit}>
+  <div class="login-container">
+    <h2>Admin Login</h2>
+    <div class="photo">
+      <img src="/Photo/Icon.png" alt="icon" />
     </div>
+
+    <div class="form-group">
+      <label>
+        <input
+          name="username"
+          type="text"
+          placeholder="Username"
+          bind:value={username}
+          required
+          class="border rounded px-2 py-1 w-full"
+        />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Password"
+          bind:value={password}
+          required
+          class="border rounded px-2 py-1 w-full"
+        />
+        <span
+          class="passwordicon material-symbols-outlined"
+          on:click={() => (showPassword = !showPassword)}
+          style="cursor:pointer;"
+          >{showPassword ? 'visibility' : 'visibility_off'}</span
+        >
+      </label>
+    </div>
+
+    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white w-full">
+      Log in
+    </button>
+  </div>
 </form>
+
 
 <style>
     .login-container {
