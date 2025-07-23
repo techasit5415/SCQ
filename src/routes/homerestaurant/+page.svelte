@@ -1,6 +1,6 @@
 <script>
     import { goto } from "$app/navigation";
-    function restaurantMenu() {
+    function listOrder() {
         var x = document.getElementById("hiddenbar-container");
         if (x) {
             if (x.style.display === "none" || x.style.display === "") {
@@ -11,16 +11,18 @@
         }
     }
     let activeMenu = "dashboard";
+    let titleHeader2 = "Dashboard";
+    let pathPra = "Home / Dashboard";
 </script>
 
-
-
-<!-- <div id="menubar" class="menubar">
+<div id="menubar" class="menubar">
     <button
         type="button"
         class="menu-btn"
         class:active={activeMenu === "dashboard"}
         on:click={() => (activeMenu = "dashboard")}
+        on:click={() => (titleHeader2 = "Dashboard")}
+        on:click={() => (pathPra = "Home / Dashboard")}
     >
         <span class="material-symbols-outlined">dashboard</span>
         <span class="btn-text">Dashboard</span>
@@ -28,7 +30,7 @@
     <button
         type="button"
         class="menu-btn"
-        on:click={restaurantMenu}
+        on:click={listOrder}
         class:active={activeMenu === "manageRestaurant"}
         ><span class="material-symbols-outlined"> storefront </span><span
             class="btn-text">Order</span
@@ -36,20 +38,28 @@
     >
     <label id="hiddenbar-container">
         <button type="button" class="order"
+            on:click={() => (titleHeader2 = "New")}
+            on:click={() => (pathPra = "Home / Order / New")} 
             ><span class="btn-text">New</span></button
         >
         <button type="button" class="order"
+            on:click={() => (titleHeader2 = "In Progress")}
+            on:click={() => (pathPra = "Home / Order / In Progress")} 
             ><span class="btn-text">In Progress</span></button
         >
         <button type="button" class="order"
+            on:click={() => (titleHeader2 = "Completed")}
+            on:click={() => (pathPra = "Home / Order / Completed")} 
             ><span class="btn-text">Completed</span></button
         >
     </label>
     <button
         type="button"
         class="menu-btn"
-        class:active={activeMenu === "report"}
-        on:click={() => (activeMenu = "report")}
+        class:active={activeMenu === "menu"}
+        on:click={() => (activeMenu = "menu")}
+        on:click={() => (titleHeader2 = "Menu")}
+        on:click={() => (pathPra = "Home / Menu")} 
         ><span class="material-symbols-outlined"> fork_spoon </span><span
             class="btn-text">Menu</span
         ></button
@@ -57,8 +67,10 @@
     <button
         type="button"
         class="menu-btn"
-        class:active={activeMenu === "systemLog"}
-        on:click={() => (activeMenu = "systemLog")}
+        class:active={activeMenu === "reports"}
+        on:click={() => (activeMenu = "reports")}
+        on:click={() => (titleHeader2 = "Reports")}
+        on:click={() => (pathPra = "Home / Reports")} 
         ><span class="material-symbols-outlined"> assignment </span><span
             class="btn-text">Reports</span
         ></button
@@ -68,6 +80,8 @@
         class="menu-btn"
         class:active={activeMenu === "setting"}
         on:click={() => (activeMenu = "setting")}
+        on:click={() => (titleHeader2 = "Setting")}
+        on:click={() => (pathPra = "Home / Setting")} 
         ><span class="material-symbols-outlined"> settings </span><span
             class="btn-text">Settings</span
         ></button
@@ -77,27 +91,29 @@
         class="menu-btn"
         class:active={activeMenu === "logout"}
         on:click={() => (activeMenu = "logout")}
+        on:click={() => (titleHeader2 = "Logout")}
         ><span class="material-symbols-outlined"> logout </span><span
             class="btn-text">Logout</span
         ></button
     >
-</div> -->
+</div>
 
-<!-- <div class="header">
+ <div class="header">
     <div class="photo">
         <img src="/Photo/Icon.png" alt="icon" />
     </div>
     <div class="headtext">
         <h1>Restaurant panel</h1>
     </div>
-</div> -->
+</div>
 
 <div class="header2">
     <div class="path">
-        <d>Restaurant panel</d>
+        <p>{pathPra}</p>
+        
     </div>
     <div class="headtext2">
-        <h2>Restaurant panel</h2>
+        <h2 id="title">{titleHeader2}</h2>
     </div>
 </div>
 
@@ -129,13 +145,15 @@
         left: 0;
         align-items: center;
     }
+
     .header2 {
         height: 150px;
         width: 100%;
         border-bottom: 2px solid rgb(221, 221, 221);
         background: white;
-        padding-left: 40vh;
+        padding-left: 32vh;
         align-items: center;
+        
     }
 
     /* .icon-menu {
@@ -185,14 +203,24 @@
         line-height: 19.2px;
     }
 
-    /* h2 {
+    h2 {
+        color: #333;
+        font-family: "Noto Sans Thai";
+        font-size: 20px;
+        font-style: regular;
+        font-weight: 400;
+        line-height: 19.2px;
+    }
+
+    p {
         color: #333;
         font-family: "Noto Sans Thai";
         font-size: 16px;
         font-style: regular;
         font-weight: 400;
         line-height: 19.2px;
-    } */
+        padding-top: 70px;
+    }
 
     button:hover {
         background-color: #f0f0f0;

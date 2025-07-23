@@ -21,14 +21,14 @@
 
 // export const load: PageServerLoad = async ({ cookies }) => {
 //   const session = cookies.get('session');
-
-//   if (!session) {
-//     throw redirect(303, '/admin'); // หรือหน้า login
+//   console.log('Session cookie in homeadmin:', session);
+  
+//   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
+//   if (!session || !session.match(/^\d+$/)) {
+//       console.log('No valid session, redirecting to /admin');
+//       throw redirect(302, '/admin');
 //   }
-
-//   // ถ้าต้องการ ตรวจสอบ session กับฐานข้อมูลก็ทำตรงนี้
-
-//   return {
-//     userId: session
-//   };
+  
+//   console.log('Session valid, loading homeadmin page');
+//   return {};
 // };

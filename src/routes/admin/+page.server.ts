@@ -49,8 +49,9 @@ export const actions: Actions = {
 
       cookies.set('session', String(user.id), {
       path: '/',
-      httpOnly: true,
-      sameSite: 'strict',
+      httpOnly: false,     // เปลี่ยนเป็น false เพื่อให้ client-side เข้าถึงได้
+      sameSite: 'lax',     // เปลี่ยนเป็น lax เพื่อความยืดหยุ่น
+      secure: false,       // สำหรับ development (http)
       maxAge: 60 * 60 * 24 // 1 วัน
     });
     return { success: true };
