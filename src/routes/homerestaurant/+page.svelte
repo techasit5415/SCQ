@@ -13,14 +13,7 @@
     let activeMenu = "dashboard";
 </script>
 
-<div class="header2">
-    <div class="path">
-        <d>Restaurant panel</d>
-    </div>
-    <div class="headtext2">
-        <h2>Restaurant panel</h2>
-    </div>
-</div>
+
 
 <!-- <div id="menubar" class="menubar">
     <button
@@ -99,6 +92,15 @@
     </div>
 </div> -->
 
+<div class="header2">
+    <div class="path">
+        <d>Restaurant panel</d>
+    </div>
+    <div class="headtext2">
+        <h2>Restaurant panel</h2>
+    </div>
+</div>
+
 <style>
     /* Icon  */
     .material-symbols-outlined {
@@ -128,14 +130,12 @@
         align-items: center;
     }
     .header2 {
-        display: flex;
         height: 150px;
         width: 100%;
         border-bottom: 2px solid rgb(221, 221, 221);
         background: white;
-        position: fixed;
-        top: 0;
-
+        padding-left: 40vh;
+        align-items: center;
     }
 
     /* .icon-menu {
@@ -185,14 +185,14 @@
         line-height: 19.2px;
     }
 
-    h2 {
+    /* h2 {
         color: #333;
         font-family: "Noto Sans Thai";
         font-size: 16px;
         font-style: regular;
         font-weight: 400;
         line-height: 19.2px;
-    }
+    } */
 
     button:hover {
         background-color: #f0f0f0;
