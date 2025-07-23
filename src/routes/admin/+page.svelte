@@ -17,7 +17,11 @@
     try {
       const formData = new FormData(event.target);
       console.log("Sending form data:", [...formData.entries()]);
-      const res = await fetch("/admin", { method: "POST", body: formData });
+      
+      // ใช้ window.location.origin เพื่อให้ใช้ได้ทั้ง localhost และ IP
+      const apiUrl = `${window.location.origin}/admin`;
+      const res = await fetch(apiUrl, { method: "POST", body: formData });
+      
       console.log("Response status:", res.status);
       const data = await res.json();
       console.log("Response JSON:", data);
@@ -25,7 +29,15 @@
       console.log('Parsed data:', parsedData);
       if (res.ok && parsedData[0]?.success === 1) {
         console.log("Login success, redirecting...");
-        goto("/homeadmin");
+        
+        // เก็บ login state
+        localStorage.setItem('isLoggedIn', 'true');
+        // หรือ sessionStorage.setItem('isLoggedIn', 'true');
+        
+        const redirectUrl = `${window.location.origin}/homeadmin`;
+        console.log("Redirecting to:", redirectUrl);
+        window.location.href = redirectUrl;
+        console.log("Redirect command executed");
       } else {
         alert(data.error || "Login failed");
       }

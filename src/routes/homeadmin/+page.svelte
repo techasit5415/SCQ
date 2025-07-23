@@ -11,6 +11,18 @@
         }
     }
     let activeMenu = "dashboard";
+
+    async function handleLogout() {
+        console.log("Logout function called");
+        try {
+            await fetch('/logout');
+            // ไม่ต้องเช็ค redirect แค่ไปหน้า admin ตรงๆ
+            window.location.href = '/admin';
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.location.href = '/admin';
+        }
+    }
 </script>
 
 
@@ -76,24 +88,20 @@
         class="menu-btn"
         class:active={activeMenu === "setting"}
         on:click={() => (activeMenu = "setting")}
-        ><span class="material-symbols-outlined"> settings </span><span
-            class="btn-text">setting</span
-        ></button
     >
-<script>
-  import { goto } from '$app/navigation';
-  let activeMenu = '';
-</script>
+        <span class="material-symbols-outlined">settings</span>
+        <span class="btn-text">setting</span>
+    </button>
 
-<button
-  type="button"
-  class="menu-btn"
-  class:active={activeMenu === "Logout"}
-  on:click={() => goto('/logout')}
->
-  <span class="material-symbols-outlined">logout</span>
-  <span class="btn-text">Logout</span>
-</button>
+    <button
+        type="button"
+        class="menu-btn"
+        class:active={activeMenu === "Logout"}
+        on:click={handleLogout}
+    >
+        <span class="material-symbols-outlined">logout</span>
+        <span class="btn-text">Logout</span>
+    </button>
 </div>
 
 <div class="header">
@@ -114,6 +122,7 @@
             "GRAD" 0,
             "opsz" 24;
         margin-right: 10px;
+        color: black;
     }
     .btn-text {
         font-family: "Noto Sans Thai";
@@ -194,14 +203,6 @@
         height: auto;
     }
 
-    .material-symbols-outlined {
-        font-variation-settings:
-            "FILL" 0,
-            "wght" 400,
-            "GRAD" 0,
-            "opsz" ;
-        color: black;
-    }
     button.active {
         /* background: orange; */
         color: white;
