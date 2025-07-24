@@ -399,10 +399,10 @@
         align-items: center;
     }
 
-    /* .icon-menu {
+    .icon-menu {
         width: 10px;
         height: 10px;
-    } */
+    }
 
     .menubar {
         height: 100vh; /* เต็มความสูงของ viewport */
