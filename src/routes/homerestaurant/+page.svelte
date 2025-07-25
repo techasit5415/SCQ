@@ -10,9 +10,71 @@
             }
         }
     }
+
+    function openAnyPage() {
+        var thisPage = document.getElementById(activeMenu);
+        var lastPage = document.getElementById(last);
+        if(lastPage) {
+            lastPage.style.display = "none";
+        }
+        if (thisPage) {
+            if(activeMenu == "dashboard") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "orderNew") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "orderInProgress") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "orderCompleted") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "menu") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "reports") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            else if(activeMenu == "setting") {
+                if (thisPage.style.display === "none" || thisPage.style.display === "") {
+                    thisPage.style.display = "block";
+                } else {
+                    thisPage.style.display = "none";
+                }
+            }
+            last = activeMenu;
+        }
+    }
+
     let activeMenu = "dashboard";
     let titleHeader2 = "Dashboard";
     let pathPra = "Home / Dashboard";
+    let last = "dashboard";
 </script>
 
 <div id="menubar" class="menubar">
@@ -23,6 +85,7 @@
         on:click={() => (activeMenu = "dashboard")}
         on:click={() => (titleHeader2 = "Dashboard")}
         on:click={() => (pathPra = "Home / Dashboard")}
+        on:click={openAnyPage}
     >
         <span class="material-symbols-outlined">dashboard</span>
         <span class="btn-text">Dashboard</span>
@@ -38,18 +101,24 @@
     >
     <label id="hiddenbar-container">
         <button type="button" class="order"
+            class:active={activeMenu === "orderNew"}
             on:click={() => (titleHeader2 = "New")}
             on:click={() => (pathPra = "Home / Order / New")} 
+            on:click={openAnyPage}
             ><span class="btn-text">New</span></button
         >
         <button type="button" class="order"
+            class:active={activeMenu === "orderInProgress"}
             on:click={() => (titleHeader2 = "In Progress")}
-            on:click={() => (pathPra = "Home / Order / In Progress")} 
+            on:click={() => (pathPra = "Home / Order / In Progress")}
+            on:click={openAnyPage}
             ><span class="btn-text">In Progress</span></button
         >
         <button type="button" class="order"
+            class:active={activeMenu === "orderCompleted"}
             on:click={() => (titleHeader2 = "Completed")}
-            on:click={() => (pathPra = "Home / Order / Completed")} 
+            on:click={() => (pathPra = "Home / Order / Completed")}
+            on:click={openAnyPage}
             ><span class="btn-text">Completed</span></button
         >
     </label>
@@ -60,6 +129,7 @@
         on:click={() => (activeMenu = "menu")}
         on:click={() => (titleHeader2 = "Menu")}
         on:click={() => (pathPra = "Home / Menu")} 
+        on:click={openAnyPage}
         ><span class="material-symbols-outlined"> fork_spoon </span><span
             class="btn-text">Menu</span
         ></button
@@ -70,7 +140,8 @@
         class:active={activeMenu === "reports"}
         on:click={() => (activeMenu = "reports")}
         on:click={() => (titleHeader2 = "Reports")}
-        on:click={() => (pathPra = "Home / Reports")} 
+        on:click={() => (pathPra = "Home / Reports")}
+        on:click={openAnyPage}
         ><span class="material-symbols-outlined"> assignment </span><span
             class="btn-text">Reports</span
         ></button
@@ -81,7 +152,8 @@
         class:active={activeMenu === "setting"}
         on:click={() => (activeMenu = "setting")}
         on:click={() => (titleHeader2 = "Setting")}
-        on:click={() => (pathPra = "Home / Setting")} 
+        on:click={() => (pathPra = "Home / Setting")}
+        on:click={openAnyPage}
         ><span class="material-symbols-outlined"> settings </span><span
             class="btn-text">Settings</span
         ></button
@@ -109,13 +181,63 @@
 
 <div class="header2">
     <div class="path">
-        <p>{pathPra}</p>
-        
+        <p style="padding-top: 70px;">{pathPra}</p>
     </div>
     <div class="headtext2">
         <h2 id="title">{titleHeader2}</h2>
     </div>
 </div>
+
+<!-- หน้า Dashboard ร้านอาหาร -->
+<div id="dashboard" class="dashboard">
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">New Order</p>
+    </div>
+</div>
+
+<!-- หน้า Order New ร้านอาหาร -->
+<div id="orderNew" class="orderNew" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Order New</p>
+    </div>
+</div>
+
+<!-- หน้า Order In Progress ร้านอาหาร -->
+<div id="orderInProgress" class="orderInProgress" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Order In Progress</p>
+    </div>
+</div>
+
+<!-- หน้า Order Completed ร้านอาหาร -->
+<div id="orderCompleted" class="orderCompleted" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Order Completed</p>
+    </div>
+</div>
+
+<!-- หน้า Menu ร้านอาหาร -->
+<div id="menu" class="menu" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Menu</p>
+    </div>
+</div>
+
+<!-- หน้า Roprts ร้านอาหาร -->
+<div id="reports" class="reports" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Reports</p>
+    </div>
+</div>
+
+<!-- หน้า Setting ร้านอาหาร -->
+<div id="setting" class="setting" hidden>
+    <div class="newOrder">
+        <p style="padding-top: 10px; margin-left: 5px;">Setting</p>
+    </div>
+</div>
+
+<body></body>
 
 <style>
     /* Icon  */
@@ -153,13 +275,7 @@
         background: white;
         padding-left: 32vh;
         align-items: center;
-        
     }
-
-    /* .icon-menu {
-        width: 10px;
-        height: 10px;
-    } */
 
     .menubar {
         height: 100vh; /* เต็มความสูงของ viewport */
@@ -170,11 +286,23 @@
         top: 0;
         left: 0;
         padding-top: 70px;
-
     }
 
     .order {
         background-color: rgb(221, 221, 221);
+    }
+
+    .newOrder {
+        height: 96px; /* เต็มความสูงของ viewport */
+        width: 253px;
+        background: rgb(255, 255, 255);
+        margin-left: 17%;
+        border-radius: 15px;
+        align-items: center;
+    }
+
+    body {
+        background-color: #EDF0F2;
     }
 
     label {
@@ -220,7 +348,7 @@
         font-style: regular;
         font-weight: 400;
         line-height: 19.2px;
-        padding-top: 70px;
+        /* padding-top: 70px; */
     }
 
     button:hover {
@@ -256,5 +384,3 @@
         color: orange;
     }
 </style>
-
-<!-- hi hi  -->
