@@ -93,8 +93,8 @@
     <button
         type="button"
         class="menu-btn"
-        on:click={listOrder}
         class:active={activeMenu === "manageRestaurant"}
+        on:click={listOrder}
         ><span class="material-symbols-outlined"> storefront </span><span
             class="btn-text">Order</span
         ></button
@@ -102,6 +102,7 @@
     <label id="hiddenbar-container">
         <button type="button" class="order"
             class:active={activeMenu === "orderNew"}
+            on:click={() => (activeMenu = "orderNew")}
             on:click={() => (titleHeader2 = "New")}
             on:click={() => (pathPra = "Home / Order / New")} 
             on:click={openAnyPage}
@@ -109,6 +110,7 @@
         >
         <button type="button" class="order"
             class:active={activeMenu === "orderInProgress"}
+            on:click={() => (activeMenu = "orderInProgress")}
             on:click={() => (titleHeader2 = "In Progress")}
             on:click={() => (pathPra = "Home / Order / In Progress")}
             on:click={openAnyPage}
@@ -116,6 +118,7 @@
         >
         <button type="button" class="order"
             class:active={activeMenu === "orderCompleted"}
+            on:click={() => (activeMenu = "orderCompleted")}
             on:click={() => (titleHeader2 = "Completed")}
             on:click={() => (pathPra = "Home / Order / Completed")}
             on:click={openAnyPage}
@@ -190,10 +193,25 @@
 
 <!-- หน้า Dashboard ร้านอาหาร -->
 <div id="dashboard" class="dashboard">
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">New Order</p>
+    <div class="dash1">
+        <div class="dash1-com1">
+            <p style="padding-top: 10px; margin-left: 5px;">New Order</p>
+        </div>
+        <div class="dash1-com1" style="margin-left: 5%;">
+            <p style="padding-top: 10px; margin-left: 5px;">In Progess Order</p>
+        </div>
+        <div class="dash1-com1" style="margin-left: 5%;">
+            <p style="padding-top: 10px; margin-left: 5px;">Completed Order</p>
+        </div>
+        <div class="dash1-com1" style="margin-left: 5%;">
+            <p style="padding-top: 10px; margin-left: 5px;">Today's Sales</p>
+        </div>
+    </div>
+    <div class="dash2">
+        <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
     </div>
 </div>
+
 
 <!-- หน้า Order New ร้านอาหาร -->
 <div id="orderNew" class="orderNew" hidden>
@@ -292,7 +310,15 @@
         background-color: rgb(221, 221, 221);
     }
 
-    .newOrder {
+    /* หน้า Dashboard */
+    .dash1 {
+        margin-top: 10px;
+        display: flex;
+        height: 100%;
+        width: 100%;
+        /* background-color: red; */
+    }
+    .dash1-com1 {
         height: 96px; /* เต็มความสูงของ viewport */
         width: 253px;
         background: rgb(255, 255, 255);
@@ -300,7 +326,15 @@
         border-radius: 15px;
         align-items: center;
     }
+    .dash2 {
+        margin-left: 320px;
+        width: 1300px;
+        height: 200px;
+        border-radius: 15px;
+        background-color: white;
+    }
 
+    /* หน้า Order */
     body {
         background-color: #EDF0F2;
     }
