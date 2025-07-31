@@ -1,4 +1,4 @@
-package com.scq.svelteSCQ;
+package com.scq.SCQ;
 
 import com.getcapacitor.BridgeActivity;
 

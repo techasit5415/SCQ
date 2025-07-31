@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.scq.svelteSCQ"
+    namespace "com.scq.SCQ"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.scq.svelteSCQ"
+        applicationId "com.scq.SCQ"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
