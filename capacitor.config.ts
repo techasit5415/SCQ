@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.scq.SCQ',
-  appName: 'SCQ App',
+  appId: 'com.SciCanteenQueue.app',
+  appName: 'SCQ',
   webDir: 'build'
 };
 
