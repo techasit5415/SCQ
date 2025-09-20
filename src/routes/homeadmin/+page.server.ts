@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
   if (!session || !session.match(/^\d+$/)) {
       console.log('No valid session, redirecting to /admin');
-      throw redirect(302, '/admin');
+      // throw redirect(302, '/admin');
   }
 
   console.log('Session valid, loading homeadmin page');

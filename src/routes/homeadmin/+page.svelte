@@ -1,6 +1,10 @@
 <script>
     import { goto } from "$app/navigation";
     import { onMount } from 'svelte';
+    import PocketBase from 'pocketbase';
+    import { env } from '$env/dynamic/public';
+    
+    const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
     
     function restaurantMenu() {
         var x = document.getElementById("hiddenbar-container");
@@ -20,10 +24,11 @@
     // ข้อมูลร้านค้า
     let restaurantData = {
         name: '',
-        category: '',
-        description: '',
-        address: '',
-        phone: ''
+        Details: '',
+        Addr: '',
+        Phone: '',
+        Type_Shop: 'อาหารไทย',
+        User_Owner_ID: ''
     };
     
     // โหลดข้อมูลร้านค้าเมื่อเริ่มต้น
@@ -33,13 +38,15 @@
     
     async function loadRestaurants() {
         try {
-            const response = await fetch('/api/restaurants');
-            if (response.ok) {
-                restaurants = await response.json();
-                console.log('Restaurants loaded:', restaurants);
-            }
+            console.log('Loading restaurants from PocketBase...');
+            const records = await pb.collection('Shop').getFullList({
+                sort: '-created',
+            });
+            restaurants = records;
+            console.log('Restaurants loaded:', restaurants);
         } catch (error) {
             console.error('Error loading restaurants:', error);
+            console.error('Error details:', error.response?.data || error.message);
         }
     }
     
@@ -53,10 +60,11 @@
         // รีเซ็ตข้อมูล
         restaurantData = {
             name: '',
-            category: '',
-            description: '',
-            address: '',
-            phone: ''
+            Details: '',
+            Addr: '',
+            Phone: '',
+            Type_Shop: 'อาหารไทย',
+            User_Owner_ID: ''
         };
     }
     
@@ -64,26 +72,16 @@
         console.log('Adding restaurant:', restaurantData);
         
         try {
-            const response = await fetch('/api/restaurants', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(restaurantData)
-            });
+            const record = await pb.collection('Shop').create(restaurantData);
+            console.log('Restaurant created:', record);
             
-            if (response.ok) {
-                await loadRestaurants(); // โหลดข้อมูลใหม่
-                closeAddRestaurantPopup();
-                activeMenu = "dashboard"; // กลับไปหน้า dashboard
-                alert('เพิ่มร้านค้าสำเร็จ!');
-            } else {
-                const errorData = await response.json();
-                alert(`เกิดข้อผิดพลาด: ${errorData.message || 'ไม่สามารถเพิ่มร้านค้าได้'}`);
-            }
+            await loadRestaurants(); // โหลดข้อมูลใหม่
+            closeAddRestaurantPopup();
+            activeMenu = "dashboard"; // กลับไปหน้า dashboard
+            alert('เพิ่มร้านค้าสำเร็จ!');
         } catch (error) {
             console.error('Error adding restaurant:', error);
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถเพิ่มร้านค้าได้'}`);
         }
     }
 
@@ -104,21 +102,12 @@
         }
         
         try {
-            const response = await fetch(`/api/restaurants?id=${restaurantId}`, {
-                method: 'DELETE'
-            });
-            
-            const responseData = await response.json();
-            
-            if (response.ok) {
-                await loadRestaurants(); // โหลดข้อมูลใหม่
-                alert('ลบร้านค้าสำเร็จ!');
-            } else {
-                alert(`เกิดข้อผิดพลาด: ${responseData.message || 'ไม่สามารถลบร้านค้าได้'}`);
-            }
+            await pb.collection('Shop').delete(restaurantId);
+            await loadRestaurants(); // โหลดข้อมูลใหม่
+            alert('ลบร้านค้าสำเร็จ!');
         } catch (error) {
             console.error('Error deleting restaurant:', error);
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถลบร้านค้าได้'}`);
         }
     }
 </script>
@@ -246,7 +235,7 @@
             
             <div class="form-group">
                 <label for="category">ประเภทร้านค้า:</label>
-                <select id="category" bind:value={restaurantData.category} required>
+                <select id="category" bind:value={restaurantData.Type_Shop} required>
                     <option value="">เลือกประเภท</option>
                     <option value="อาหารไทย">อาหารไทย</option>
                     <option value="อาหารจีน">อาหารจีน</option>
@@ -261,7 +250,7 @@
                 <label for="description">รายละเอียด:</label>
                 <textarea 
                     id="description"
-                    bind:value={restaurantData.description}
+                    bind:value={restaurantData.Details}
                     placeholder="รายละเอียดเกี่ยวกับร้านค้า"
                     rows="3"
                 ></textarea>
@@ -271,7 +260,7 @@
                 <label for="address">ที่อยู่:</label>
                 <textarea 
                     id="address"
-                    bind:value={restaurantData.address}
+                    bind:value={restaurantData.Addr}
                     placeholder="ที่อยู่ร้านค้า"
                     rows="2"
                     required
@@ -283,8 +272,19 @@
                 <input 
                     id="phone"
                     type="tel" 
-                    bind:value={restaurantData.phone}
+                    bind:value={restaurantData.Phone}
                     placeholder="0xx-xxx-xxxx"
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <label for="owner">เจ้าของร้าน ID:</label>
+                <input 
+                    id="owner"
+                    type="text" 
+                    bind:value={restaurantData.User_Owner_ID}
+                    placeholder="กรอก User Owner ID"
                     required
                 />
             </div>
@@ -328,23 +328,23 @@
                     <span class="material-symbols-outlined">storefront</span>
                     <h3>{restaurant.name}</h3>
                 </div>
-                <div class="card-content">
+                                <div class="card-content">
                     <div class="info-row">
                         <span class="material-symbols-outlined">category</span>
-                        <span>{restaurant.category || 'ไม่ระบุ'}</span>
+                        <span>{restaurant.Type_Shop || 'ไม่ระบุ'}</span>
                     </div>
                     <div class="info-row">
                         <span class="material-symbols-outlined">phone</span>
-                        <span>{restaurant.phone}</span>
+                        <span>{restaurant.Phone}</span>
                     </div>
                     <div class="info-row">
                         <span class="material-symbols-outlined">location_on</span>
-                        <span>{restaurant.address || 'ไม่ระบุที่อยู่'}</span>
+                        <span>{restaurant.Addr || 'ไม่ระบุที่อยู่'}</span>
                     </div>
-                    {#if restaurant.description}
+                    {#if restaurant.Details}
                     <div class="info-row">
                         <span class="material-symbols-outlined">description</span>
-                        <span>{restaurant.description}</span>
+                        <span>{restaurant.Details}</span>
                     </div>
                     {/if}
                 </div>
