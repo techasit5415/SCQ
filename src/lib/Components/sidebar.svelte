@@ -17,16 +17,16 @@
     function handleMenuClick(menu) {
         switch(menu) {
             case "dashboard":
-                goto('/homeadmin/dashboard');
+                goto('/admin/dashboard');
                 break;
             case "manageUsers":
-                goto('/homeadmin/manageUser');
+                goto('/admin/manageUser');
                 break;
             case "manageRestaurant":
-                goto('/homeadmin/Restaurant');
+                goto('/admin/Restaurant');
                 break;
             case "addRestaurant":
-                goto('/homeadmin/Restaurant/AddRestaurant');
+                goto('/admin/Restaurant/AddRestaurant');
                 break;
             default:
                 // For other menus that need special handling, dispatch event
@@ -40,7 +40,7 @@
     
     function handleViewRestaurant(id) {
         // Navigate to specific restaurant page
-        goto(`/homeadmin/Restaurant/${id}`);
+        goto(`/admin/Restaurant/${id}`);
     }
 </script>
 
