@@ -20,6 +20,12 @@
 
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import PocketBase from 'pocketbase';
+import { env } from '$env/dynamic/public';
+import { env as privateEnv } from '$env/dynamic/private';
+
+// ใช้ URL จาก environment variable
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
@@ -32,5 +38,107 @@ export const load: PageServerLoad = async ({ cookies }) => {
   }
 
   console.log('Session valid, loading homeadmin page');
-  return {};
+  console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+
+  try {
+    console.log('Attempting to connect to PocketBase...');
+    
+    // Initialize stats object
+    let stats = {
+      users: 0,
+      orders: 0,
+      dishes: 0,
+      canceled: 0
+    };
+    let shops = [];
+
+    // Authenticate as admin first
+    try {
+      await pb.admins.authWithPassword(
+        privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com', 
+        privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123'
+      );
+      console.log('Admin authenticated successfully');
+    } catch (authError) {
+      console.log('Admin auth failed, trying without auth...');
+    }
+    
+    // ดึงจำนวน Users ทั้งหมด
+    let usersData = [];
+    try {
+      console.log('Fetching users count...');
+      const usersCount = await pb.collection('users').getFullList();
+      console.log('Users count result:', usersCount);
+      console.log('Users totalItems:', usersCount.length);
+      stats.users = usersCount.length;
+      usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
+    } catch (error) {
+      console.log('Error fetching users:', error);
+    }
+
+    // ดึงจำนวน Orders ทั้งหมด
+    try {
+      console.log('Fetching orders count...');
+      const ordersCount = await pb.collection('Order').getFullList();
+      console.log('Orders count result:', ordersCount);
+      stats.orders = ordersCount.length;
+    } catch (error) {
+      console.log('Error fetching orders:', error);
+    }
+
+    // ดึงจำนวน Menu/Dishes ทั้งหมด
+    try {
+      console.log('Fetching menu count...');
+      const menuCount = await pb.collection('Menu').getFullList();
+      console.log('Menu count result:', menuCount);
+      stats.dishes = menuCount.length;
+    } catch (error) {
+      console.log('Error fetching menu:', error);
+    }
+
+    // ดึงจำนวน Canceled Orders (Status = "error")
+    try {
+      console.log('Fetching canceled orders count...');
+      const canceledCount = await pb.collection('Order').getFullList({
+        filter: 'Status = "error"'
+      });
+      console.log('Canceled count result:', canceledCount);
+      stats.canceled = canceledCount.length;
+    } catch (error) {
+      console.log('Error fetching canceled orders:', error);
+    }
+
+    // ดึงข้อมูล Shops สำหรับแสดงในตาราง
+    try {
+      console.log('Fetching shops...');
+      shops = await pb.collection('Shop').getFullList({
+        expand: 'User_Owner_ID'
+      });
+      console.log('Shops result:', shops);
+    } catch (error) {
+      console.log('Error fetching shops:', error);
+    }
+
+    const result = {
+      stats,
+      shops,
+      users: usersData // เพิ่มข้อมูล users แบบละเอียด
+    };
+
+    console.log('Final result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    
+    // Return fallback data if database connection fails
+    return {
+      stats: {
+        users: 0,
+        orders: 0,
+        dishes: 0,
+        canceled: 0
+      },
+      shops: []
+    };
+  }
 };
