@@ -183,184 +183,31 @@
     >
 </div>
 
- <div class="header">
-    <div class="photo">
-        <img src="/Photo/Icon.png" alt="icon" />
-    </div>
+<div class="header">
     <div class="headtext">
-        <h1>Restaurant panel</h1>
+        <h1 style="font-size: 20px;">SCQ</h1>
+        <p style="color:orange; font-size:20px;">คณะวิทยาศาสตร์</p>
     </div>
-</div>
+    <div class="headbtn">
+        <button
+            type="button"
+            class="header-btn"
+            class:active={activeMenu === "menu"}
+            on:click={openAnyPage}>
+            <span class="material-symbols-outlined"> notifications </span>
+        </button>
+        <button
+            type="button"
+            class="header-btn"
+            class:active={activeMenu === "menu"}
+            on:click={() => (activeMenu = "menu")}
+            on:click={() => (titleHeader2 = "Menu")}
+            on:click={() => (pathPra = "Home / Menu")} 
+            on:click={openAnyPage}>
+            <span class="material-symbols-outlined"> overview </span>
+        </button>
+    </div>
 
-<div class="header2">
-    <div class="path">
-        <p style="padding-top: 70px;">{pathPra}</p>
-    </div>
-    <div class="headtext2">
-        <h2 id="title">{titleHeader2}</h2>
-    </div>
-</div>
-
-<!-- หน้า Dashboard ร้านอาหาร -->
-<div id="dashboard" class="dashboard">
-    <div class="dash1">
-        <div class="dash1-com1">
-            <p style="margin-left: 5px;">New Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">In Progess Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">Completed Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">Today's Sales</p>
-        </div>
-    </div>
-    <div class="dash2">
-        <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
-    </div>
-</div>
-
-<!-- หน้า Order ร้านอาหาร -->
-<!-- <div id="orderbar" class="orderbar" hidden>
-    <div class="orderbar1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span class="btn-text">Pending Order</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    Active Orders
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    Order History
-            </button>
-        </div>
-    </div>   
-</div> -->
-
-<!-- หน้า Pending Orders ร้านอาหาร -->
-<div id="orderNew" class="orderNew" hidden>
-    <div class="orderNew1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Pending Orders</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    Active Orders
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    Order History
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- หน้า Active Orders ร้านอาหาร -->
-<div id="orderInProgress" class="orderInProgress" hidden>
-    <div class="orderInProgress1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    Pending Orders
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Active Orders</span>
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    Order History
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- หน้า Order History ร้านอาหาร -->
-<div id="orderCompleted" class="orderCompleted" hidden>
-    <div class="orderCompleted1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    Pending Orders
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    Active Orders
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Order History</span>
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- หน้า Menu ร้านอาหาร -->
-<div id="menu" class="menu" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Menu</p>
-    </div>
-</div>
-
-<!-- หน้า Roprts ร้านอาหาร -->
-<div id="reports" class="reports" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Reports</p>
-    </div>
-</div>
-
-<!-- หน้า Setting ร้านอาหาร -->
-<div id="setting" class="setting" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Setting</p>
-    </div>
 </div>
 
 <body></body>
@@ -384,7 +231,7 @@
     }
     .header {
         display: flex;
-        height: 60px;
+        height: 100px;
         width: 100%;
         border-bottom: 2px solid rgb(221, 221, 221);
         background: white;
@@ -393,16 +240,15 @@
         left: 0;
         align-items: center;
     }
-
-    .header2 {
-        height: 150px;
-        width: 100%;
-        border-bottom: 2px solid rgb(221, 221, 221);
-        background: white;
-        padding-left: 32vh;
-        align-items: center;
+    .headtext {
+        margin-left: 50px;
     }
-
+    .headbtn {
+        display: flex;
+    }
+    .header-btn {
+        margin-left: 20px;
+    }
     .menubar {
         height: 100vh; /* เต็มความสูงของ viewport */
         width: 30vh;
@@ -413,88 +259,14 @@
         left: 0;
         padding-top: 70px;
     }
-
-    /* .order {
-        background-color: rgb(221, 221, 221);
-    } */
-
-    /* หน้า Dashboard */
-    .dash1 {
-        margin-top: 10px;
-        display: flex;
-        height: 100%;
-        width: 100%;
-        /* background-color: red; */
-    }
-    .dash1-com1 {
-        height: 96px;
-        width: 253px;
-        background: rgb(255, 255, 255);
-        margin-left: 17%;
-        border-radius: 15px;
-        /* align-items: center; */
-    }
-    .dash2 {
-        margin-left: 320px;
-        width: 1300px;
-        height: 200px;
-        border-radius: 15px;
-        background-color: white;
-    }
-
-    /* หน้า Order */
-    /* .orderbar1 {
-        width: 1300px;
-        height: 200px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-        background-color: rgb(115, 99, 255);
-    } */
-    /* หน้า Pending Orders */
-    .orderNew1 {
-        width: 1300px;
-        height: 200px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-        /* background-color: rgb(115, 99, 255); */
-    }
-    /* หน้า Active Orders */
-    .orderInProgress1 {
-        width: 1300px;
-        height: 200px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-        /* background-color: rgb(115, 99, 255); */
-    }
-    /* หน้า Order History */
-    .orderCompleted1 {
-        width: 1300px;
-        height: 200px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-        /* background-color: rgb(115, 99, 255); */
-    }
-    
-
     body {
         background-color: #EDF0F2;
     }
-
-    /* label {
-        display: flex;
-    } */
-
     button {
         display: flex;
         align-items: center;
-        text-align: left;
         height: 40px;
-        width: 100%;
-        padding: 1rem;
+        width: 40px;
         /* background-color: rgb(255, 255, 255); */
         background-color: transparent;
         border: none;
@@ -502,7 +274,6 @@
         cursor: pointer;
         transition: background-color 0.3s ease;
     }
-
     h1 {
         color: #333;
         font-family: "Noto Sans Thai";
@@ -511,16 +282,6 @@
         font-weight: 400;
         line-height: 19.2px;
     }
-
-    h2 {
-        color: #333;
-        font-family: "Noto Sans Thai";
-        font-size: 20px;
-        font-style: regular;
-        font-weight: 400;
-        line-height: 19.2px;
-    }
-
     p {
         color: #333;
         font-family: "Noto Sans Thai";
@@ -530,20 +291,13 @@
         line-height: 19.2px;
         /* padding-top: 70px; */
     }
-
     button:hover {
         background-color: #f0f0f0;
     }
-
-    /* button:active { */
-    /* background: orange; ตอนกด */
-    /* } */
-
     .photo img {
         width: 48px;
         height: auto;
     }
-
     .material-symbols-outlined {
         font-variation-settings:
             "FILL" 0,
@@ -556,7 +310,6 @@
         /* background: orange; */
         color: white;
     }
-
     button.active .material-symbols-outlined {
         color: orange;
     }

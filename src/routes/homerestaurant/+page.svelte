@@ -1,5 +1,11 @@
 <script>
     import { goto } from "$app/navigation";
+    let activeMenu = "dashboard";
+    let titleHeader2 = "Dashboard";
+    let pathPra = "Home / Dashboard";
+    let last = "dashboard";
+    let addItem = "addItem";
+
     function listOrder() {
         var x = document.getElementById("hiddenbar-container");
         if (x) {
@@ -78,10 +84,7 @@
         }
     }
 
-    let activeMenu = "dashboard";
-    let titleHeader2 = "Dashboard";
-    let pathPra = "Home / Dashboard";
-    let last = "dashboard";
+
 </script>
 
 <div id="menubar" class="menubar">
@@ -97,44 +100,20 @@
         <span class="material-symbols-outlined">dashboard</span>
         <span class="btn-text">Dashboard</span>
     </button>
+
     <button
         type="button"
         class="menu-btn"
         class:active={activeMenu === "orderNew"}
+        on:click={() => (activeMenu = "orderNew")}
         on:click={() => (titleHeader2 = "Order")}
         on:click={() => (pathPra = "Home / Order")}
-        on:click={() => (activeMenu = "orderNew")}
         on:click={openAnyPage}
-        ><span class="material-symbols-outlined"> storefront </span><span
-            class="btn-text">Order</span
-        ></button
     >
-    <!-- <label id="hiddenbar-container">
-        <button type="button" class="order"
-            class:active={activeMenu === "orderNew"}
-            on:click={() => (activeMenu = "orderNew")}
-            on:click={() => (titleHeader2 = "New")}
-            on:click={() => (pathPra = "Home / Order / New")} 
-            on:click={openAnyPage}
-            ><span class="btn-text">New</span></button
-        >
-        <button type="button" class="order"
-            class:active={activeMenu === "orderInProgress"}
-            on:click={() => (activeMenu = "orderInProgress")}
-            on:click={() => (titleHeader2 = "In Progress")}
-            on:click={() => (pathPra = "Home / Order / In Progress")}
-            on:click={openAnyPage}
-            ><span class="btn-text">In Progress</span></button
-        >
-        <button type="button" class="order"
-            class:active={activeMenu === "orderCompleted"}
-            on:click={() => (activeMenu = "orderCompleted")}
-            on:click={() => (titleHeader2 = "Completed")}
-            on:click={() => (pathPra = "Home / Order / Completed")}
-            on:click={openAnyPage}
-            ><span class="btn-text">Completed</span></button
-        >
-    </label> -->
+        <span class="material-symbols-outlined"> storefront </span>
+        <span class="btn-text">Order</span>
+    </button>
+
     <button
         type="button"
         class="menu-btn"
@@ -143,10 +122,11 @@
         on:click={() => (titleHeader2 = "Menu")}
         on:click={() => (pathPra = "Home / Menu")} 
         on:click={openAnyPage}
-        ><span class="material-symbols-outlined"> fork_spoon </span><span
-            class="btn-text">Menu</span
-        ></button
     >
+        <span class="material-symbols-outlined"> fork_spoon </span>
+        <span class="btn-text">Menu</span>
+    </button>
+
     <button
         type="button"
         class="menu-btn"
@@ -155,10 +135,11 @@
         on:click={() => (titleHeader2 = "Reports")}
         on:click={() => (pathPra = "Home / Reports")}
         on:click={openAnyPage}
-        ><span class="material-symbols-outlined"> assignment </span><span
-            class="btn-text">Reports</span
-        ></button
     >
+        <span class="material-symbols-outlined"> assignment </span>
+        <span class="btn-text">Reports</span>
+    </button>
+
     <button
         type="button"
         class="menu-btn"
@@ -167,23 +148,24 @@
         on:click={() => (titleHeader2 = "Settings")}
         on:click={() => (pathPra = "Home / Settings")}
         on:click={openAnyPage}
-        ><span class="material-symbols-outlined"> settings </span><span
-            class="btn-text">Settings</span
-        ></button
     >
+        <span class="material-symbols-outlined"> settings </span>
+        <span class="btn-text">Settings</span>
+    </button>
+
     <button
         type="button"
         class="menu-btn"
         class:active={activeMenu === "logout"}
         on:click={() => (activeMenu = "logout")}
         on:click={() => (titleHeader2 = "Logout")}
-        ><span class="material-symbols-outlined"> logout </span><span
-            class="btn-text">Logout</span
-        ></button
     >
+        <span class="material-symbols-outlined"> logout </span>
+        <span class="btn-text">Logout</span>
+    </button>
 </div>
 
- <div class="header">
+<div class="header">
     <div class="photo">
         <img src="/Photo/Icon.png" alt="icon" />
     </div>
@@ -222,36 +204,6 @@
     </div>
 </div>
 
-<!-- หน้า Order ร้านอาหาร -->
-<!-- <div id="orderbar" class="orderbar" hidden>
-    <div class="orderbar1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span class="btn-text">Pending Order</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    Active Orders
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    Order History
-            </button>
-        </div>
-    </div>   
-</div> -->
-
 <!-- หน้า Pending Orders ร้านอาหาร -->
 <div id="orderNew" class="orderNew" hidden>
     <div class="orderNew1">
@@ -260,7 +212,7 @@
                 class:active={activeMenu === "orderNew"}
                 on:click={() => (activeMenu = "orderNew")}
                 on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Pending Orders</span>
+                    <span style="color:#2B7FFF; font-size: 19px;">Pending Orders</span>
             </button>
         </div>
         <div class="inProgress" style="margin-left: 20px">
@@ -268,7 +220,7 @@
                 class:active={activeMenu === "orderInProgress"}
                 on:click={() => (activeMenu = "orderInProgress")}
                 on:click={openAnyPage}>
-                    Active Orders
+                    <span style="color: black; font-size: 19px;">Active Orders</span>
             </button>
         </div>
         <div class="completed" style="margin-left: 20px">
@@ -276,8 +228,25 @@
                 class:active={activeMenu === "orderCompleted"}
                 on:click={() => (activeMenu = "orderCompleted")}
                 on:click={openAnyPage}>
-                    Order History
+                    <span style="color: black; font-size: 19px;">Order History</span>
             </button>
+        </div>
+    </div>
+    <div class="lineMenu">
+        <div class="lineMenu1" style="background-color: #2B7FFF;"></div>
+        <div class="lineMenu2" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu3" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
+    </div>
+    <div class="orderNewDetail">
+        <div class="orderID">
+            <h2>
+                Order <span style="word-spacing: 400px;">ID ราคา</span>
+            </h2>
+            
+        </div>
+        <div class="orderIDDetail">
+
         </div>
     </div>
 </div>
@@ -290,7 +259,7 @@
                 class:active={activeMenu === "orderNew"}
                 on:click={() => (activeMenu = "orderNew")}
                 on:click={openAnyPage}>
-                    Pending Orders
+                    <span style="color: black; font-size: 19px;">Pending Orders</span>
             </button>
         </div>
         <div class="inProgress" style="margin-left: 20px">
@@ -298,7 +267,7 @@
                 class:active={activeMenu === "orderInProgress"}
                 on:click={() => (activeMenu = "orderInProgress")}
                 on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Active Orders</span>
+                    <span style="color:#2B7FFF; font-size: 19px">Active Orders</span>
             </button>
         </div>
         <div class="completed" style="margin-left: 20px">
@@ -306,9 +275,15 @@
                 class:active={activeMenu === "orderCompleted"}
                 on:click={() => (activeMenu = "orderCompleted")}
                 on:click={openAnyPage}>
-                    Order History
+                    <span style="color: black; font-size: 19px;">Order History</span>
             </button>
         </div>
+    </div>
+    <div class="lineMenu">
+        <div class="lineMenu1" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu2" style="background-color: #2B7FFF;"></div>
+        <div class="lineMenu3" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
     </div>
 </div>
 
@@ -320,7 +295,7 @@
                 class:active={activeMenu === "orderNew"}
                 on:click={() => (activeMenu = "orderNew")}
                 on:click={openAnyPage}>
-                    Pending Orders
+                    <span style="color: black; font-size: 19px;">Pending Orders</span>
             </button>
         </div>
         <div class="inProgress" style="margin-left: 20px">
@@ -328,7 +303,7 @@
                 class:active={activeMenu === "orderInProgress"}
                 on:click={() => (activeMenu = "orderInProgress")}
                 on:click={openAnyPage}>
-                    Active Orders
+                    <span style="color: black; font-size: 19px;">Active Orders</span>
             </button>
         </div>
         <div class="completed" style="margin-left: 20px">
@@ -336,31 +311,50 @@
                 class:active={activeMenu === "orderCompleted"}
                 on:click={() => (activeMenu = "orderCompleted")}
                 on:click={openAnyPage}>
-                    <span style="color:#2B7FFF;">Order History</span>
+                    <span style="color: #2B7FFF; font-size: 19px">Order History</span>
             </button>
         </div>
+    </div>
+    <div class="lineMenu">
+        <div class="lineMenu1" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu2" style="background-color: #bcbbbb;"></div>
+        <div class="lineMenu3" style="background-color: #2B7FFF;"></div>
+        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
     </div>
 </div>
 
 <!-- หน้า Menu ร้านอาหาร -->
 <div id="menu" class="menu" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Menu</p>
+    <div class="menu1">
+        <div class="menuItem" style="margin-top: 10px;">
+            <div style="display: flex; gap: 45vh;">
+                <button type="button" class="addItem-btn">
+                    <span class="material-symbols-outlined" style="color: white;"> add_2 </span>
+                    <span class="btn-text" style="color: white; font-size: 20px">Add Item</span>
+                </button>
+                <input type="text" 
+                    placeholder="Search"
+                    name="search"
+                    class="searchItem"
+                />
+            </div>
+            
+            
+        </div>
+        <div class="menuCategory" style="margin-top: 10px;">
+
+        </div>
     </div>
 </div>
 
 <!-- หน้า Roprts ร้านอาหาร -->
 <div id="reports" class="reports" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Reports</p>
-    </div>
+    
 </div>
 
 <!-- หน้า Setting ร้านอาหาร -->
 <div id="setting" class="setting" hidden>
-    <div class="newOrder">
-        <p style="padding-top: 10px; margin-left: 5px;">Setting</p>
-    </div>
+    
 </div>
 
 <body></body>
@@ -375,6 +369,7 @@
             "opsz" 24;
         margin-right: 10px;
     }
+    
     .btn-text {
         font-family: "Noto Sans Thai";
         font-size: 16px;
@@ -396,7 +391,7 @@
 
     .header2 {
         height: 150px;
-        width: 100%;
+        width: 84.3%;
         border-bottom: 2px solid rgb(221, 221, 221);
         background: white;
         padding-left: 32vh;
@@ -414,11 +409,6 @@
         padding-top: 70px;
     }
 
-    /* .order {
-        background-color: rgb(221, 221, 221);
-    } */
-
-    /* หน้า Dashboard */
     .dash1 {
         margin-top: 10px;
         display: flex;
@@ -442,47 +432,121 @@
         background-color: white;
     }
 
-    /* หน้า Order */
-    /* .orderbar1 {
-        width: 1300px;
-        height: 200px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-        background-color: rgb(115, 99, 255);
-    } */
     /* หน้า Pending Orders */
     .orderNew1 {
-        width: 1300px;
-        height: 200px;
         margin-top: 10px;
         margin-left: 17%;
         display: flex;
-        /* background-color: rgb(115, 99, 255); */
     }
+    .lineMenu {
+        display: flex;
+    }
+    .lineMenu1 {
+        width: 175px;
+        height: 3px;
+        margin-left: 17.5%;
+    }
+    .lineMenu2 {
+        width: 175px;
+        height: 3px;
+    }
+    .lineMenu3 {
+        width: 175px;
+        height: 3px;
+    }
+    .lineMenu4 {
+        width: 995px;
+        height: 3px;
+        margin-bottom: 20px;
+    }
+    .orderNewDetail {
+        display: flex;
+        margin-left: 17.5%;
+    }
+
+    .orderID {
+        padding: 16px;
+        width: 550px;
+        height: 623px;
+        background: white;
+        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+    }
+    .orderIDDetail {
+        padding: 16px;
+        width: 850px;
+        height: 623px;
+        margin-left: 3.5%;
+        background: white;
+        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+    }
+
     /* หน้า Active Orders */
     .orderInProgress1 {
         width: 1300px;
-        height: 200px;
+        height: 40px;
         margin-top: 10px;
         margin-left: 17%;
         display: flex;
-        /* background-color: rgb(115, 99, 255); */
     }
+
     /* หน้า Order History */
     .orderCompleted1 {
         width: 1300px;
-        height: 200px;
+        height: 40px;
         margin-top: 10px;
         margin-left: 17%;
         display: flex;
-        /* background-color: rgb(115, 99, 255); */
     }
-    
+
+    /* หน้า Menu */
+    .menu1 {
+        margin-top: 10px;
+        margin-left: 16%;
+        display: flex;
+    }
+    .menuItem {
+        width: 100vh;
+        height: 77vh;
+        background-color: rgb(255, 255, 255);
+        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+    }
+    .addItem-btn {
+        display: flex;
+        width: 20vh;
+        height: 7vh;
+        margin-left: 2%;
+        margin-top: 20px;
+        background-color: orange;
+        border-radius: 16px;
+        justify-content: center;      /*  จัดแนวนอน */
+    }
+    .searchItem {
+        display: flex;
+        width: 25vh;
+        height: 7vh;
+        margin-top: 20px;
+        padding-left: 10px;
+        border-radius: 16px;
+        border: 1px solid #ccc;
+        border-color: #333;
+    }
+    .menuCategory {
+        width: 60vh;
+        height: 77vh;
+        margin-left: 2%;
+        background-color: rgb(255, 255, 255);
+        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+    }
+        
 
     body {
         background-color: #EDF0F2;
     }
+
 
     /* label {
         display: flex;
