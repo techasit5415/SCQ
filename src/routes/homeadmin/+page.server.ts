@@ -18,8 +18,8 @@
 // };
 //test กิ่ง
 
-import type { PageServerLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 import { env as privateEnv } from '$env/dynamic/private';
@@ -138,7 +138,84 @@ export const load: PageServerLoad = async ({ cookies }) => {
         dishes: 0,
         canceled: 0
       },
-      shops: []
+      shops: [],
+      users: []
     };
+  }
+};
+
+export const actions: Actions = {
+  addRestaurant: async ({ request }) => {
+    const formData = await request.formData();
+    
+    const restaurantData = {
+      name: formData.get('name') as string,
+      Type_Shop: formData.get('type') as string,
+      User_Owner_ID: formData.get('ownerId') as string,
+      Phone: formData.get('phone') as string,
+      Addr: formData.get('address') as string,
+      Details: formData.get('description') as string,
+      field: '' // Required field in schema
+    };
+
+    console.log('Attempting to create restaurant with data:', restaurantData);
+
+    try {
+      // Admin authentication
+      if (privateEnv.POCKETBASE_ADMIN_EMAIL && privateEnv.POCKETBASE_ADMIN_PASSWORD) {
+        await pb.admins.authWithPassword(
+          privateEnv.POCKETBASE_ADMIN_EMAIL,
+          privateEnv.POCKETBASE_ADMIN_PASSWORD
+        );
+        console.log('Admin authenticated successfully');
+      }
+
+      // Validate required fields
+      if (!restaurantData.name || !restaurantData.Type_Shop || !restaurantData.Phone || !restaurantData.Addr) {
+        console.log('Missing required fields:', {
+          name: !!restaurantData.name,
+          type: !!restaurantData.Type_Shop,
+          phone: !!restaurantData.Phone,
+          address: !!restaurantData.Addr
+        });
+        
+        return fail(400, {
+          error: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+          formData: restaurantData
+        });
+      }
+
+      // Create restaurant in database
+      const record = await pb.collection('Shop').create(restaurantData);
+      
+      console.log('Restaurant created successfully:', record);
+      
+      return {
+        success: true,
+        message: 'เพิ่มร้านอาหารสำเร็จ!'
+      };
+      
+    } catch (error: any) {
+      console.error('Error creating restaurant:', error);
+      console.error('Error details:', error.response?.data);
+      
+      let errorMessage = 'ไม่สามารถเพิ่มร้านอาหารได้ กรุณาลองใหม่อีกครั้ง';
+      
+      if (error.response?.data?.data) {
+        const fieldErrors = error.response.data.data;
+        if (fieldErrors.Type_Shop) {
+          errorMessage = `ประเภทร้านอาหารไม่ถูกต้อง: กรุณาเลือกเฉพาะ "อาหารไทย" หรือ "อาหารญี่ปุ่น" เท่านั้น`;
+        } else if (fieldErrors.User_Owner_ID) {
+          errorMessage = `เจ้าของร้านไม่ถูกต้อง: กรุณาเลือกเจ้าของร้าน`;
+        } else {
+          errorMessage = `ข้อมูลไม่ถูกต้อง: ${JSON.stringify(fieldErrors)}`;
+        }
+      }
+      
+      return fail(400, {
+        error: errorMessage,
+        formData: restaurantData
+      });
+    }
   }
 };

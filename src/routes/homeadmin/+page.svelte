@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     
     export let data;
+    export let form;
     
     // Active menu state
     let activeMenu = "dashboard";
@@ -19,25 +20,22 @@
     // Selected restaurant for detail view
     let selectedRestaurant = null;
     
-    // Dummy restaurants data (will be replaced with real data)
-    let restaurants = [];
-    
     // Functions
     function handleEditUser(userId) {
-        console.log('Edit user:', userId);
-        // Implement user edit functionality
+        alert(`Edit user functionality for ID: ${userId} (Coming soon...)`);
     }
     
     function handleDeleteUser(userId) {
-        console.log('Delete user:', userId);
-        // Implement user delete functionality
+        if (confirm('Are you sure you want to delete this user?')) {
+            alert(`Delete user functionality for ID: ${userId} (Coming soon...)`);
+        }
     }
     
     function handleViewRestaurant(restaurantId) {
         // Find the restaurant in shops data
         selectedRestaurant = data.shops?.find(shop => shop.id === restaurantId);
         if (selectedRestaurant) {
-            activeMenu = "restaurantDetail";
+            activeMenu = `restaurant-${restaurantId}`;
         }
     }
     
@@ -46,35 +44,14 @@
         // Implement restaurant delete functionality
     }
     
-    async function handleAddRestaurant() {
+    async function handleLogout() {
         try {
-            // Here you would normally send data to server
-            console.log('Adding restaurant:', newRestaurant);
-            
-            // Reset form
-            newRestaurant = {
-                name: '',
-                type: '',
-                ownerId: '',
-                phone: '',
-                address: '',
-                description: ''
-            };
-            
-            // Go back to restaurant list
-            activeMenu = "manageRestaurant";
-            
-            // Show success message
-            alert('Restaurant added successfully!');
-            
+            await fetch('/logout');
+            window.location.href = '/admin';
         } catch (error) {
-            console.error('Error adding restaurant:', error);
-            alert('Error adding restaurant. Please try again.');
+            console.error('Logout error:', error);
+            window.location.href = '/admin';
         }
-    }
-    
-    function handleLogout() {
-        goto('/logout');
     }
 </script>
 
@@ -114,7 +91,7 @@
             <!-- Manage Restaurant -->
             <button
                 class="menu-item"
-                class:active={activeMenu === "manageRestaurant" || activeMenu === "addRestaurant" || activeMenu === "allRestaurants" || activeMenu === "restaurantDetail"}
+                class:active={activeMenu === "manageRestaurant" || activeMenu === "addRestaurant" || activeMenu.startsWith('restaurant-')}
                 on:click={() => activeMenu = "manageRestaurant"}
             >
                 <span class="material-symbols-outlined">storefront</span>
@@ -122,16 +99,8 @@
             </button>
 
             <!-- Restaurant Submenu -->
-            {#if activeMenu === "manageRestaurant" || activeMenu === "addRestaurant" || activeMenu === "allRestaurants" || activeMenu === "restaurantDetail"}
+            {#if activeMenu === "manageRestaurant" || activeMenu === "addRestaurant" || activeMenu.startsWith('restaurant-')}
                 <div class="submenu">
-                    <button 
-                        class="submenu-item" 
-                        class:active={activeMenu === "manageRestaurant" || activeMenu === "allRestaurants"}
-                        on:click={() => (activeMenu = "manageRestaurant")}
-                    >
-                        <span class="material-symbols-outlined">list</span>
-                        <span>All Restaurants</span>
-                    </button>
                     <button 
                         class="submenu-item" 
                         class:active={activeMenu === "addRestaurant"}
@@ -140,6 +109,20 @@
                         <span class="material-symbols-outlined">add</span>
                         <span>Add Restaurant</span>
                     </button>
+                    
+                    <!-- Display actual restaurants from database -->
+                    {#if data.shops && data.shops.length > 0}
+                        {#each data.shops as shop}
+                            <button 
+                                class="submenu-item restaurant-item" 
+                                class:active={activeMenu === `restaurant-${shop.id}`}
+                                on:click={() => handleViewRestaurant(shop.id)}
+                            >
+                                <span class="material-symbols-outlined">storefront</span>
+                                <span>{shop.name}</span>
+                            </button>
+                        {/each}
+                    {/if}
                 </div>
             {/if}
 
@@ -293,84 +276,36 @@
                 </div>
             </div>
 
-        <!-- Manage Restaurant Section -->
-        {:else if activeMenu === "manageRestaurant" || activeMenu === "allRestaurants"}
+        <!-- Manage Restaurant Default Page -->
+        {:else if activeMenu === "manageRestaurant"}
             <div class="page-header">
                 <nav class="breadcrumb">
                     <span class="breadcrumb-item">Home</span>
                     <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item">Manage Restaurant</span>
-                    <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item active">All Restaurant</span>
+                    <span class="breadcrumb-item active">Manage Restaurant</span>
                 </nav>
-                <h2>All Restaurants</h2>
+                <h2>Manage Restaurant</h2>
             </div>
 
-            <div class="restaurants-section">
-                <div class="restaurants-table-container">
-                    <div class="table-header">
-                        <h3>Restaurants</h3>
+            <div class="welcome-section">
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <span class="material-symbols-outlined">storefront</span>
                     </div>
-                    <table class="restaurants-table">
-                        <thead>
-                            <tr>
-                                <th>Restaurant ID</th>
-                                <th>Image</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Date Added</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#if data.shops && data.shops.length > 0}
-                                {#each data.shops as shop, index}
-                                    <tr>
-                                        <td>{index + 1}</td>
-                                        <td>
-                                            <div class="restaurant-image">
-                                                <span class="material-symbols-outlined">broken_image</span>
-                                            </div>
-                                        </td>
-                                        <td>{shop.name || 'N/A'}</td>
-                                        <td>
-                                            <!-- Get owner email from users data -->
-                                            {#if data.users}
-                                                {#each data.users as user}
-                                                    {#if user.id === shop.User_Owner_ID}
-                                                        {user.email || 'N/A'}
-                                                    {/if}
-                                                {/each}
-                                            {:else}
-                                                N/A
-                                            {/if}
-                                        </td>
-                                        <td>{new Date(shop.created).toLocaleDateString('en-US', { 
-                                            month: 'short', 
-                                            day: 'numeric', 
-                                            year: 'numeric' 
-                                        })}</td>
-                                        <td>
-                                            <span class="status-badge active">Active</span>
-                                        </td>
-                                        <td>
-                                            <button class="action-link edit" on:click={() => handleViewRestaurant(shop.id)}>
-                                                Edit
-                                            </button>
-                                            <button class="action-link delete" on:click={() => handleDeleteRestaurant(shop.id)}>
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                {/each}
-                            {:else}
-                                <tr>
-                                    <td colspan="7" class="no-data">No restaurants found</td>
-                                </tr>
-                            {/if}
-                        </tbody>
-                    </table>
+                    <h3>Restaurant Management</h3>
+                    <p>Select a restaurant from the sidebar to view details, or add a new restaurant.</p>
+                    
+                    <div class="stats-overview">
+                        <div class="stat-item">
+                            <span class="stat-number">{data.shops?.length || 0}</span>
+                            <span class="stat-label">Total Restaurants</span>
+                        </div>
+                    </div>
+                    
+                    <button class="welcome-btn" on:click={() => (activeMenu = "addRestaurant")}>
+                        <span class="material-symbols-outlined">add</span>
+                        Add New Restaurant
+                    </button>
                 </div>
             </div>
 
@@ -388,30 +323,41 @@
             </div>
 
             <div class="add-restaurant-section">
+                <!-- Success/Error Messages -->
+                {#if form?.success}
+                    <div class="alert alert-success">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        {form.message}
+                    </div>
+                {/if}
+                
+                {#if form?.error}
+                    <div class="alert alert-error">
+                        <span class="material-symbols-outlined">error</span>
+                        {form.error}
+                    </div>
+                {/if}
+                
                 <div class="add-restaurant-form">
-                    <form on:submit|preventDefault={handleAddRestaurant}>
+                    <form method="POST" action="?/addRestaurant">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="restaurantName">Restaurant Name</label>
                                 <input 
                                     type="text" 
                                     id="restaurantName" 
-                                    bind:value={newRestaurant.name} 
+                                    name="name"
+                                    value={newRestaurant.name}
                                     placeholder="Enter restaurant name"
                                     required
                                 />
                             </div>
                             <div class="form-group">
                                 <label for="restaurantType">Restaurant Type</label>
-                                <select id="restaurantType" bind:value={newRestaurant.type} required>
+                                <select id="restaurantType" name="type" value={newRestaurant.type} required>
                                     <option value="">Select type</option>
                                     <option value="อาหารไทย">อาหารไทย</option>
-                                    <option value="อาหารจีน">อาหารจีน</option>
                                     <option value="อาหารญี่ปุ่น">อาหารญี่ปุ่น</option>
-                                    <option value="อาหารเกาหลี">อาหารเกาหลี</option>
-                                    <option value="อาหารฝรั่ง">อาหารฝรั่ง</option>
-                                    <option value="อาหารอีสาน">อาหารอีสาน</option>
-                                    <option value="อาหารเจ">อาหารเจ</option>
                                 </select>
                             </div>
                         </div>
@@ -419,7 +365,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ownerEmail">Owner Email</label>
-                                <select id="ownerEmail" bind:value={newRestaurant.ownerId} required>
+                                <select id="ownerEmail" name="ownerId" value={newRestaurant.ownerId} required>
                                     <option value="">Select owner</option>
                                     {#if data.users}
                                         {#each data.users as user}
@@ -433,7 +379,8 @@
                                 <input 
                                     type="tel" 
                                     id="phone" 
-                                    bind:value={newRestaurant.phone} 
+                                    name="phone"
+                                    value={newRestaurant.phone}
                                     placeholder="Enter phone number"
                                     required
                                 />
@@ -444,7 +391,8 @@
                             <label for="address">Address</label>
                             <textarea 
                                 id="address" 
-                                bind:value={newRestaurant.address} 
+                                name="address"
+                                value={newRestaurant.address}
                                 placeholder="Enter restaurant address"
                                 rows="3"
                                 required
@@ -455,7 +403,8 @@
                             <label for="description">Description</label>
                             <textarea 
                                 id="description" 
-                                bind:value={newRestaurant.description} 
+                                name="description"
+                                value={newRestaurant.description}
                                 placeholder="Enter restaurant description"
                                 rows="4"
                             ></textarea>
@@ -474,7 +423,7 @@
             </div>
 
         <!-- Restaurant Detail -->
-        {:else if activeMenu === "restaurantDetail" && selectedRestaurant}
+        {:else if selectedRestaurant && activeMenu.startsWith('restaurant-')}
             <div class="page-header">
                 <nav class="breadcrumb">
                     <span class="breadcrumb-item">Home</span>
@@ -570,63 +519,6 @@
         {/if}
     </main>
 </div>
-
-<script>
-    import { goto } from "$app/navigation";
-    import { onMount } from 'svelte';
-    import PocketBase from 'pocketbase';
-    import { env } from '$env/dynamic/public';
-    
-    export let data;
-    
-    const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
-    
-    let activeMenu = "dashboard";
-    let restaurants = [];
-    
-    onMount(async () => {
-        await loadRestaurants();
-    });
-
-    async function loadRestaurants() {
-        try {
-            const records = await pb.collection('Shop').getFullList({
-                sort: '-created',
-            });
-            restaurants = records;
-        } catch (error) {
-            console.error('Error loading restaurants:', error);
-        }
-    }
-
-    function restaurantMenu() {
-        if (activeMenu === "manageRestaurant") {
-            activeMenu = "dashboard";
-        } else {
-            activeMenu = "manageRestaurant";
-        }
-    }
-
-    function handleEditUser(userId) {
-        alert(`Edit user functionality for ID: ${userId} (Coming soon...)`);
-    }
-    
-    function handleDeleteUser(userId) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            alert(`Delete user functionality for ID: ${userId} (Coming soon...)`);
-        }
-    }
-
-    async function handleLogout() {
-        try {
-            await fetch('/logout');
-            window.location.href = '/admin';
-        } catch (error) {
-            console.error('Logout error:', error);
-            window.location.href = '/admin';
-        }
-    }
-</script>
 
 <style>
     /* Reset and Base */
@@ -973,6 +865,116 @@
         margin: 20px 0;
     }
 
+    /* Welcome Section */
+    .welcome-section {
+        margin: 20px 0;
+        display: flex;
+        justify-content: center;
+    }
+
+    .welcome-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+    }
+
+    .welcome-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #ff8c00 0%, #ffb347 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .welcome-icon .material-symbols-outlined {
+        font-size: 36px;
+        color: white;
+    }
+
+    .welcome-card h3 {
+        margin: 0 0 10px 0;
+        font-size: 24px;
+        color: #333438;
+    }
+
+    .welcome-card p {
+        margin: 0 0 30px 0;
+        color: #666;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
+    .stats-overview {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0 30px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-number {
+        font-size: 28px;
+        font-weight: 600;
+        color: #ff8c00;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .welcome-btn {
+        background: #ff8c00;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 auto;
+        transition: all 0.2s;
+    }
+
+    .welcome-btn:hover {
+        background: #e67e00;
+        transform: translateY(-1px);
+    }
+
+    /* Restaurant Submenu Styles */
+    .restaurant-item {
+        background: rgba(255, 140, 0, 0.1);
+        border-left: 3px solid #ff8c00;
+        margin-left: 10px;
+        padding-left: 15px !important;
+    }
+
+    .restaurant-item:hover {
+        background: rgba(255, 140, 0, 0.15);
+    }
+
+    .restaurant-item.active {
+        background: rgba(255, 140, 0, 0.2);
+        border-left-color: #e67e00;
+    }
+
     .restaurants-table-container {
         background: white;
         border-radius: 16px;
@@ -1058,6 +1060,37 @@
     }
 
     /* Add Restaurant Form Styles */
+    .add-restaurant-section {
+        padding: 20px;
+    }
+    
+    /* Alert Messages */
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .alert-success {
+        background-color: #e7f5e7;
+        color: #2d5a2d;
+        border: 1px solid #b8e6b8;
+    }
+    
+    .alert-error {
+        background-color: #fdeaea;
+        color: #d32f2f;
+        border: 1px solid #ffcccb;
+    }
+    
+    .alert .material-symbols-outlined {
+        font-size: 18px;
+    }
     .add-restaurant-section {
         margin: 20px 0;
     }
