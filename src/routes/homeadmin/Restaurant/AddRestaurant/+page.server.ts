@@ -1,31 +1,11 @@
-// import type { Actions } from './$types.js';
-
-// export const actions: Actions = {
-//   default: async ({ request }) => {
-//     // ดึงข้อมูลฟอร์ม
-//     const formData = await request.formData();
-//     const username = formData.get('username');
-//     const password = formData.get('password');
-
-//     // ตรวจสอบข้อมูล (ตัวอย่าง)
-//     if (username !== 'admin'  password !== '1234') {
-//       return { status: 401, errors: { message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' } };
-//     }
-
-//     // ถ้าล็อกอินสำเร็จ
-//     return { success: true };
-//   }
-// };
-//test กิ่ง
-
-import type { PageServerLoad, Actions } from './$types';
+import type { PageServerLoad, Actions } from '../$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 import { env as privateEnv } from '$env/dynamic/private';
 
 // ใช้ URL จาก environment variable
-const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
@@ -38,17 +18,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
   }
 
   console.log('Session valid, loading homeadmin page');
-  console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+  console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
     
     // Initialize stats object
     let stats = {
-      users: 0,
-      orders: 0,
-      dishes: 0,
-      canceled: 0
+    
     };
     let shops = [];
 
@@ -74,38 +51,6 @@ export const load: PageServerLoad = async ({ cookies }) => {
       usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
     } catch (error) {
       console.log('Error fetching users:', error);
-    }
-
-    // ดึงจำนวน Orders ทั้งหมด
-    try {
-      console.log('Fetching orders count...');
-      const ordersCount = await pb.collection('Order').getFullList();
-      console.log('Orders count result:', ordersCount);
-      stats.orders = ordersCount.length;
-    } catch (error) {
-      console.log('Error fetching orders:', error);
-    }
-
-    // ดึงจำนวน Menu/Dishes ทั้งหมด
-    try {
-      console.log('Fetching menu count...');
-      const menuCount = await pb.collection('Menu').getFullList();
-      console.log('Menu count result:', menuCount);
-      stats.dishes = menuCount.length;
-    } catch (error) {
-      console.log('Error fetching menu:', error);
-    }
-
-    // ดึงจำนวน Canceled Orders (Status = "error")
-    try {
-      console.log('Fetching canceled orders count...');
-      const canceledCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "error"'
-      });
-      console.log('Canceled count result:', canceledCount);
-      stats.canceled = canceledCount.length;
-    } catch (error) {
-      console.log('Error fetching canceled orders:', error);
     }
 
     // ดึงข้อมูล Shops สำหรับแสดงในตาราง
@@ -161,14 +106,8 @@ export const actions: Actions = {
     console.log('Attempting to create restaurant with data:', restaurantData);
 
     try {
-      // Admin authentication
-      if (privateEnv.POCKETBASE_ADMIN_EMAIL && privateEnv.POCKETBASE_ADMIN_PASSWORD) {
-        await pb.admins.authWithPassword(
-          privateEnv.POCKETBASE_ADMIN_EMAIL,
-          privateEnv.POCKETBASE_ADMIN_PASSWORD
-        );
-        console.log('Admin authenticated successfully');
-      }
+
+   
 
       // Validate required fields
       if (!restaurantData.name || !restaurantData.Type_Shop || !restaurantData.Phone || !restaurantData.Addr) {
