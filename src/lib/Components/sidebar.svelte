@@ -23,10 +23,10 @@
                 goto('/admin/manageUser');
                 break;
             case "manageRestaurant":
-                goto('/admin/Restaurant');
+                goto('/admin/restaurant');
                 break;
             case "addRestaurant":
-                goto('/admin/Restaurant/AddRestaurant');
+                goto('/admin/restaurant/AddRestaurant');
                 break;
             default:
                 // For other menus that need special handling, dispatch event
@@ -40,7 +40,7 @@
     
     function handleViewRestaurant(id) {
         // Navigate to specific restaurant page
-        goto(`/admin/Restaurant/${id}`);
+        goto(`/admin/restaurant/${id}`);
     }
 </script>
 
