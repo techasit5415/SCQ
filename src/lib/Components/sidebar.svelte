@@ -28,6 +28,15 @@
             case "addRestaurant":
                 goto('/admin/restaurant/AddRestaurant');
                 break;
+            case "reports":
+                goto('/admin/reports');
+                break;
+            case "systemLog":
+                goto('/admin/systemlog');
+                break;
+            case "settings":
+                goto('/admin/settings');
+                break;
             default:
                 // For other menus that need special handling, dispatch event
                 dispatch('menuChange', menu);
