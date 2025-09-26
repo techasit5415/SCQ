@@ -1,7 +1,7 @@
 <script>
     import { goto } from '$app/navigation';
-    import TopBar from '$lib/components/TopBar.svelte';
-    import AdminSidebar from '$lib/components/sidebar.svelte';
+    import TopBar from '$lib/Components/Topbar.svelte';
+    import AdminSidebar from '$lib/Components/sidebar.svelte';
 
     export let data;
 
