@@ -103,7 +103,7 @@
     <TopBar />
     
     <!-- Side Navigation -->
-    <AdminSidebar />
+    <AdminSidebar activeMenu="settings" />
     
     <!-- Main Content -->
     <div class="content">

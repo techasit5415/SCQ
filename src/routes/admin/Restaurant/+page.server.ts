@@ -9,7 +9,7 @@ const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
-  console.log('Session cookie in homeadmin:', session);
+  console.log('Session cookie in manage restaurant:', session);
 
   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
   if (!session || !session.match(/^\d+$/)) {
@@ -17,62 +17,76 @@ export const load: PageServerLoad = async ({ cookies }) => {
       // throw redirect(302, '/admin');
   }
 
-  console.log('Session valid, loading homeadmin page');
+  console.log('Session valid, loading manage restaurant page');
   console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
-    
-    // Initialize stats object
-    let stats = {
-    
-    };
-    let shops: any[] = [];
 
-    // Authenticate as admin first
+    // Try to authenticate as admin first
     try {
-      await pb.admins.authWithPassword(
-        privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com', 
-        privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123'
-      );
+      const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+      console.log('Attempting admin login with:', adminEmail);
+      
+      await pb.admins.authWithPassword(adminEmail, adminPassword);
       console.log('Admin authenticated successfully');
     } catch (authError) {
-      console.log('Admin auth failed, trying without auth...');
+      console.log('Admin auth failed:', authError);
+      console.log('Trying without auth...');
     }
-    
 
-
-    // ดึงข้อมูล Shops สำหรับแสดงในตาราง
+    // ดึงข้อมูล Shops สำหรับแสดงใน Cards
+    let shops: any[] = [];
     try {
-      console.log('Fetching shops...');
+      console.log('Fetching shops with owner details...');
       shops = await pb.collection('Shop').getFullList({
         expand: 'User_Owner_ID',
         sort: '-created'
       });
-      console.log('Shops result:', shops);
+      console.log('Shops fetched:', shops.length);
     } catch (error) {
-      console.log('Error fetching shops:', error);
+      console.error('Error fetching shops:', error);
     }
 
+    // คำนวณสถิติร้านค้า
+    const restaurantStats = calculateRestaurantStats(shops);
+
     const result = {
-      stats,
       shops,
+      restaurantStats,
+      totalRestaurants: shops.length
     };
 
-    console.log('Final result:', result);
+    console.log('Manage restaurant data loaded successfully');
     return result;
   } catch (error) {
-    console.error('Error loading dashboard data:', error);
+    console.error('Error loading manage restaurant data:', error);
     
-    // Return fallback data if database connection fails
     return {
-      stats: {
-        users: 0,
-    
-      },
       shops: [],
-      users: []
+      restaurantStats: {
+        totalRestaurants: 0,
+        activeRestaurants: 0,
+        newThisMonth: 0,
+        totalOrders: 0
+      },
+      totalRestaurants: 0
     };
   }
 };
+
+function calculateRestaurantStats(shops: any[]) {
+  const now = new Date();
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  const stats = {
+    totalRestaurants: shops.length,
+    activeRestaurants: shops.filter(shop => shop.Status !== false).length,
+    newThisMonth: shops.filter(shop => new Date(shop.created) >= thisMonth).length,
+    totalOrders: 0 // จะต้องดึงจาก Order collection ในอนาคต
+  };
+
+  return stats;
+}
 

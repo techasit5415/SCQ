@@ -9,7 +9,7 @@ const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
-  console.log('Session cookie in homeadmin:', session);
+  console.log('Session cookie in add restaurant:', session);
 
   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
   if (!session || !session.match(/^\d+$/)) {
@@ -17,111 +17,129 @@ export const load: PageServerLoad = async ({ cookies }) => {
       // throw redirect(302, '/admin');
   }
 
-  console.log('Session valid, loading homeadmin page');
+  console.log('Session valid, loading add restaurant page');
   console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
-    
-    // Initialize stats object
-    let stats = {
-    
-    };
-    let shops = [];
 
-    // Authenticate as admin first
+    // Try to authenticate as admin first
     try {
-      await pb.admins.authWithPassword(
-        privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com', 
-        privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123'
-      );
+      const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+      console.log('Attempting admin login with:', adminEmail);
+      
+      await pb.admins.authWithPassword(adminEmail, adminPassword);
       console.log('Admin authenticated successfully');
     } catch (authError) {
-      console.log('Admin auth failed, trying without auth...');
-    }
-    
-    // ดึงจำนวน Users ทั้งหมด
-    let usersData = [];
-    try {
-      console.log('Fetching users count...');
-      const usersCount = await pb.collection('users').getFullList();
-      console.log('Users count result:', usersCount);
-      console.log('Users totalItems:', usersCount.length);
-      stats.users = usersCount.length;
-      usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
-    } catch (error) {
-      console.log('Error fetching users:', error);
+      console.log('Admin auth failed:', authError);
+      console.log('Trying without auth...');
     }
 
-    // ดึงข้อมูล Shops สำหรับแสดงในตาราง
+    // ดึงรายชื่อ Role สำหรับตรวจสอบ
+    let roles: any[] = [];
     try {
-      console.log('Fetching shops...');
-      shops = await pb.collection('Shop').getFullList({
-        expand: 'User_Owner_ID'
-      });
-      console.log('Shops result:', shops);
+      console.log('Fetching roles...');
+      roles = await pb.collection('Role').getFullList();
+      console.log('Roles fetched:', roles.length);
     } catch (error) {
-      console.log('Error fetching shops:', error);
+      console.error('Error fetching roles:', error);
+    }
+
+    // หา Role ID ของ Restaurant
+    const restaurantRole = roles.find(role => role.name.toLowerCase() === 'restaurant');
+    
+    // ดึงเฉพาะ Users ที่เป็น Role Restaurant สำหรับเลือกเป็น Owner
+    let restaurantOwners: any[] = [];
+    try {
+      console.log('Fetching restaurant owners...');
+      if (restaurantRole) {
+        restaurantOwners = await pb.collection('users').getFullList({
+          filter: `Role = "${restaurantRole.id}"`,
+          sort: 'name'
+        });
+        console.log('Restaurant owners fetched:', restaurantOwners.length);
+      } else {
+        console.log('Restaurant role not found');
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant owners:', error);
     }
 
     const result = {
-      stats,
-      shops,
-      users: usersData // เพิ่มข้อมูล users แบบละเอียด
+      restaurantOwners,
+      roles,
+      restaurantTypes: [
+        'อาหารญี่ปุ่น',
+        'อาหารเกาหลี', 
+        'อาหารไทย',
+        'อาหารจีน',
+        'อาหารฝรั่ง',
+        'เครื่องดื่ม'
+      ]
     };
 
-    console.log('Final result:', result);
+    console.log('Add restaurant data loaded successfully');
     return result;
   } catch (error) {
-    console.error('Error loading dashboard data:', error);
+    console.error('Error loading add restaurant data:', error);
     
-    // Return fallback data if database connection fails
     return {
-      stats: {
-        users: 0,
-        orders: 0,
-        dishes: 0,
-        canceled: 0
-      },
-      shops: [],
-      users: []
+      restaurantOwners: [],
+      roles: [],
+      restaurantTypes: [
+        'อาหารญี่ปุ่น',
+        'อาหารเกาหลี', 
+        'อาหารไทย',
+        'อาหารจีน',
+        'อาหารฝรั่ง',
+        'เครื่องดื่ม'
+      ]
     };
   }
 };
 
 export const actions: Actions = {
   addRestaurant: async ({ request }) => {
-    const formData = await request.formData();
-    
-    const restaurantData = {
-      name: formData.get('name') as string,
-      Type_Shop: formData.get('type') as string,
-      User_Owner_ID: formData.get('ownerId') as string,
-      Phone: formData.get('phone') as string,
-      Addr: formData.get('address') as string,
-      Details: formData.get('description') as string,
-      field: '' // Required field in schema
-    };
-
-    console.log('Attempting to create restaurant with data:', restaurantData);
-
     try {
+      const formData = await request.formData();
+      
+      const restaurantData = {
+        name: formData.get('name') as string,
+        Type: formData.get('type') as string, // เปลี่ยนจาก Type_Shop เป็น Type
+        User_Owner_ID: formData.get('ownerId') as string,
+        Phone: formData.get('phone') as string,
+        Address: formData.get('address') as string, // เปลี่ยนจาก Addr เป็น Address
+        Description: formData.get('description') as string, // เปลี่ยนจาก Details เป็น Description
+        Status: true // เพิ่ม Status เป็น active
+      };
 
-   
+      console.log('Attempting to create restaurant with data:', restaurantData);
 
       // Validate required fields
-      if (!restaurantData.name || !restaurantData.Type_Shop || !restaurantData.Phone || !restaurantData.Addr) {
+      if (!restaurantData.name || !restaurantData.Type || !restaurantData.Phone || !restaurantData.Address) {
         console.log('Missing required fields:', {
           name: !!restaurantData.name,
-          type: !!restaurantData.Type_Shop,
+          type: !!restaurantData.Type,
           phone: !!restaurantData.Phone,
-          address: !!restaurantData.Addr
+          address: !!restaurantData.Address
         });
         
         return fail(400, {
           error: 'กรุณากรอกข้อมูลให้ครบถ้วน',
           formData: restaurantData
         });
+      }
+
+      // Try to authenticate as admin for creating restaurant
+      try {
+        const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
+        const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+        
+        await pb.admins.authWithPassword(adminEmail, adminPassword);
+        console.log('Admin authenticated for restaurant creation');
+      } catch (authError) {
+        console.log('Admin auth failed for restaurant creation, continuing...');
       }
 
       // Create restaurant in database
@@ -131,7 +149,8 @@ export const actions: Actions = {
       
       return {
         success: true,
-        message: 'เพิ่มร้านอาหารสำเร็จ!'
+        message: 'เพิ่มร้านอาหารสำเร็จ!',
+        restaurantId: record.id
       };
       
     } catch (error: any) {
@@ -142,18 +161,15 @@ export const actions: Actions = {
       
       if (error.response?.data?.data) {
         const fieldErrors = error.response.data.data;
-        if (fieldErrors.Type_Shop) {
-          errorMessage = `ประเภทร้านอาหารไม่ถูกต้อง: กรุณาเลือกเฉพาะ "อาหารไทย" หรือ "อาหารญี่ปุ่น" เท่านั้น`;
-        } else if (fieldErrors.User_Owner_ID) {
-          errorMessage = `เจ้าของร้านไม่ถูกต้อง: กรุณาเลือกเจ้าของร้าน`;
-        } else {
-          errorMessage = `ข้อมูลไม่ถูกต้อง: ${JSON.stringify(fieldErrors)}`;
+        const errorFields = Object.keys(fieldErrors);
+        if (errorFields.length > 0) {
+          errorMessage = `ข้อผิดพลาดในฟิลด์: ${errorFields.join(', ')}`;
         }
       }
       
       return fail(400, {
         error: errorMessage,
-        formData: restaurantData
+        details: error.message
       });
     }
   }

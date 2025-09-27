@@ -123,7 +123,7 @@
     <TopBar />
     
     <!-- Side Navigation -->
-    <AdminSidebar />
+    <AdminSidebar activeMenu="systemLog" />
     
     <!-- Main Content -->
     <div class="content">

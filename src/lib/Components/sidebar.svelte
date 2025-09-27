@@ -26,7 +26,7 @@
                 goto('/admin/restaurant');
                 break;
             case "addRestaurant":
-                goto('/admin/restaurant/AddRestaurant');
+                goto('/admin/restaurant/addrestaurant');
                 break;
             case "reports":
                 goto('/admin/reports');
