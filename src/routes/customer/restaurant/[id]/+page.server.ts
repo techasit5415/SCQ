@@ -1,7 +1,8 @@
 import PocketBase from 'pocketbase';
 import { error } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
 
-const pb = new PocketBase('http://10.1.1.113:8080');
 
 export const load = async ({ params }: { params: { id: string } }) => {
     try {

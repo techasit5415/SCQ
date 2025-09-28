@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from "svelte";
-    import RestaurantCard from "./RestaurantCard.svelte.backup";
+    import RestaurantCard from "./RestaurantCard.svelte";
 
     export let restaurants = [];
     export let loading = false;
