@@ -128,13 +128,14 @@
     <!-- Main Content -->
     <div class="content">
         <!-- Breadcrumb and Title -->
-        <div class="frame-6">
-            <div class="home-system-log">
-                <span class="homesystemlog_span_01">Home / </span>
-                <span class="homesystemlog_span_02">System Log</span>
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item current">System Log</span>
             </div>
-            <div class="system-log_01">
-                <span class="systemlog_01_span">System Log</span>
+            <div class="page-title">
+                <h1>System Log</h1>
+                <p>บันทึกกิจกรรมและเหตุการณ์ต่างๆ ในระบบ</p>
             </div>
         </div>
 
@@ -282,25 +283,60 @@
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    :global(html) {
+        overflow: hidden;
+    }
+
     .content {
         width: calc(100% - 256px);
         height: calc(100vh - 60px);
         margin-left: 256px;
         margin-top: 60px;
-        background: #EDF0F2;
-        overflow: auto;
+        background: #f5f7fa;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    .frame-6 {
+    .header-section {
         width: 100%;
         padding: 20px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: flex-start;
-        gap: 10px;
-        display: flex;
+    }
+
+    .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
+    }
+
+    .breadcrumb-item.current {
+        color: #333438;
+    }
+
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
+    }
+
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
+        margin: 0;
     }
 
     .home-system-log {
@@ -339,14 +375,12 @@
     }
 
     .frame-7 {
-        width: 100%;
+        flex: 1;
         padding: 20px;
-        justify-content: flex-start;
-        align-items: flex-start;
-        gap: 24px;
+        overflow-y: auto;
         display: flex;
-        flex-wrap: wrap;
-        align-content: flex-start;
+        flex-direction: column;
+        gap: 24px;
     }
 
     .frame-11 {

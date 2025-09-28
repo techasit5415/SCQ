@@ -18,6 +18,12 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
   const restaurantId = params.id;
   
+  // Skip static routes - these should be handled by their own routes
+  if (restaurantId === 'AddRestaurant' || restaurantId === 'edit') {
+    console.log('Skipping dynamic route for static path:', restaurantId);
+    throw error(404, { message: 'Restaurant not found' });
+  }
+  
   try {
     console.log('Attempting to connect to PocketBase...');
     

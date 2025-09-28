@@ -1,7 +1,7 @@
 <script>
     import { goto } from '$app/navigation';
-    import TopBar from '$lib/components/Topbar.svelte';
-    import AdminSidebar from '$lib/components/sidebar.svelte';
+    import TopBar from '$lib/Components/Topbar.svelte';
+    import AdminSidebar from '$lib/Components/sidebar.svelte';
 
     export let data;
 
@@ -71,14 +71,15 @@
 
     <!-- Main Content -->
     <div class="content">
-        <!-- Breadcrumb Header -->
-        <div class="frame-6">
-            <div class="home-reports">
-                <span class="homereports_span_01">Home / </span>
-                <span class="homereports_span_02">Reports</span>
+        <!-- Breadcrumb and Title -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item current">Reports</span>
             </div>
-            <div class="reports_01">
-                <span class="reports_01_span">Reports</span>
+            <div class="page-title">
+                <h1>Reports</h1>
+                <p>รายงานและสถิติการใช้งานระบบ</p>
             </div>
         </div>
 
@@ -323,6 +324,9 @@
 </div>
 
 <style>
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
     /* Import the original CSS with modifications */
     .reports {
         width: 100%;
@@ -330,26 +334,57 @@
         position: relative;
         background: white;
         overflow: hidden;
+        font-family: 'Noto Sans Thai', sans-serif;
     }
 
 
+
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+    }
 
     .content {
         margin-left: 256px;
         margin-top: 60px;
         min-height: calc(100vh - 60px);
-        background: #EDF0F2;
+        background: #f5f7fa;
         padding: 0;
     }
 
-    .frame-6 {
+    .header-section {
         width: 100%;
         padding: 20px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+    }
+
+    .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
+    }
+
+    .breadcrumb-item.current {
+        color: #333438;
+    }
+
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
+    }
+
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
+        margin: 0;
     }
 
     .frame-7 {

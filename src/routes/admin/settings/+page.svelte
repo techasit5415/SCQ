@@ -557,6 +557,18 @@
 
 <style>
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    :global(html) {
+        overflow: hidden;
+    }
 
     .settings-page {
         width: 100%;
@@ -572,8 +584,10 @@
         height: calc(100vh - 60px);
         margin-left: 256px;
         margin-top: 60px;
-        background: #EDF0F2;
-        overflow: auto;
+        background: #f5f7fa;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .header-section {
@@ -611,9 +625,10 @@
     }
 
     .settings-container {
+        flex: 1;
         padding: 20px;
-        max-width: 1200px;
-        margin: 0 auto;
+        overflow-y: auto;
+        max-height: calc(100vh - 140px);
     }
 
     .overview-section {

@@ -1,7 +1,7 @@
 <script>
     import { goto } from '$app/navigation';
-    import TopBar from '$lib/components/Topbar.svelte';
-    import AdminSidebar from '$lib/components/sidebar.svelte';
+    import TopBar from '$lib/Components/Topbar.svelte';
+    import AdminSidebar from '$lib/Components/sidebar.svelte';
     import { onMount } from 'svelte';
 
     export let data;
@@ -110,15 +110,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <nav class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
+        <!-- Breadcrumb and Title -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
                 <span class="breadcrumb-item current">Dashboard</span>
-            </nav>
-            <h1>Dashboard</h1>
-            <p class="page-subtitle">ภาพรวมของระบบ SCQ</p>
+            </div>
+            <div class="page-title">
+                <h1>Dashboard</h1>
+                <p>ภาพรวมของระบบ SCQ</p>
+            </div>
         </div>
 
         <!-- KPI Cards -->
@@ -383,10 +384,16 @@
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+    }
+
     .admin-layout {
         width: 100%;
         height: 100vh;
-        background: #f5f7fa;
+        background: #f5f7fa !important;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
@@ -396,40 +403,41 @@
         padding: 24px;
         min-height: calc(100vh - 60px);
         overflow-y: auto;
+        background: #f5f7fa !important;
     }
 
-    .page-header {
-        margin-bottom: 32px;
+    .header-section {
+        width: 100%;
+        padding: 20px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
     }
 
     .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        font-size: 14px;
-        color: #64748b;
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
     }
 
     .breadcrumb-item.current {
-        color: #1e293b;
-        font-weight: 500;
+        color: #333438;
     }
 
-    .breadcrumb-separator {
-        color: #cbd5e1;
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
     }
 
-    .page-header h1 {
-        font-size: 32px;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 8px 0;
-    }
-
-    .page-subtitle {
-        font-size: 16px;
-        color: #64748b;
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
     }
 

@@ -4,10 +4,15 @@
     import AdminSidebar from '$lib/Components/sidebar.svelte';
 
     export let data;
+
+    // Active menu state
     let activeMenu = "manageRestaurant";
+    
+    // Search and filter states
     let searchQuery = '';
     let selectedType = 'all';
     
+    // Reactive filtered restaurants
     $: filteredShops = (data?.shops || []).filter(shop => {
         const matchesSearch = searchQuery === '' || 
                             shop.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -16,14 +21,28 @@
         return matchesSearch && matchesType;
     });
 
+
+
+    // Event Handlers for Components
     function handleMenuChange(event) {
         const menu = event.detail;
         if (menu !== "manageRestaurant") {
+            // Navigate to different pages based on menu selection
             switch(menu) {
-                case "dashboard": goto('/admin/dashboard'); break;
-                case "manageUsers": goto('/admin/manageUser'); break;
-                case "systemLog": goto('/admin/systemlog'); break;
-                case "settings": goto('/admin/settings'); break;
+                case "dashboard":
+                    goto('/admin/dashboard');
+                    break;
+                case "manageUsers":
+                    goto('/admin/manageUser');
+                    break;
+                case "systemLog":
+                    goto('/admin/systemlog');
+                    break;
+                case "settings":
+                    goto('/admin/settings');
+                    break;
+                default:
+                    console.log('Navigation to', menu, 'not implemented yet');
             }
         }
     }
@@ -33,6 +52,7 @@
             await fetch('/logout');
             window.location.href = '/admin';
         } catch (error) {
+            console.error('Logout error:', error);
             window.location.href = '/admin';
         }
     }
@@ -41,63 +61,93 @@
         goto(`/admin/restaurant/${shopId}`);
     }
     
-    function handleAddRestaurant() {
-        goto('/admin/restaurant/addrestaurant');
+    function handleEditRestaurant(shopId) {
+        goto(`/admin/restaurant/${shopId}/edit`);
     }
-
+    
+    function handleAddRestaurant() {
+        goto('/admin/restaurant/AddRestaurant');
+    }
+    
     function getRestaurantTypeIcon(type) {
         switch (type?.toLowerCase()) {
-            case 'อาหารญี่ปุ่น': return 'ramen_dining';
-            case 'อาหารเกาหลี': return 'restaurant';
-            case 'อาหารไทย': return 'rice_bowl';
-            case 'อาหารจีน': return 'restaurant_menu';
-            case 'อาหารฝรั่ง': return 'dining';
-            case 'เครื่องดื่ม': return 'local_cafe';
-            default: return 'restaurant';
+            case 'อาหารญี่ปุ่น':
+                return 'ramen_dining';
+            case 'อาหารเกาหลี':
+                return 'restaurant';
+            case 'อาหารไทย':
+                return 'rice_bowl';
+            case 'อาหารจีน':
+                return 'restaurant_menu';
+            case 'อาหารฝรั่ง':
+                return 'dining';
+            case 'เครื่องดื่ม':
+                return 'local_cafe';
+            default:
+                return 'restaurant';
         }
     }
     
     function getRestaurantTypeColor(type) {
         switch (type?.toLowerCase()) {
-            case 'อาหารญี่ปุ่น': return '#e91e63';
-            case 'อาหารเกาหลี': return '#f44336';
-            case 'อาหารไทย': return '#ff9800';
-            case 'อาหารจีน': return '#ffeb3b';
-            case 'อาหารฝรั่ง': return '#4caf50';
-            case 'เครื่องดื่ม': return '#2196f3';
-            default: return '#9e9e9e';
+            case 'อาหารญี่ปุ่น':
+                return '#e91e63';
+            case 'อาหารเกาหลี':
+                return '#f44336';
+            case 'อาหารไทย':
+                return '#ff9800';
+            case 'อาหารจีน':
+                return '#ffeb3b';
+            case 'อาหารฝรั่ง':
+                return '#4caf50';
+            case 'เครื่องดื่ม':
+                return '#2196f3';
+            default:
+                return '#9e9e9e';
         }
+    }
+    
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     }
 </script>
 
-<div class="admin-layout">
-    <TopBar title="Admin Panel - Restaurant Management" logoSrc="/SCQ_logo.png" />
+<!-- Admin Layout -->
+<div class="restaurant-page">
+    <!-- Top Navigation -->
+    <TopBar />
     
-    <AdminSidebar 
-        {activeMenu} 
-        shops={[]}
-        on:menuChange={handleMenuChange}
-        on:logout={handleLogout}
-    />
-
-    <main class="main-content">
-        <div class="page-header">
-            <nav class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
+    <!-- Side Navigation -->
+    <AdminSidebar activeMenu="manageRestaurant" />
+    
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Breadcrumb and Title -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
                 <span class="breadcrumb-item current">Manage Restaurant</span>
-            </nav>
-            <h2>Manage Restaurant</h2>
+            </div>
+            <div class="page-title">
+                <h1>Manage Restaurant</h1>
+                <p>จัดการข้อมูลร้านค้าในระบบ</p>
+            </div>
         </div>
 
-        <!-- KPI Cards -->
-        <div class="kpi-grid">
+        <!-- Restaurant Content -->
+        <div class="restaurant-container">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-icon" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%)">
                     <span class="material-symbols-outlined">storefront</span>
                 </div>
                 <div class="kpi-content">
-                    <div class="kpi-value">{data?.restaurantStats?.totalRestaurants || data?.shops?.length || 0}</div>
+                    <div class="kpi-value">{data.restaurantStats?.totalRestaurants || 0}</div>
                     <div class="kpi-label">Total Restaurants</div>
                 </div>
             </div>
@@ -107,7 +157,7 @@
                     <span class="material-symbols-outlined">check_circle</span>
                 </div>
                 <div class="kpi-content">
-                    <div class="kpi-value">{data?.restaurantStats?.activeRestaurants || (data?.shops?.length || 0)}</div>
+                    <div class="kpi-value">{data.restaurantStats?.activeRestaurants || 0}</div>
                     <div class="kpi-label">Active Restaurants</div>
                 </div>
             </div>
@@ -117,7 +167,7 @@
                     <span class="material-symbols-outlined">new_releases</span>
                 </div>
                 <div class="kpi-content">
-                    <div class="kpi-value">{data?.restaurantStats?.newThisMonth || 0}</div>
+                    <div class="kpi-value">{data.restaurantStats?.newThisMonth || 0}</div>
                     <div class="kpi-label">New This Month</div>
                 </div>
             </div>
@@ -127,7 +177,7 @@
                     <span class="material-symbols-outlined">receipt_long</span>
                 </div>
                 <div class="kpi-content">
-                    <div class="kpi-value">{data?.restaurantStats?.totalOrders || 0}</div>
+                    <div class="kpi-value">{data.restaurantStats?.totalOrders || 0}</div>
                     <div class="kpi-label">Total Orders</div>
                 </div>
             </div>
@@ -165,7 +215,7 @@
             </div>
             
             <div class="results-info">
-                Showing {filteredShops?.length || 0} of {data?.shops?.length || 0} restaurants
+                Showing {filteredShops.length} of {data.shops?.length || 0} restaurants
             </div>
         </div>
 
@@ -180,7 +230,9 @@
                                     <span class="material-symbols-outlined">{getRestaurantTypeIcon(shop.Type_Shop)}</span>
                                 </div>
                                 <div class="restaurant-status">
-                                    <span class="status-badge active">Active</span>
+                                    <span class="status-badge" class:active={shop.Status !== false}>
+                                        {shop.Status !== false ? 'Active' : 'Inactive'}
+                                    </span>
                                 </div>
                             </div>
                             
@@ -203,6 +255,11 @@
                                         <span class="material-symbols-outlined">location_on</span>
                                         <span class="address-text">{shop.Addr || 'ไม่มีที่อยู่'}</span>
                                     </div>
+                                    
+                                    <div class="info-item">
+                                        <span class="material-symbols-outlined">schedule</span>
+                                        <span>เพิ่มเมื่อ {formatDate(shop.created)}</span>
+                                    </div>
                                 </div>
                                 
                                 {#if shop.Details}
@@ -217,7 +274,7 @@
                                     <span class="material-symbols-outlined">visibility</span>
                                     View Details
                                 </button>
-                                <button class="action-btn edit" on:click={() => handleViewRestaurant(shop.id)}>
+                                <button class="action-btn edit" on:click={() => handleEditRestaurant(shop.id)}>
                                     <span class="material-symbols-outlined">edit</span>
                                     Edit
                                 </button>
@@ -241,51 +298,84 @@
                 </div>
             {/if}
         </div>
-    </main>
+        </div>
+    </div>
 </div>
 
 <style>
-    .admin-layout {
-        display: flex;
-        min-height: 100vh;
-        background: #f5f5f5;
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    :global(html) {
+        overflow: hidden;
+    }
+
+    .restaurant-page {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        background: white;
+        overflow: hidden;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
-    .main-content {
-        flex: 1;
-        margin-left: 250px;
+    .content {
+        width: calc(100% - 256px);
+        height: calc(100vh - 60px);
+        margin-left: 256px;
         margin-top: 60px;
-        padding: 30px;
-        min-height: calc(100vh - 60px);
+        background: #f5f7fa;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    .page-header {
-        margin-bottom: 30px;
+    .header-section {
+        width: 100%;
+        padding: 20px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
     }
 
     .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
         font-size: 13px;
-        color: #888;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
+        font-weight: 400;
     }
 
     .breadcrumb-item.current {
-        color: #333;
-        font-weight: 500;
+        color: #333438;
     }
 
-    .breadcrumb-separator {
-        margin: 0 8px;
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
     }
 
-    .page-header h2 {
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
-        font-size: 28px;
-        font-weight: 600;
-        color: #333;
+    }
+
+    .restaurant-container {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        max-height: calc(100vh - 140px);
     }
 
     /* KPI Cards */
@@ -496,8 +586,12 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        background: #28a745;
+        background: #dc3545;
         color: white;
+    }
+
+    .status-badge.active {
+        background: #28a745;
     }
 
     .card-body {

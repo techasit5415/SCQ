@@ -1,8 +1,8 @@
 <script>
     import { goto } from '$app/navigation';
     import { enhance } from '$app/forms';
-    import TopBar from '$lib/components/TopBar.svelte';
-    import AdminSidebar from '$lib/components/sidebar.svelte';
+    import TopBar from '$lib/Components/Topbar.svelte';
+    import AdminSidebar from '$lib/Components/sidebar.svelte';
 
     export let data;
     export let form;
@@ -133,14 +133,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <nav class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
+        <!-- Breadcrumb and Title -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
                 <span class="breadcrumb-item current">Manage Users</span>
-            </nav>
-            <h2>Manage Users</h2>
+            </div>
+            <div class="page-title">
+                <h1>Manage Users</h1>
+                <p>จัดการข้อมูลผู้ใช้งานในระบบ</p>
+            </div>
         </div>
 
         <!-- KPI Cards -->
@@ -492,9 +494,15 @@
         box-sizing: border-box;
     }
 
+    :global(body) {
+        background: #f5f7fa !important;
+        margin: 0;
+        padding: 0;
+    }
+
     .admin-layout {
         min-height: 100vh;
-        background: #f5f5f5;
+        background: #f5f7fa;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
@@ -502,34 +510,44 @@
     .main-content {
         margin-left: 250px;
         margin-top: 60px;
-        padding: 30px;
+        padding: 24px;
         min-height: calc(100vh - 60px);
+        background: #f5f7fa !important;
     }
 
-    /* Page Header */
-    .page-header {
-        margin-bottom: 30px;
+    .header-section {
+        width: 100%;
+        padding: 20px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
     }
 
     .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
         font-size: 13px;
-        color: #888;
-        margin-bottom: 8px;
+        font-weight: 400;
     }
 
     .breadcrumb-item.current {
-        color: #333;
+        color: #333438;
     }
 
-    .breadcrumb-separator {
-        margin: 0 8px;
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
     }
 
-    .page-header h2 {
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
-        font-size: 24px;
-        font-weight: 500;
-        color: #333;
     }
 
     /* Alert Messages */
