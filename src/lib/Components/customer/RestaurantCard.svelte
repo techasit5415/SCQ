@@ -125,7 +125,7 @@
                 // console.log(`🎯 Found image file in field '${key}':`, value);
                 
                 // Try multiple URL patterns - REMOVE thumbnail for now
-                const baseUrl = `${debugUrl}/api/files/${restaurant.collectionId}/${restaurant.id}/${value}`;
+                const baseUrl = `${PUBLIC_POCKETBASE_URL}/api/files/${restaurant.collectionId}/${restaurant.id}/${value}`;
                 
                 // console.log('📸 Base URL:', baseUrl);
                 
