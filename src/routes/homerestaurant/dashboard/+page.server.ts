@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   
   // console.log('PocketBase URL:', PUBLIC_POCKETBASE_URL);
   
-  const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
+  // const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
