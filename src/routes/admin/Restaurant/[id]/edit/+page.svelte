@@ -103,12 +103,11 @@
                             <label for="restaurantType">Restaurant Type</label>
                             <select id="restaurantType" name="type" bind:value={editRestaurant.type} required>
                                 <option value="">Select type</option>
-                                <option value="อาหารไทย">อาหารไทย</option>
+                                <option value="อาหารเกาหลี">อาหารเกาหลี</option>
                                 <option value="อาหารญี่ปุ่น">อาหารญี่ปุ่น</option>
-                                <option value="อาหารจีน">อาหารจีน</option>
-                                <option value="อาหารฝรั่ง">อาหารฝรั่ง</option>
+                                <option value="อาหารอีสาน">อาหารอีสาน</option>
+                                <option value="อาหารตามสั่ง">อาหารตามสั่ง</option>
                                 <option value="เครื่องดื่ม">เครื่องดื่ม</option>
-                                <option value="ขนม/เบเกอรี่">ขนม/เบเกอรี่</option>
                             </select>
                         </div>
                     </div>

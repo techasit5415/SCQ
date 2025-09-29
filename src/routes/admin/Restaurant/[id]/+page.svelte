@@ -40,6 +40,212 @@
         console.log('Delete restaurant:', restaurantId);
         // Implement restaurant delete functionality
     }
+
+    function handlePrintReport() {
+        // Create a printable version of the restaurant report
+        const printWindow = window.open('', '_blank');
+        const restaurant = data.restaurant;
+        const totalSales = data.totalSales || 0;
+        const analytics = data.analytics || {};
+        const recentOrders = data.recentOrders || [];
+        const popularMenus = data.popularMenus || [];
+        
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Restaurant Report - ${restaurant.name}</title>
+                <meta charset="UTF-8">
+                <style>
+                    body { 
+                        font-family: 'Noto Sans Thai', Arial, sans-serif; 
+                        margin: 20px; 
+                        color: #333;
+                    }
+                    .header { 
+                        text-align: center; 
+                        border-bottom: 2px solid #FF8C00; 
+                        padding-bottom: 20px; 
+                        margin-bottom: 30px;
+                    }
+                    .restaurant-name { 
+                        color: #FF8C00; 
+                        font-size: 28px; 
+                        font-weight: bold; 
+                    }
+                    .section { 
+                        margin-bottom: 30px; 
+                        page-break-inside: avoid;
+                    }
+                    .section h3 { 
+                        color: #FF8C00; 
+                        border-bottom: 1px solid #ddd; 
+                        padding-bottom: 5px;
+                    }
+                    .info-grid { 
+                        display: grid; 
+                        grid-template-columns: 1fr 1fr; 
+                        gap: 20px; 
+                        margin-bottom: 20px;
+                    }
+                    .info-item { 
+                        margin-bottom: 10px; 
+                    }
+                    .info-label { 
+                        font-weight: bold; 
+                        color: #666; 
+                    }
+                    .analytics-grid { 
+                        display: grid; 
+                        grid-template-columns: repeat(4, 1fr); 
+                        gap: 15px; 
+                        margin-bottom: 20px;
+                    }
+                    .analytics-card { 
+                        border: 1px solid #ddd; 
+                        padding: 15px; 
+                        text-align: center; 
+                        border-radius: 8px;
+                    }
+                    .analytics-value { 
+                        font-size: 24px; 
+                        font-weight: bold; 
+                        color: #FF8C00; 
+                    }
+                    .order-item, .menu-item { 
+                        border: 1px solid #eee; 
+                        padding: 10px; 
+                        margin-bottom: 10px; 
+                        border-radius: 5px;
+                    }
+                    .print-date { 
+                        text-align: right; 
+                        color: #666; 
+                        font-size: 12px; 
+                        margin-top: 30px;
+                    }
+                    @media print {
+                        body { margin: 0; }
+                        .section { page-break-inside: avoid; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="restaurant-name">${restaurant.name}</div>
+                    <div>Restaurant Detail Report</div>
+                </div>
+
+                <div class="section">
+                    <h3>Basic Information</h3>
+                    <div class="info-grid">
+                        <div>
+                            <div class="info-item">
+                                <span class="info-label">Restaurant ID:</span> ${restaurant.id}
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Type:</span> ${restaurant.Type_Shop || 'N/A'}
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Phone:</span> ${restaurant.Phone || 'N/A'}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="info-item">
+                                <span class="info-label">Address:</span> ${restaurant.Addr || 'N/A'}
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Created:</span> ${new Date(restaurant.created).toLocaleDateString('en-US', { 
+                                    month: 'long', 
+                                    day: 'numeric', 
+                                    year: 'numeric'
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Description:</span> ${restaurant.Details || 'No description provided'}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Analytics Overview</h3>
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <div>Total Sales</div>
+                            <div class="analytics-value">฿${totalSales.toLocaleString()}</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div>Total Orders</div>
+                            <div class="analytics-value">${analytics.totalOrders || 0}</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div>Completed Orders</div>
+                            <div class="analytics-value">${analytics.completedOrders || 0}</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div>Total Menus</div>
+                            <div class="analytics-value">${data.menus?.length || 0}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Recent Orders</h3>
+                    ${recentOrders.length > 0 ? 
+                        recentOrders.slice(0, 10).map(order => `
+                            <div class="order-item">
+                                <strong>Order #${order.id.slice(-8)}</strong> - 
+                                Status: ${order.Status} - 
+                                Amount: ฿${order.Total_Amount?.toLocaleString() || '0'} - 
+                                Date: ${new Date(order.created).toLocaleDateString('en-US', { 
+                                    month: 'short', 
+                                    day: 'numeric', 
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </div>
+                        `).join('') : 
+                        '<p>No recent orders</p>'
+                    }
+                </div>
+
+                <div class="section">
+                    <h3>Popular Menus</h3>
+                    ${popularMenus.length > 0 ? 
+                        popularMenus.map(menu => `
+                            <div class="menu-item">
+                                <strong>${menu.menuName}</strong> - 
+                                Orders: ${menu.totalOrdered} - 
+                                ${menu.price ? `Price: ฿${menu.price}` : 'Price: N/A'}
+                            </div>
+                        `).join('') : 
+                        '<p>No popular menus data</p>'
+                    }
+                </div>
+
+                <div class="print-date">
+                    Report generated on: ${new Date().toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Wait for content to load then print
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+    }
 </script>
 
 <!-- Admin Layout -->
@@ -135,10 +341,147 @@
                         </div>
                     </div>
 
+                    <!-- Analytics Section -->
+                    <div class="analytics-section">
+                        <div class="section-header">
+                            <h3>Analytics Overview</h3>
+                        </div>
+                        <div class="analytics-grid">
+                            <div class="analytics-card sales">
+                                <div class="analytics-icon">
+                                    <span class="material-symbols-outlined">payments</span>
+                                </div>
+                                <div class="analytics-content">
+                                    <h4>Total Sales</h4>
+                                    <div class="analytics-value">฿{data.totalSales?.toLocaleString() || '0'}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card orders">
+                                <div class="analytics-icon">
+                                    <span class="material-symbols-outlined">receipt_long</span>
+                                </div>
+                                <div class="analytics-content">
+                                    <h4>Total Orders</h4>
+                                    <div class="analytics-value">{data.analytics?.totalOrders || 0}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card completed">
+                                <div class="analytics-icon">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                </div>
+                                <div class="analytics-content">
+                                    <h4>Completed Orders</h4>
+                                    <div class="analytics-value">{data.analytics?.completedOrders || 0}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card menus">
+                                <div class="analytics-icon">
+                                    <span class="material-symbols-outlined">restaurant_menu</span>
+                                </div>
+                                <div class="analytics-content">
+                                    <h4>Total Menus</h4>
+                                    <div class="analytics-value">{data.menus?.length || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders Section -->
+                    <div class="recent-orders-section">
+                        <div class="section-header">
+                            <h3>Recent Orders</h3>
+                        </div>
+                        <div class="orders-container">
+                            {#if data.recentOrders && data.recentOrders.length > 0}
+                                {#each data.recentOrders.slice(0, 5) as order}
+                                    <div class="order-card">
+                                        <div class="order-header">
+                                            <div class="order-id">#{order.id.slice(-8)}</div>
+                                            <div class="order-status status-{order.Status?.toLowerCase()}">
+                                                {order.Status}
+                                            </div>
+                                        </div>
+                                        <div class="order-details">
+                                            <div class="order-amount">฿{order.Total_Amount?.toLocaleString() || '0'}</div>
+                                            <div class="order-date">
+                                                {new Date(order.created).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                        {#if order.Menu_ID && order.Menu_ID.length > 0}
+                                            <div class="order-items">
+                                                Items: {order.Menu_ID.length}
+                                            </div>
+                                        {/if}
+                                    </div>
+                                {/each}
+                            {:else}
+                                <div class="no-orders">
+                                    <span class="material-symbols-outlined">receipt</span>
+                                    <p>No recent orders</p>
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <!-- Popular Menus Section -->
+                    <div class="popular-menus-section">
+                        <div class="section-header">
+                            <h3>Popular Menus</h3>
+                            {#if data.popularMenus && data.popularMenus.length === 0}
+                                <span class="section-subtitle">No data available</span>
+                            {:else}
+                                <span class="section-subtitle">{data.popularMenus?.length || 0} items</span>
+                            {/if}
+                        </div>
+                        <div class="menus-container">
+                            {#if data.popularMenus && data.popularMenus.length > 0}
+                                {#each data.popularMenus as menu}
+                                    <div class="menu-card">
+                                        <div class="menu-info">
+                                            <h4>{menu.menuName || 'Unknown Menu'}</h4>
+                                            <div class="menu-details">
+                                                {#if menu.price && menu.price > 0}
+                                                    <span class="menu-price">฿{menu.price}</span>
+                                                {:else}
+                                                    <span class="menu-price">Price not set</span>
+                                                {/if}
+                                                <span class="menu-id">ID: {menu.menuId}</span>
+                                            </div>
+                                        </div>
+                                        <div class="menu-stats">
+                                            <div class="orders-count">
+                                                <span class="material-symbols-outlined">shopping_cart</span>
+                                                {menu.totalOrdered} orders
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/each}
+                            {:else}
+                                <div class="no-menus">
+                                    <span class="material-symbols-outlined">restaurant_menu</span>
+                                    <p>No popular menus data</p>
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
+
                     <div class="detail-footer">
                         <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
                             <span class="material-symbols-outlined">arrow_back</span>
                             Back to Restaurants
+                        </button>
+                        
+                        <button class="btn-print" on:click={handlePrintReport}>
+                            <span class="material-symbols-outlined">print</span>
+                            Print Report
                         </button>
                     </div>
                 </div>
@@ -757,6 +1100,322 @@
         .detail-actions {
             margin-left: 0;
             margin-top: 15px;
+        }
+    }
+
+    /* Section Headers */
+    .section-header {
+        padding: 0 30px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+    }
+
+    .section-header h3 {
+        color: #333;
+        margin: 0 0 5px 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .section-subtitle {
+        color: #666;
+        font-size: 14px;
+    }
+
+    /* Analytics Section */
+    .analytics-section {
+        margin: 30px 0;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 0 30px 30px 30px;
+    }
+
+    .analytics-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s;
+    }
+
+    .analytics-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .analytics-card.sales {
+        border-left: 4px solid #28a745;
+    }
+
+    .analytics-card.orders {
+        border-left: 4px solid #007bff;
+    }
+
+    .analytics-card.completed {
+        border-left: 4px solid #17a2b8;
+    }
+
+    .analytics-card.menus {
+        border-left: 4px solid #ffc107;
+    }
+
+    .analytics-icon {
+        flex-shrink: 0;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        background: rgba(255, 140, 0, 0.1);
+        color: #ff8c00;
+    }
+
+    .analytics-content h4 {
+        color: #666;
+        font-size: 14px;
+        margin: 0 0 8px 0;
+        font-weight: 500;
+    }
+
+    .analytics-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+
+    /* Recent Orders Section */
+    .recent-orders-section {
+        margin: 30px 0;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .orders-container {
+        display: grid;
+        gap: 1px;
+        padding: 0 30px 30px 30px;
+        background: #f8f9fa;
+    }
+
+    .order-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s;
+    }
+
+    .order-card:hover {
+        transform: translateY(-1px);
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .order-id {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .order-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-completed {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .status-pending {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+
+    .status-in-progress {
+        background: rgba(0, 123, 255, 0.1);
+        color: #007bff;
+    }
+
+    .status-canceled {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .order-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .order-amount {
+        font-size: 18px;
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .order-date {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .order-items {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .no-orders, .no-menus {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .no-orders span, .no-menus span {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 16px;
+        display: block;
+    }
+
+    /* Popular Menus Section */
+    .popular-menus-section {
+        margin: 30px 0;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .menus-container {
+        display: grid;
+        gap: 1px;
+        padding: 0 30px 30px 30px;
+        background: #f8f9fa;
+    }
+
+    .menu-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+
+    .menu-card:hover {
+        transform: translateY(-1px);
+    }
+
+    .menu-info h4 {
+        color: #333;
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .menu-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .menu-price {
+        color: #28a745;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .menu-id {
+        color: #666;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+    }
+
+    .menu-stats {
+        text-align: right;
+    }
+
+    .orders-count {
+        display: flex;
+        align-items: center;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .orders-count span {
+        margin-right: 8px;
+        font-size: 18px;
+    }
+
+    /* Print Button */
+    .btn-print {
+        background: #17a2b8;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-print:hover {
+        background: #138496;
+    }
+
+    .detail-footer {
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media (max-width: 768px) {
+        .analytics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .detail-footer {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .btn-print, .btn-back {
+            width: 100%;
+            justify-content: center;
         }
     }
 </style>

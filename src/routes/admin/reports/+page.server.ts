@@ -6,6 +6,31 @@ import { env as privateEnv } from '$env/dynamic/private';
 
 const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
+// Helper function to get date range
+function getDateRange(period: string) {
+  const now = new Date();
+  let startDate = new Date();
+  
+  switch (period) {
+    case 'daily':
+      startDate.setDate(now.getDate() - 7); // Last 7 days
+      break;
+    case 'weekly':
+      startDate.setDate(now.getDate() - 28); // Last 4 weeks
+      break;
+    case 'monthly':
+      startDate.setMonth(now.getMonth() - 12); // Last 12 months
+      break;
+    case 'yearly':
+      startDate.setFullYear(now.getFullYear() - 3); // Last 3 years
+      break;
+    default:
+      startDate.setMonth(now.getMonth() - 1); // Default to last month
+  }
+  
+  return { startDate, endDate: now };
+}
+
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
   console.log('Session cookie in reports:', session);
@@ -28,7 +53,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
       totalOrders: 0,
       totalDishes: 0,
       totalUsers: 0,
-      activeUsers: [],
+      activeUsers: [] as any[],
       orderStatus: {
         completed: 0,
         canceled: 0
@@ -36,7 +61,15 @@ export const load: PageServerLoad = async ({ cookies }) => {
       monthlyData: {
         2024: Array(12).fill(0),
         2025: Array(12).fill(0)
-      }
+      },
+      paymentMethods: {
+        cash: 0,
+        credit_card: 0,
+        promptpay: 0,
+        bank_transfer: 0
+      },
+      shopSales: [] as any[],
+      popularMenus: [] as any[]
     };
 
     // Authenticate as admin first
@@ -50,50 +83,160 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.log('Admin auth failed, trying without auth...');
     }
     
-    // ดึงข้อมูล Orders สำหรับคำนวณ Total Sales และ Total Orders
+    // ดึงข้อมูล Orders
     try {
       console.log('Fetching orders data...');
-      const orders = await pb.collection('Order').getFullList();
+      const orders = await pb.collection('Order').getFullList({
+        expand: 'Shop_ID,Menu_ID'
+      });
       console.log('Orders result:', orders);
       
       reportsData.totalOrders = orders.length;
-      reportsData.totalSales = orders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0);
       
       // คำนวณ Order Status
       reportsData.orderStatus.completed = orders.filter(order => 
-        order.Status === 'sus' || order.Status === 'completed'
+        order.Status === 'Completed'
       ).length;
       reportsData.orderStatus.canceled = orders.filter(order => 
-        order.Status === 'error' || order.Status === 'canceled'
+        order.Status === 'Canceled'
       ).length;
-      
-      // จำลองข้อมูล monthly data (ในอนาคตสามารถคำนวณจากวันที่ created ของ orders)
-      reportsData.monthlyData[2024] = [80, 95, 110, 125, 90, 105, 130, 115, 95, 110, 85, 100];
-      reportsData.monthlyData[2025] = [90, 105, 85, 180, 75, 95, 140, 125, 105, 115, 90, 80];
       
     } catch (error) {
       console.log('Error fetching orders:', error);
     }
 
+    // ดึงข้อมูล Payments สำหรับคำนวณ Total Sales และ Payment Methods
+    try {
+      console.log('Fetching payments data...');
+      const payments = await pb.collection('Payment').getFullList({
+        expand: 'User_ID,Shop_ID,Order_ID'
+      });
+      console.log('Payments result:', payments);
+      
+      // คำนวณ Total Sales จากการชำระที่สำเร็จ
+      reportsData.totalSales = payments
+        .filter(payment => payment.status === 'Sus')
+        .reduce((sum, payment) => sum + (payment.Total_Amount || 0), 0);
+      
+      // คำนวณ Payment Methods จาก Payment table
+      const paymentMethodCounts = payments
+        .filter(payment => payment.status === 'Sus')
+        .reduce((acc, payment) => {
+          const method = payment.Method_Payment;
+          if (method === 'Cash') acc.cash++;
+          else if (method === 'Qr Code') acc.promptpay++;
+          else if (method === 'Point') acc.credit_card++;
+          return acc;
+        }, { cash: 0, credit_card: 0, promptpay: 0, bank_transfer: 0 });
+      
+      reportsData.paymentMethods = paymentMethodCounts;
+      
+      // คำนวณยอดขายของแต่ละร้านจาก Payment data
+      const shopSalesMap = payments
+        .filter(payment => payment.status === 'Sus')
+        .reduce((acc, payment) => {
+          const shopId = payment.Shop_ID;
+          const shopName = payment.expand?.Shop_ID?.name || 'Unknown Shop';
+          if (!acc[shopId]) {
+            acc[shopId] = {
+              shopId,
+              shopName,
+              totalSales: 0,
+              totalOrders: 0
+            };
+          }
+          acc[shopId].totalSales += payment.Total_Amount || 0;
+          acc[shopId].totalOrders += 1;
+          return acc;
+        }, {} as any);
+      
+      reportsData.shopSales = Object.values(shopSalesMap);
+      
+    } catch (error) {
+      console.log('Error fetching payments:', error);
+    }
+
     // ดึงข้อมูล Menu สำหรับ Total Dishes
     try {
       console.log('Fetching menu data...');
-      const menus = await pb.collection('Menu').getFullList();
+      const menus = await pb.collection('Menu').getFullList({
+        expand: 'Shop_ID'
+      });
       console.log('Menu result count:', menus.length);
       reportsData.totalDishes = menus.length;
     } catch (error) {
       console.log('Error fetching menu:', error);
     }
 
-    // ดึงข้อมูล Users
+    // ดึงข้อมูล Orders อีกครั้งเพื่อคำนวณเมนูยอดนิยม
+    try {
+      console.log('Calculating popular menus from orders...');
+      const orders = await pb.collection('Order').getFullList({
+        expand: 'Menu_ID,Shop_ID'
+      });
+      
+      const menus = await pb.collection('Menu').getFullList({
+        expand: 'field'
+      });
+      
+      // คำนวณเมนูยอดนิยมจาก Order.Menu_ID (array relation)
+      const menuPopularity = {} as any;
+      
+      orders.forEach(order => {
+        if (order.Menu_ID && Array.isArray(order.Menu_ID) && order.Status === 'Completed') {
+          order.Menu_ID.forEach(menuId => {
+            if (!menuPopularity[menuId]) {
+              const menu = menus.find(m => m.id === menuId);
+              menuPopularity[menuId] = {
+                menuId,
+                menuName: menu?.name || 'Unknown Menu',
+                shopId: order.Shop_ID,
+                shopName: order.expand?.Shop_ID?.name || 'Unknown Shop',
+                totalOrdered: 0
+              };
+            }
+            menuPopularity[menuId].totalOrdered += 1;
+          });
+        }
+      });
+      
+      // เรียงลำดับตามความนิยม
+      reportsData.popularMenus = Object.values(menuPopularity)
+        .sort((a: any, b: any) => b.totalOrdered - a.totalOrdered)
+        .slice(0, 10); // Top 10 popular menus
+        
+    } catch (error) {
+      console.log('Error calculating popular menus:', error);
+    }
+
+    // ดึงข้อมูล Users และคำนวณ Active Users
     try {
       console.log('Fetching users data...');
-      const users = await pb.collection('users').getFullList();
+      const users = await pb.collection('users').getFullList({
+        expand: 'Role'
+      });
       console.log('Users result count:', users.length);
       reportsData.totalUsers = users.length;
       
-      // จำลองข้อมูล active users (ในอนาคตสามารถคำนวณจาก last login)
-      reportsData.activeUsers = users.slice(0, Math.min(users.length, 2));
+      // ดึง Payments เพื่อหา Active Users (ผู้ใช้ที่มีการทำรายการ)
+      const payments = await pb.collection('Payment').getFullList({
+        filter: 'status = "Sus"'
+      });
+      
+      const activeUserIds = new Set(payments.map(p => p.User_ID));
+      
+      // สร้างรายการ active users พร้อมข้อมูลเพิ่มเติม
+      reportsData.activeUsers = users
+        .filter(user => activeUserIds.has(user.id))
+        .map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.expand?.Role?.name || 'Unknown',
+          created: user.created
+        }))
+        .slice(0, 10); // แสดงแค่ 10 คนแรก
+        
     } catch (error) {
       console.log('Error fetching users:', error);
     }
@@ -121,7 +264,15 @@ export const load: PageServerLoad = async ({ cookies }) => {
         monthlyData: {
           2024: Array(12).fill(0),
           2025: Array(12).fill(0)
-        }
+        },
+        paymentMethods: {
+          cash: 0,
+          credit_card: 0,
+          promptpay: 0,
+          bank_transfer: 0
+        },
+        shopSales: [],
+        popularMenus: []
       }
     };
   }

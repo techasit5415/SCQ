@@ -2,8 +2,42 @@
     import { goto } from '$app/navigation';
     import TopBar from '$lib/Components/Topbar.svelte';
     import AdminSidebar from '$lib/Components/sidebar.svelte';
+    import { onMount } from 'svelte';
 
     export let data;
+
+    // Chart.js import
+    let Chart;
+    let chartInstances = {};
+    
+    onMount(async () => {
+        console.log('Component mounted, loading Chart.js...');
+        
+        // Check if Chart.js is already loaded
+        if (window.Chart) {
+            Chart = window.Chart;
+            setTimeout(initializeCharts, 500);
+            return;
+        }
+        
+        // Load Chart.js from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = () => {
+            console.log('Chart.js loaded from CDN');
+            Chart = window.Chart;
+            // Initialize charts after Chart.js is loaded with longer delay
+            setTimeout(initializeCharts, 1000);
+        };
+        script.onerror = () => {
+            console.error('Failed to load Chart.js from CDN');
+        };
+        document.head.appendChild(script);
+    });
+
+    // State for time period selection
+    let selectedPeriod = 'monthly';
+    let selectedShop = 'all';
 
     // Event Handlers for Components
     function handleMenuChange(event) {
@@ -36,26 +70,181 @@
         }
     }
 
-    // Calculate completion percentage
-    $: completionPercentage = data.reports.orderStatus.completed + data.reports.orderStatus.canceled > 0 
-        ? ((data.reports.orderStatus.completed / (data.reports.orderStatus.completed + data.reports.orderStatus.canceled)) * 100).toFixed(2)
-        : 0;
-    
-    $: canceledPercentage = (100 - completionPercentage).toFixed(2);
+    function initializeCharts() {
+        console.log('🎯 Initializing charts...', window.Chart);
+        console.log('📊 Reports data:', data.reports);
+        console.log('💰 Payment methods:', data.reports.paymentMethods);
+        console.log('🏪 Shop sales:', data.reports.shopSales);
+        console.log('🍽️ Popular menus:', data.reports.popularMenus);
+        
+        if (!window.Chart) {
+            console.error('❌ Chart.js not loaded yet');
+            return;
+        }
+        
+        Chart = window.Chart;
 
-    // Generate chart points for line chart
-    function generateChartPoints(dataArray, maxHeight = 150) {
-        const maxValue = Math.max(...dataArray, 200); // Minimum scale of 200
-        return dataArray.map((value, index) => {
-            const x = (index * 652.67) / 11; // Distribute across chart width
-            const y = maxHeight - (value / maxValue) * maxHeight;
-            return { x, y, value };
-        });
+        // Payment Methods Pie Chart
+        const paymentCtx = document.getElementById('paymentChart')?.getContext('2d');
+        if (paymentCtx) {
+            console.log('Creating payment chart with data:', data.reports.paymentMethods);
+            if (chartInstances.payment) {
+                chartInstances.payment.destroy();
+            }
+            
+            try {
+                chartInstances.payment = new Chart(paymentCtx, {
+                    type: 'doughnut',
+                data: {
+                    labels: ['เงินสด', 'พอยท์', 'QR Code'],
+                    datasets: [{
+                        data: [
+                            data.reports.paymentMethods.cash || 0,
+                            data.reports.paymentMethods.credit_card || 0,
+                            data.reports.paymentMethods.promptpay || 1
+                        ],
+                        backgroundColor: [
+                            '#FF8C00',
+                            '#4CAF50',
+                            '#2196F3'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+                });
+                console.log('Payment chart created successfully');
+            } catch (error) {
+                console.error('Error creating payment chart:', error);
+            }
+        } else {
+            console.error('Payment chart canvas not found');
+        }
+
+        // Shop Sales Bar Chart
+        const shopSalesCtx = document.getElementById('shopSalesChart')?.getContext('2d');
+        console.log('Shop sales data:', data.reports.shopSales);
+        if (shopSalesCtx) {
+            if (chartInstances.shopSales) {
+                chartInstances.shopSales.destroy();
+            }
+            
+            try {
+                chartInstances.shopSales = new Chart(shopSalesCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.reports.shopSales.length > 0 ? data.reports.shopSales.map(shop => shop.shopName) : ['ไม่มีข้อมูล'],
+                    datasets: [{
+                        label: 'ยอดขาย (บาท)',
+                        data: data.reports.shopSales.length > 0 ? data.reports.shopSales.map(shop => shop.totalSales) : [0],
+                        backgroundColor: '#FF8C00',
+                        borderColor: '#e67e00',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '฿' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+                });
+                console.log('Shop sales chart created successfully');
+            } catch (error) {
+                console.error('Error creating shop sales chart:', error);
+            }
+        } else {
+            console.error('Shop sales chart canvas not found');
+        }
+
+        // Popular Menus Bar Chart
+        const popularMenusCtx = document.getElementById('popularMenusChart')?.getContext('2d');
+        if (popularMenusCtx) {
+            if (chartInstances.popularMenus) {
+                chartInstances.popularMenus.destroy();
+            }
+            
+            try {
+                chartInstances.popularMenus = new Chart(popularMenusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.reports.popularMenus.length > 0 ? data.reports.popularMenus.slice(0, 5).map(menu => menu.menuName) : ['ไม่มีข้อมูล'],
+                        datasets: [{
+                            label: 'จำนวนที่สั่ง',
+                            data: data.reports.popularMenus.length > 0 ? data.reports.popularMenus.slice(0, 5).map(menu => menu.totalOrdered) : [0],
+                        backgroundColor: '#4CAF50',
+                        borderColor: '#45a049',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+                });
+                console.log('Popular menus chart created successfully');
+            } catch (error) {
+                console.error('Error creating popular menus chart:', error);
+            }
+        } else {
+            console.error('Popular menus chart canvas not found');
+        }
     }
 
-    $: chart2024Points = generateChartPoints(data.reports.monthlyData[2024]);
-    $: chart2025Points = generateChartPoints(data.reports.monthlyData[2025]);
+    // Format number as currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('th-TH', {
+            style: 'currency',
+            currency: 'THB'
+        }).format(amount);
+    }
+
+    // Format number with commas
+    function formatNumber(num) {
+        return num.toLocaleString('th-TH');
+    }
 </script>
+
+<svelte:head>
+    <title>Admin Panel - Reports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</svelte:head>
 
 <div class="reports">
     <!-- Top Navigation -->
@@ -64,259 +253,152 @@
     <!-- Side Navigation -->
     <AdminSidebar 
         activeMenu="reports" 
-        shops={[]}
+        shops={data.reports.shopSales || []}
         on:menuChange={handleMenuChange}
         on:logout={handleLogout}
     />
 
     <!-- Main Content -->
     <div class="content">
-        <!-- Breadcrumb and Title -->
+        <!-- Header -->
         <div class="header-section">
             <div class="breadcrumb">
-                <span class="breadcrumb-item">Home / </span>
-                <span class="breadcrumb-item current">Reports</span>
+                <span class="breadcrumb-item">Home</span>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-item active">Reports</span>
             </div>
-            <div class="page-title">
-                <h1>Reports</h1>
-                <p>รายงานและสถิติการใช้งานระบบ</p>
+            <h1 class="page-title">รายงานและสถิติ</h1>
+            <p class="page-subtitle">ภาพรวมการดำเนินงานของระบบ</p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-section">
+            <div class="kpi-grid">
+                <!-- Total Sales -->
+                <div class="kpi-card sales">
+                    <div class="kpi-icon">
+                        <span class="material-symbols-outlined">payments</span>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>ยอดขายทั้งหมด</h3>
+                        <div class="kpi-value">{formatCurrency(data.reports.totalSales)}</div>
+                        <div class="kpi-subtitle">Total Sales</div>
+                    </div>
+                </div>
+
+                <!-- Total Orders -->
+                <div class="kpi-card orders">
+                    <div class="kpi-icon">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>จำนวนคำสั่งซื้อ</h3>
+                        <div class="kpi-value">{formatNumber(data.reports.totalOrders)}</div>
+                        <div class="kpi-subtitle">Total Orders</div>
+                    </div>
+                </div>
+
+                <!-- Total Dishes -->
+                <div class="kpi-card dishes">
+                    <div class="kpi-icon">
+                        <span class="material-symbols-outlined">restaurant_menu</span>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>จำนวนเมนูทั้งหมด</h3>
+                        <div class="kpi-value">{formatNumber(data.reports.totalDishes)}</div>
+                        <div class="kpi-subtitle">Total Dishes</div>
+                    </div>
+                </div>
+
+                <!-- Total Users -->
+                <div class="kpi-card users">
+                    <div class="kpi-icon">
+                        <span class="material-symbols-outlined">group</span>
+                    </div>
+                    <div class="kpi-content">
+                        <h3>จำนวนผู้ใช้งาน</h3>
+                        <div class="kpi-value">{formatNumber(data.reports.totalUsers)}</div>
+                        <div class="kpi-subtitle">Total Users</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Reports Content -->
-        <div class="frame-7">
-            <!-- Stats Cards Row -->
-            <div class="stats-row">
-                <!-- Total Sales Card -->
-                <div class="frame-10">
-                    <div class="frame-84">
-                        <div class="total-sales">
-                            <span class="totalsales_span">Total Sales</span>
-                        </div>
-                        <div class="icons">
-                            <div class="bounding-box"></div>
-                            <div class="keyboard_arrow_down"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="f200_span">฿{data.reports.totalSales.toLocaleString()}</span>
-                    </div>
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <!-- Payment Methods Chart -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>วิธีการชำระเงิน</h3>
+                    <span class="chart-subtitle">Payment Methods</span>
                 </div>
-
-                <!-- Total Orders Card -->
-                <div class="frame-8">
-                    <div class="total-orders">
-                        <span class="totalorders_span">Total Orders</span>
-                    </div>
-                    <div>
-                        <span class="f51_span">{data.reports.totalOrders}</span>
-                    </div>
-                </div>
-
-                <!-- Total Dishes Card -->
-                <div class="frame-13">
-                    <div class="total-dishes">
-                        <span class="totaldishes_span">Total Dishes</span>
-                    </div>
-                    <div>
-                        <span class="f51_01_span">{data.reports.totalDishes}</span>
-                    </div>
-                </div>
-
-                <!-- Total Users Card -->
-                <div class="frame-14">
-                    <div class="total-dishes_01">
-                        <span class="totaldishes_01_span">Total Users</span>
-                    </div>
-                    <div>
-                        <span class="f51_02_span">{data.reports.totalUsers}</span>
-                    </div>
+                <div class="chart-content">
+                    <canvas id="paymentChart"></canvas>
                 </div>
             </div>
 
-            <!-- Charts Row -->
-            <div class="charts-row">
-                <!-- Line Chart -->
-                <div class="frame-11">
-                    <div class="frame-81">
-                        <div>
-                            <span class="activeusers_span">Active Users</span>
-                        </div>
-                        <div class="show-by-year">
-                            <span class="showbyyear_span_01">Show</span>
-                            <span class="showbyyear_span_02"> by Year</span>
-                        </div>
-                        <div class="icons_01">
-                            <div class="bounding-box_01"></div>
-                            <div class="keyboard_arrow_down_01"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="barlinechart">
-                        <div class="chartaxis">
-                            <div class="mainchart">
-                                <div class="yaxisleft">
-                                    <div><span class="f00_span">200</span></div>
-                                    <div><span class="f50_span">150</span></div>
-                                    <div><span class="f00_span_01">100</span></div>
-                                    <div><span class="f0_span">50</span></div>
-                                    <div><span class="f_span">0</span></div>
-                                </div>
-                                <div class="graphigrid">
-                                    <!-- Grid Lines -->
-                                    <div class="xlines">
-                                        <div class="line"></div>
-                                        <div class="line_01"></div>
-                                        <div class="line_02"></div>
-                                        <div class="line_03"></div>
-                                        <div class="line_04"></div>
-                                    </div>
-                                    <div class="ylines">
-                                        {#each Array(13) as _, i}
-                                            <div class="line_{i + 5}"></div>
-                                        {/each}
-                                    </div>
-                                    
-                                    <!-- Chart Lines -->
-                                    <div class="linearea">
-                                        <!-- 2024 Line (Red) -->
-                                        <svg class="chart-svg" viewBox="0 0 712 160">
-                                            <polyline
-                                                points="{chart2024Points.map(p => `${p.x + 30},${p.y + 5}`).join(' ')}"
-                                                fill="none"
-                                                stroke="#FF928A"
-                                                stroke-width="2"
-                                                class="singleline1"
-                                            />
-                                            {#each chart2024Points as point, i}
-                                                <circle
-                                                    cx="{point.x + 30}"
-                                                    cy="{point.y + 5}"
-                                                    r="4"
-                                                    fill="white"
-                                                    stroke="#FF928A"
-                                                    stroke-width="1"
-                                                />
-                                            {/each}
-                                        </svg>
-
-                                        <!-- 2025 Line (Blue) -->
-                                        <svg class="chart-svg" viewBox="0 0 712 160">
-                                            <polyline
-                                                points="{chart2025Points.map(p => `${p.x + 30},${p.y + 2}`).join(' ')}"
-                                                fill="none"
-                                                stroke="#8979FF"
-                                                stroke-width="2"
-                                                class="singleline0"
-                                            />
-                                            {#each chart2025Points as point, i}
-                                                <circle
-                                                    cx="{point.x + 30}"
-                                                    cy="{point.y + 2}"
-                                                    r="4"
-                                                    fill="white"
-                                                    stroke="#8979FF"
-                                                    stroke-width="1"
-                                                />
-                                            {/each}
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="xaxis">
-                                {#each ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as month}
-                                    <div class="xlabelbox">
-                                        <div class="jan">
-                                            <span class="jan_span">{month}</span>
-                                        </div>
-                                    </div>
-                                {/each}
-                            </div>
-                        </div>
-                        <div class="legends">
-                            <div class="linelegends">
-                                <div class="legend">
-                                    <div class="legendnode">
-                                        <div class="line_18"></div>
-                                        <div class="basicnode_24">
-                                            <div class="ellipseline_24"></div>
-                                        </div>
-                                    </div>
-                                    <div><span class="f024_span">2024</span></div>
-                                </div>
-                                <div class="legend_01">
-                                    <div class="legendnode_01">
-                                        <div class="line_19"></div>
-                                        <div class="basicnode_25">
-                                            <div class="ellipseline_25"></div>
-                                        </div>
-                                    </div>
-                                    <div><span class="f025_span">2025</span></div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Shop Sales Chart -->
+            <div class="chart-container wide">
+                <div class="chart-header">
+                    <h3>ยอดขายของแต่ละร้าน</h3>
+                    <div class="chart-controls">
+                        <select bind:value={selectedPeriod} on:change={initializeCharts}>
+                            <option value="daily">รายวัน</option>
+                            <option value="weekly">รายอาทิตย์</option>
+                            <option value="monthly">รายเดือน</option>
+                            <option value="yearly">รายปี</option>
+                        </select>
                     </div>
                 </div>
+                <div class="chart-content">
+                    <canvas id="shopSalesChart"></canvas>
+                </div>
+            </div>
 
-                <!-- Pie Chart -->
-                <div class="piechart">
-                    <div class="mainchart_01">
-                        <div class="pielayer">
-                            <svg viewBox="0 0 200 200" class="pie-svg">
-                                <!-- Completed portion (Green) -->
-                                <circle
-                                    cx="100"
-                                    cy="100"
-                                    r="80"
-                                    fill="transparent"
-                                    stroke="#4CAF50"
-                                    stroke-width="40"
-                                    stroke-dasharray="{(completionPercentage / 100) * 502.65} 502.65"
-                                    stroke-dashoffset="0"
-                                    transform="rotate(-90 100 100)"
-                                />
-                                <!-- Canceled portion (Red) -->
-                                <circle
-                                    cx="100"
-                                    cy="100"
-                                    r="80"
-                                    fill="transparent"
-                                    stroke="#E53935"
-                                    stroke-width="40"
-                                    stroke-dasharray="{(canceledPercentage / 100) * 502.65} 502.65"
-                                    stroke-dashoffset="-{(completionPercentage / 100) * 502.65}"
-                                    transform="rotate(-90 100 100)"
-                                />
-                            </svg>
-                        </div>
-                        
-                        <!-- Center Number -->
-                        <div class="text-100_01">
-                            <span class="f00_01_span">{data.reports.orderStatus.completed + data.reports.orderStatus.canceled}</span>
-                        </div>
-
-                        <!-- Completed Label -->
-                        <div class="labelname">
-                            <span class="labelname_span">Completed</span>
-                        </div>
-                        <div class="labelvalue">
-                            <span class="labelvalue_span">{data.reports.orderStatus.completed}</span>
-                        </div>
-                        <div class="labelpercent">
-                            <span class="labelpercent_span">{completionPercentage}%</span>
-                        </div>
-
-                        <!-- Canceled Label -->
-                        <div class="labelname_01">
-                            <span class="labelname_01_span">Canceled</span>
-                        </div>
-                        <div class="labelvalue_01">
-                            <span class="labelvalue_01_span">{data.reports.orderStatus.canceled}</span>
-                        </div>
-                        <div class="labelpercent_01">
-                            <span class="labelpercent_01_span">{canceledPercentage}%</span>
-                        </div>
+            <!-- Popular Menus Chart -->
+            <div class="chart-container wide">
+                <div class="chart-header">
+                    <h3>เมนูยอดนิยม</h3>
+                    <div class="chart-controls">
+                        <select bind:value={selectedShop} on:change={initializeCharts}>
+                            <option value="all">ทุกร้าน</option>
+                            {#each data.reports.shopSales as shop}
+                                <option value={shop.shopId}>{shop.shopName}</option>
+                            {/each}
+                        </select>
                     </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="popularMenusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Active Users List -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>ผู้ใช้งานล่าสุด</h3>
+                    <span class="chart-subtitle">Active Users</span>
+                </div>
+                <div class="users-list">
+                    {#each data.reports.activeUsers as user}
+                        <div class="user-item">
+                            <div class="user-avatar">
+                                {#if user.avatar}
+                                    <img src="http://localhost:8090/api/files/_pb_users_auth_/{user.id}/{user.avatar}" alt={user.name} />
+                                {:else}
+                                    <span class="material-symbols-outlined">person</span>
+                                {/if}
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name">{user.name} {user.Lastname}</div>
+                                <div class="user-email">{user.email}</div>
+                            </div>
+                            <div class="user-status online">
+                                <span class="status-dot"></span>
+                                Active
+                            </div>
+                        </div>
+                    {/each}
                 </div>
             </div>
         </div>
@@ -324,519 +406,349 @@
 </div>
 
 <style>
-    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+    /* Base Styles */
+    * {
+        box-sizing: border-box;
+    }
 
-    /* Import the original CSS with modifications */
+    :global(html), :global(body) {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
     .reports {
-        width: 100%;
-        height: 100vh;
-        position: relative;
-        background: white;
-        overflow: hidden;
+        min-height: 100vh;
+        width: 100vw;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
-
-
-    :global(body) {
-        background: #f5f7fa !important;
-        margin: 0;
-        padding: 0;
-    }
-
+    /* Main Content */
     .content {
-        margin-left: 256px;
+        margin-left: 250px;
         margin-top: 60px;
+        padding: 30px 40px;
         min-height: calc(100vh - 60px);
-        background: #f5f7fa;
-        padding: 0;
+        width: calc(100vw - 250px);
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
+    /* Header */
     .header-section {
-        width: 100%;
-        padding: 20px;
-        background: white;
-        border-bottom: 1px #B4B5B7 solid;
-    }
-
-    .breadcrumb {
-        margin-bottom: 10px;
-    }
-
-    .breadcrumb-item {
-        color: #95969A;
-        font-size: 13px;
-        font-weight: 400;
-    }
-
-    .breadcrumb-item.current {
-        color: #333438;
-    }
-
-    .page-title h1 {
-        color: #333438;
-        font-size: 20px;
-        font-weight: 400;
-        margin: 0 0 5px 0;
-    }
-
-    .page-title p {
-        color: #68696E;
-        font-size: 14px;
-        margin: 0;
-    }
-
-    .frame-7 {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .stats-row {
-        display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-    }
-
-    .charts-row {
-        display: flex;
-        gap: 24px;
-        align-items: flex-start;
-    }
-
-    /* Stats Cards */
-    .frame-10, .frame-8, .frame-13, .frame-14 {
-        width: 253px;
-        height: 96px;
-        padding: 16px;
-        background: white;
-        box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.20);
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    /* Line Chart */
-    .frame-11 {
-        flex: 1;
-        padding: 16px;
-        background: white;
-        box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.20);
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .barlinechart {
-        height: 266px;
-        padding: 32px 16px 16px;
-        background: white;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chart-svg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-
-    /* Pie Chart */
-    .piechart {
-        width: 253px;
-        height: 332px;
-        padding: 24px 8px 8px;
-        background: white;
-        box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.20);
-        border-radius: 16px;
-        position: relative;
-    }
-
-    .pie-svg {
-        width: 100%;
-        height: 200px;
-    }
-
-    .mainchart_01 {
-        position: relative;
-        width: 100%;
-        height: 100%;
-    }
-
-    /* Text Styles from original CSS */
-    .totalsales_span, .totalorders_span, .totaldishes_span, .totaldishes_01_span {
-        color: #333438;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .f200_span, .f51_span, .f51_01_span, .f51_02_span {
-        color: #FF8C00;
-        font-size: 25px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 500;
-        line-height: 30px;
-    }
-
-    .activeusers_span {
-        color: #333438;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .showbyyear_span_01 {
-        color: #68696E;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .showbyyear_span_02 {
-        color: #333438;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .homereports_span_01 {
-        color: #95969A;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .homereports_span_02 {
-        color: #333438;
-        font-size: 13px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 15.60px;
-    }
-
-    .reports_01_span {
-        color: #333438;
-        font-size: 20px;
-        font-family: 'Noto Sans Thai', sans-serif;
-        font-weight: 400;
-        line-height: 24px;
-    }
-
-    .f00_span, .f50_span, .f00_span_01, .f0_span, .f_span {
-        color: rgba(0, 0, 0, 0.70);
-        font-size: 12px;
-        font-family: Inter, sans-serif;
-        font-weight: 400;
-    }
-
-    .jan_span, .f024_span, .f025_span {
-        color: rgba(0, 0, 0, 0.70);
-        font-size: 12px;
-        font-family: Inter, sans-serif;
-        font-weight: 400;
-    }
-
-    .f00_01_span {
-        color: rgba(0, 0, 0, 0.90);
-        font-size: 24px;
-        font-family: Inter, sans-serif;
-        font-weight: 600;
-    }
-
-    .labelname_span, .labelname_01_span, .labelpercent_span, .labelpercent_01_span {
-        color: black;
-        font-size: 12px;
-        font-family: Inter, sans-serif;
-        font-weight: 400;
-    }
-
-    .labelvalue_span, .labelvalue_01_span {
-        color: black;
-        font-size: 12px;
-        font-family: Inter, sans-serif;
-        font-weight: 600;
-    }
-
-    /* Layout helpers */
-
-    .frame-84, .frame-81 {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-    }
-
-    .total-sales, .total-orders, .total-dishes, .total-dishes_01 {
-        flex: 1;
-    }
-
-    .show-by-year {
-        flex: 1;
-        text-align: right;
-    }
-
-    .icons, .icons_01 {
-        width: 24px;
-        height: 24px;
-        position: relative;
-    }
-
-    .bounding-box, .bounding-box_01 {
-        width: 24px;
-        height: 24px;
-        position: absolute;
-        background: #D9D9D9;
-        border-radius: 4px;
-    }
-
-    .keyboard_arrow_down, .keyboard_arrow_down_01 {
-        width: 12px;
-        height: 7.40px;
-        position: absolute;
-        left: 6px;
-        top: 8px;
-        background: #68696E;
-        clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
-    }
-
-    /* Chart specific styles */
-    .chartaxis {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
-    .mainchart {
-        display: flex;
-        align-items: center;
-        flex: 1;
-    }
-
-    .yaxisleft {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 4px;
-        height: 173px;
-        align-items: flex-end;
-    }
-
-    .graphigrid {
-        flex: 1;
-        position: relative;
-        height: 173px;
-    }
-
-    .xlines, .ylines {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-
-    .xlines {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 6px 1px;
-    }
-
-    .ylines {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 1px;
-    }
-
-    .line, .line_01, .line_02, .line_03, .line_04 {
-        height: 1px;
-        background: rgba(0, 0, 25.50, 0.15);
-        width: 100%;
-    }
-
-    .line_04 {
-        background: rgba(0, 0, 25.50, 0.30);
-    }
-
-    .line_05, .line_06, .line_07, .line_08, .line_09, .line_10, .line_11, .line_12, .line_13, .line_14, .line_15, .line_16, .line_17 {
-        width: 1px;
-        height: 161px;
-        background: rgba(0, 0, 25.50, 0.15);
-    }
-
-    .linearea {
-        position: absolute;
-        top: 7px;
-        left: 0;
-        width: 100%;
-        height: 159px;
-    }
-
-    .xaxis {
-        display: flex;
-        padding-bottom: 8px;
-        padding-left: 31px;
-    }
-
-    .xlabelbox {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .jan {
+        margin-bottom: 40px;
         text-align: center;
     }
 
-    .legends {
+    .breadcrumb {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item.active {
+        color: #ff8c00;
+        font-weight: 600;
+    }
+
+    .breadcrumb-separator {
+        margin: 0 8px;
+    }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 8px 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .page-subtitle {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    /* KPI Section */
+    .kpi-section {
+        margin-bottom: 40px;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ff8c00, #ffa500);
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .kpi-card.sales::before {
+        background: linear-gradient(90deg, #4CAF50, #45a049);
+    }
+
+    .kpi-card.orders::before {
+        background: linear-gradient(90deg, #2196F3, #1976d2);
+    }
+
+    .kpi-card.dishes::before {
+        background: linear-gradient(90deg, #ff8c00, #ffa500);
+    }
+
+    .kpi-card.users::before {
+        background: linear-gradient(90deg, #9C27B0, #7B1FA2);
+    }
+
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
-        padding: 8px;
-        gap: 8px;
+        font-size: 28px;
+        color: white;
     }
 
-    .linelegends {
+    .sales .kpi-icon {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+    }
+
+    .orders .kpi-icon {
+        background: linear-gradient(135deg, #2196F3, #1976d2);
+    }
+
+    .dishes .kpi-icon {
+        background: linear-gradient(135deg, #ff8c00, #ffa500);
+    }
+
+    .users .kpi-icon {
+        background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+    }
+
+    .kpi-content h3 {
+        font-size: 14px;
+        color: #666;
+        margin: 0 0 8px 0;
+        font-weight: 500;
+    }
+
+    .kpi-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 4px;
+    }
+
+    .kpi-subtitle {
+        font-size: 12px;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Charts Section */
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 25px;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .chart-container.wide {
+        grid-column: span 2;
+    }
+
+    .chart-container:hover {
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .chart-header {
         display: flex;
-        gap: 8px;
+        justify-content: space-between;
         align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
     }
 
-    .legend, .legend_01 {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px;
+    .chart-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
     }
 
-    .legendnode, .legendnode_01 {
-        width: 16px;
-        height: 16px;
+    .chart-subtitle {
+        font-size: 12px;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chart-controls select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+    }
+
+    .chart-content {
+        height: 300px;
         position: relative;
     }
 
-    .line_18, .line_19 {
-        width: 16px;
-        height: 2px;
-        position: absolute;
-        top: 7px;
+    .chart-content canvas {
+        max-height: 100%;
     }
 
-    .line_18 {
-        background: #8979FF;
+    /* Users List */
+    .users-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .line_19 {
-        background: #FF928A;
+    .user-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.2s ease;
     }
 
-    .basicnode_24, .basicnode_25 {
-        width: 8px;
-        height: 8px;
-        position: absolute;
-        left: 4px;
-        top: 4px;
+    .user-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
     }
 
-    .ellipseline_24, .ellipseline_25 {
-        width: 8px;
-        height: 8px;
-        background: white;
+    .user-avatar {
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
-        border: 1px solid;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ddd;
+        flex-shrink: 0;
     }
 
-    .ellipseline_24 {
-        border-color: #8979FF;
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .ellipseline_25 {
-        border-color: #FF928A;
+    .user-avatar .material-symbols-outlined {
+        color: #666;
+        font-size: 24px;
     }
 
-    /* Pie Chart Labels */
-    .text-100_01 {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+    .user-info {
+        flex: 1;
     }
 
-    .labelname {
-        position: absolute;
-        left: 130px;
-        top: 195px;
-        width: 63px;
-        height: 31px;
+    .user-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 2px;
     }
 
-    .labelvalue {
-        position: absolute;
-        left: 130px;
-        top: 230px;
-        width: 34px;
-        height: 31px;
+    .user-email {
+        font-size: 12px;
+        color: #666;
     }
 
-    .labelpercent {
-        position: absolute;
-        left: 170px;
-        top: 230px;
-        width: 42px;
-        height: 31px;
+    .user-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #4CAF50;
     }
 
-    .labelname_01 {
-        position: absolute;
-        left: 30px;
-        top: 18px;
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4CAF50;
+        animation: pulse 2s infinite;
     }
 
-    .labelvalue_01 {
-        position: absolute;
-        left: 30px;
-        top: 35px;
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
     }
 
-    .labelpercent_01 {
-        position: absolute;
-        left: 63px;
-        top: 35px;
+    /* Material Icons */
+    .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 1200px) {
-        .charts-row {
-            flex-direction: column;
-        }
-        
-        .frame-11 {
-            width: 100%;
-        }
-    }
-
+    /* Responsive */
     @media (max-width: 768px) {
-        .stats-row {
-            flex-direction: column;
+        .content {
+            margin-left: 0;
+            padding: 20px;
+            width: 100vw;
         }
-        
-        .frame-10, .frame-8, .frame-13, .frame-14 {
-            width: 100%;
+
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .charts-section {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-container.wide {
+            grid-column: span 1;
+        }
+
+        .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
     }
 </style>
