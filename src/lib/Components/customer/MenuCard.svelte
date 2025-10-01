@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+	import { cart } from '$lib/stores/cart';
 
 	export let menuItem: {
 		id: string;
@@ -10,24 +11,32 @@
 		category?: string;
 	};
 
+	export let restaurantId: string;
+	export let restaurantName: string;
+
 	// ใช้ reactive statement เพื่อให้ URL อัปเดตเมื่อ menuItem เปลี่ยน
 	$: imageUrl = menuItem.Photo 
 		? `${PUBLIC_POCKETBASE_URL}/api/files/Menu/${menuItem.id}/${menuItem.Photo}`
 		: '/Photo/Icon.png';
 
-	function handleCardClick() {
-		// สามารถเพิ่ม logic สำหรับคลิกเมนูได้ เช่น เพิ่มลงตะกร้า
-		console.log('Menu item clicked:', menuItem.name);
+	function handleAddToCart() {
+		cart.addItem({
+			id: menuItem.id,
+			name: menuItem.name,
+			price: menuItem.price || 50,
+			Photo: menuItem.Photo,
+			Details: menuItem.Details,
+			category: menuItem.category,
+			restaurantId,
+			restaurantName
+		});
+		
+		// Show feedback
+		console.log('เพิ่ม', menuItem.name, 'ลงตะกร้าแล้ว');
 	}
 </script>
 
-<div class="menu-card" 
-	on:click={handleCardClick} 
-	on:keydown={(e) => e.key === 'Enter' && handleCardClick()}
-	role="button" 
-	tabindex="0"
-	aria-label="เมนู {menuItem.name}"
->
+<div class="menu-card">
 	<div class="menu-image">
 		<img src={imageUrl} alt={menuItem.name || 'เมนูอาหาร'} loading="lazy" />
 	</div>
@@ -39,7 +48,16 @@
 		{#if menuItem.category}
 			<p class="menu-category">หมวด: {menuItem.category}</p>
 		{/if}
-		<p class="menu-price">฿{menuItem.price || '50'}</p>
+		<div class="menu-footer">
+			<p class="menu-price">฿{menuItem.price || '50'}</p>
+			<button 
+				class="add-btn"
+				on:click={handleAddToCart}
+				aria-label="เพิ่ม {menuItem.name} ลงตะกร้า"
+			>
+				เพิ่ม
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -113,12 +131,41 @@
 		font-weight: 500;
 	}
 
+	.menu-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 8px;
+	}
+
 	.menu-price {
 		font-size: 1rem;
 		font-weight: 600;
 		color: #ff6b35;
 		margin: 0;
 		font-family: 'Noto Sans Thai', sans-serif;
+	}
+
+	.add-btn {
+		background: #ff6b35;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		padding: 6px 16px;
+		font-size: 0.875rem;
+		font-weight: 500;
+		font-family: 'Noto Sans Thai', sans-serif;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.add-btn:hover {
+		background: #e55a2b;
+		transform: scale(1.02);
+	}
+
+	.add-btn:active {
+		transform: scale(0.98);
 	}
 
 	/* Keyboard accessibility */

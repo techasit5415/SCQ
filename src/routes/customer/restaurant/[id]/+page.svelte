@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import MenuCard from '$lib/Components/customer/MenuCard.svelte';
+	import { cart } from '$lib/stores/cart';
 	
 	export let data;
 	const pbUrl = PUBLIC_POCKETBASE_URL;
@@ -115,7 +116,11 @@
 	{#if filteredMenus.length > 0}
 		<div class="menu-list">
 			{#each filteredMenus as menuItem}
-				<MenuCard {menuItem} />
+				<MenuCard 
+					{menuItem} 
+					restaurantId={restaurant.id}
+					restaurantName={restaurant.name}
+				/>
 			{/each}
 		</div>
 	{:else}
@@ -125,10 +130,17 @@
 	{/if}
 </div>
 
-<!-- Add to Cart Button (Fixed) -->
-<div class="cart-button" aria-label="เพิ่มลงตะกร้า">
+<!-- Cart Button (Fixed) -->
+<button 
+	class="cart-button" 
+	on:click={() => goto('/customer/cart')}
+	aria-label="ดูตะกร้าสินค้า"
+>
 	<span class="material-icons">shopping_cart</span>
-</div>
+	{#if $cart.count > 0}
+		<span class="cart-badge">{$cart.count}</span>
+	{/if}
+</button>
 
 <style>
 	.hero-section {
@@ -310,6 +322,7 @@
 		width: 56px;
 		height: 56px;
 		background: #ff6b35;
+		border: none;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -329,5 +342,22 @@
 	.cart-button:hover {
 		transform: scale(1.1);
 		box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+	}
+
+	.cart-badge {
+		position: absolute;
+		top: -8px;
+		right: -8px;
+		background: #dc2626;
+		color: white;
+		border-radius: 50%;
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 12px;
+		font-weight: 600;
+		border: 2px solid white;
 	}
 </style>

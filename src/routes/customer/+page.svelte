@@ -29,8 +29,9 @@
     }
     
     function handleBookmark() {
-        console.log('Bookmark clicked');
-        // Navigate to bookmarks page
+        console.log('View orders clicked');
+        // Navigate to orders history page
+        goto('/customer/orders');
     }
     
     function handleProfile() {
