@@ -11,32 +11,54 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		
 		console.log('🔔 Loading notifications for User ID:', userId);
 		
-		// ดึงการแจ้งเตือนจาก Order/Payment ที่เกี่ยวข้องกับ user
+		// ดึงการแจ้งเตือนจาก Order และ Payment ที่เกี่ยวข้องกับ user
 		const notifications = [];
 		
-		// 1. ดึง Payment records ล่าสุด 10 รายการ
-		const paymentRecords = await pb.collection('Payment').getFullList({
+		// 1. ดึง Order records ล่าสุด 10 รายการ
+		const orderRecords = await pb.collection('Order').getFullList({
 			filter: `User_ID = "${userId}"`,
 			sort: '-created',
 			limit: 10
 		});
 		
-		// สร้างการแจ้งเตือนจาก Payment records
-		for (const payment of paymentRecords) {
+		// สร้างการแจ้งเตือนจาก Order records
+		for (const order of orderRecords) {
 			notifications.push({
-				id: payment.id,
+				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${payment.id.slice(-8)} ${payment.Status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
-				status: payment.Status === 'Success' ? 'success' : 'pending',
-				amount: payment.Total_Price || 0,
-				time: payment.created,
-				icon: payment.Status === 'Success' ? '✅' : '⏳',
+				message: `คำสั่งซื้อ #${order.id.slice(-8)} ${order.Status ? 'อัปเดตสถานะแล้ว' : 'รอดำเนินการ'}`,
+				status: order.Status ? 'success' : 'pending',
+				amount: order.Total_Price || 0,
+				time: order.created,
+				icon: order.Status ? '✅' : '⏳',
 				read: false
 			});
 		}
 		
-		// 2. ดึง Point records ล่าสุด 5 รายการ
+		// 2. ดึง Payment records ล่าสุด 5 รายการ (เพิ่มเติม)
+		const paymentRecords = await pb.collection('Payment').getFullList({
+			filter: `User_ID = "${userId}"`,
+			sort: '-created',
+			limit: 5
+		});
+		
+		// สร้างการแจ้งเตือนจาก Payment records
+		for (const payment of paymentRecords) {
+			notifications.push({
+				id: `payment_${payment.id}`,
+				type: 'payment',
+				title: 'การชำระเงิน',
+				message: `การชำระเงิน #${payment.id.slice(-8)} ${payment.Status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
+				status: payment.Status === 'Success' ? 'success' : 'pending',
+				amount: payment.Total_Price || 0,
+				time: payment.created,
+				icon: payment.Status === 'Success' ? '💰' : '💳',
+				read: false
+			});
+		}
+		
+		// 3. ดึง Point records ล่าสุด 5 รายการ
 		const pointRecords = await pb.collection('Point').getFullList({
 			filter: `User_ID = "${userId}"`,  
 			sort: '-created',

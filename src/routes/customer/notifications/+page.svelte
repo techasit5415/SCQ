@@ -47,6 +47,8 @@
 		// นำไปหน้าที่เกี่ยวข้อง
 		if (notification.type === 'order') {
 			goto('/customer/orders');
+		} else if (notification.type === 'payment') {
+			goto('/customer/orders');
 		} else if (notification.type === 'point') {
 			goto('/customer/profile');
 		}
@@ -101,7 +103,7 @@
 						
 						{#if notification.amount}
 							<div class="notification-amount">
-								{#if notification.type === 'order'}
+								{#if notification.type === 'order' || notification.type === 'payment'}
 									<span class="amount">฿{notification.amount}</span>
 								{:else if notification.type === 'point'}
 									<span class="amount">{notification.amount} แต้ม</span>
