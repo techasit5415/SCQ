@@ -26,6 +26,7 @@
     function handleNotification() {
         console.log('Notification clicked');
         // Navigate to notifications page
+        goto('/customer/notifications');
     }
     
     function handleBookmark() {
@@ -36,7 +37,8 @@
     
     function handleProfile() {
         console.log('Profile clicked');
-        // Navigate to profile page or show profile menu
+        // Navigate to profile page
+        goto('/customer/profile');
     }
     
     function handleRestaurantSelect(event) {

@@ -4,11 +4,19 @@
 	import { cart } from '$lib/stores/cart';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
 
 	$: cartItems = $cart.items;
 	$: total = $cart.total;
 	$: cartCount = $cart.count;
 	$: restaurantName = cartItems.length > 0 ? cartItems[0].restaurantName : 'ตะกร้าสินค้า';
+	$: userPoints = data.userPoints || 0;
+	
+	// Debug: แสดงข้อมูล Point ใน console
+	$: console.log('🎨 Frontend - data:', data);
+	$: console.log('🎨 Frontend - userPoints:', userPoints);
 
 	function goBack() {
 		goto('/customer');
@@ -31,10 +39,10 @@
 
 	// เลือกวิธีการจ่ายเงิน
 	let selectedPayment = 'cash';
-	const paymentMethods = [
+	$: paymentMethods = [
 		{ id: 'cash', name: 'ชำระเงินสด (Cash)', icon: '💵' },
 		{ id: 'qr', name: 'QR Code', icon: '📱' },
-		{ id: 'credit', name: 'SCQ Point (คงเหลือ 120)', icon: '💳' }
+		{ id: 'credit', name: `SCQ Point (คงเหลือ ${userPoints})`, icon: '💳' }
 	];
 
 	let isSubmitting = false;
