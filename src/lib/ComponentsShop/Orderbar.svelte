@@ -1,10 +1,12 @@
 <script>
     import { createEventDispatcher } from "svelte";
     import { goto } from "$app/navigation";
+    // import { load } from '$lib/server/order';
 
     // export let data;
     export let activeOrderMenu = "pending";
     const dispatch = createEventDispatcher();
+    let data;
 
     function handleOrderClick(menu) {
         if (menu !== activeOrderMenu) {
@@ -51,9 +53,8 @@
                 on:click={() => handleOrderClick("active")}
             >
                 <span>Orders Active</span>
-                <span class="numberOrder">(</span>
-                <!-- <div class="orderNumber">{data.stats?.canceled || 0}</div> -->
-                <span class="numberOrder">)</span>
+                <span class="numberOrder">()</span>
+                <!-- <div class="orderNumber">{data.restaurant?.canceled || 0}</div> -->
             </button>
 
             <!-- Order History -->

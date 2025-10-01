@@ -25,37 +25,56 @@ export const load: PageServerLoad = async ({ cookies }) => {
     
     // Initialize stats object
     let stats = {
-      users: 0,
+      menus: 0
     };
 
-    // ดึงจำนวน Users ทั้งหมด
-    let usersData = [];
+    let cate = [];
+    
+    // ดึงจำนวน Menu ทั้งหมด
+    let menuData = [];
     try {
       console.log('Fetching users count...');
-      const usersCount = await pb.collection('users').getFullList();
-      console.log('Users count result:', usersCount);
-      console.log('Users totalItems:', usersCount.length);
-      stats.users = usersCount.length;
-      usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
+      const menuCount = await pb.collection('Menu').getFullList();
+      console.log('Users count result:', menuCount);
+      console.log('Users totalItems:', menuCount.length);
+      stats.menus = menuCount.length;
+      menuData = menuCount; // เก็บข้อมูล users แบบละเอียด
     } catch (error) {
       console.log('Error fetching users:', error);
     }
 
+    // ดึง Category
+    try {
+      console.log('Fetching category menu count...');
+      const categoryOnly = await pb.collection('Menu').getFullList({
+        fields: 'category'
+      });
+
+      const categorySort = categoryOnly.map(o => o.category).filter(c => c != null && c !== '');; // หรือ o.expand?.menu?.category
+      const categoryCount = Array.from(new Set(categorySort)); 
+      
+      // เปลี่ยนจากเก็บแค่จำนวน → เป็น array ที่ใช้แสดง
+      cate = categoryCount.map(category => ({ category }));
+    } catch (error) {
+      console.log('Error fetching category menu:', error);
+    }
 
     const result = {
-      users: usersData // เพิ่มข้อมูล users แบบละเอียด
+      menus: menuData, // เพิ่มข้อมูล users แบบละเอียด
+      cate
     };
 
     console.log('Final result:', result);
     return result;
   } catch (error) {
-    console.error('Error loading dashboard data:', error);
+    console.error('Error loading menu data:', error);
     
     // Return fallback data if database connection fails
     return {
-      users: []
+      users: [],
+      cate: {
+        category: 0
+      }
     };
   }
 };
-
-

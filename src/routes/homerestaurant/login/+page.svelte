@@ -98,12 +98,23 @@
                 <span>Password</span>
             </div>
             <div class="restaurant-password">
-                <input
-                    type="text"
-                    placeholder="Password"
-                    name="password-login"
-                    class="password-input"
-                />
+                <label>
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        bind:value={password}
+                        required
+                        class="password-input"
+                    />
+                    <!-- <span
+                        class="passwordicon material-symbols-outlined"
+                        on:click={() => (showPassword = !showPassword)}
+                        style="cursor:pointer;"
+                    >
+                        {showPassword ? "visibility" : "visibility_off"}
+                    </span> -->
+                </label>
+                
             </div>
         </div>
         <div class="confirm">
