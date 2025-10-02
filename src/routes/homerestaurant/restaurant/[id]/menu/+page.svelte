@@ -1,28 +1,18 @@
 <script>
     import { goto } from "$app/navigation";
+    import { page } from '$app/stores';
+    import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
     import TopBar from "$lib/Components/restaurant/Topbar.svelte";
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
 
     export let data;
-    export let form;
-
     let activeMenu = "menu";
 
-    function listOrder() {
-        var x = document.getElementById("hiddenbar-container");
-        if (x) {
-            if (x.style.display === "none" || x.style.display === "") {
-                x.style.display = "block";
-            } else {
-                x.style.display = "none";
-            }
-        }
-    }
+    const pbUrl = PUBLIC_POCKETBASE_URL;
+	const { restaurant, menuItems } = data;
 
-    function handleViewRestaurant(event) {
-        // Navigate to restaurant page
-        goto("/homeadmin/rester");
-    }
+    let searchTerm = '';
+	let activeTab = 'เมนูแนะนำ';
 
     async function handleLogout() {
         try {
@@ -35,33 +25,61 @@
     }
 
     // User management functions
-    function handleEditItem(menuId) {
-        alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
-    }
+    // function handleEditItem(menuId) {
+    //     alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
+    // }
 
-    function handleDeleteItem(menuId) {
-        if (confirm("Are you sure you want to delete this user?")) {
-            alert(
-                `Delete user functionality for ID: ${menuId} (Coming soon...)`,
-            );
-        }
-    }
-
-    // // สมมุติว่า item.Available เป็น Boolean เช่น true หรือ false
-    // const item = { Available: true }; // หรือ false ก็ได้
-
-    // const checkbox = document.getElementById("toggleSwitch");
-    // checkbox.checked = data.menus.Available; // ตั้งค่าตาม item.Available
-
-    // // ถ้าคุณต้องการให้ทำอะไรบางอย่างเมื่อสลับสถานะ
-    // checkbox.addEventListener('change', function () {
-    //     if (checkbox.checked) {
-    //     console.log("เปิดใช้งาน");
-    //     } else {
-    //     console.log("ปิดใช้งาน");
+    // function handleDeleteItem(menuId) {
+    //     if (confirm("Are you sure you want to delete this user?")) {
+    //         alert(
+    //             `Delete user functionality for ID: ${menuId} (Coming soon...)`,
+    //         );
     //     }
-    // });
+    // }
 
+    // สร้าง tabs แบบ dynamic จาก categories ที่มีจริงใน menuItems
+	$: uniqueCategories = [...new Set(menuItems.map((item: any) => item.category).filter(Boolean))];
+	$: tabs = ['เมนูแนะนำ', ...uniqueCategories];
+	
+	// Debug: log categories and active tab
+	$: console.log('Available categories:', uniqueCategories);
+	$: console.log('Current active tab:', activeTab);
+	$: console.log('Filtered menus count:', filteredMenus.length);
+	
+	// Filter menu items based on search and category
+	$: filteredMenus = menuItems.filter((item: any) => {
+		const matchesSearch = (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+							 (item.Details && item.Details.toLowerCase().includes(searchTerm.toLowerCase()));
+		
+		if (activeTab === 'เมนูแนะนำ') {
+			return matchesSearch; // Show all for recommended
+		}
+		
+		// Filter by category if not "แนะนำ"
+		return matchesSearch && item.category === activeTab;
+	});
+	
+	// Debug: log filtered items when activeTab changes
+	$: if (activeTab) {
+		console.log(`=== Tab changed to: ${activeTab} ===`);
+		console.log('Filtered items:', filteredMenus.map(item => ({
+			id: item.id,
+			name: item.name,
+			category: item.category,
+			Photo: item.Photo
+		})));
+	}
+	
+	// function goBack() {
+	// 	goto('/customer');
+	// }
+	
+	// function getRestaurantImageUrl(): string {
+	// 	if (restaurant.field) {
+	// 		return `${pbUrl}/api/files/Shop/${restaurant.id}/${restaurant.field}`;
+	// 	}
+	// 	return '/Photo/Icon.png'; // แก้ path ให้ถูกต้อง
+	// }
 </script>
 
 <!-- on:menuChange={handleMenuChange} -->
@@ -122,8 +140,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#if data.menus && data.menus.length > 0}
-                            {#each data.menus as item, index}
+                        {#if data.restaurant && data.restaurant.length > 0}
+                            {#each filteredMenus as item, index}
                                 <tr>
                                     <td>{index + 1}</td>
                                     <td>{item.photo || "N/A"}</td>
@@ -191,7 +209,7 @@
                     </button>
                 </div>
                 <div class="line"></div>
-                <table class="category-table">
+                <!-- <table class="category-table">
                     <thead>
                         <tr>
                         </tr>
@@ -227,7 +245,7 @@
                             </tr>
                         {/if}
                     </tbody>
-                </table>
+                </table> -->
             </div>
         </div>
     </main>
