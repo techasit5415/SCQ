@@ -1,8 +1,8 @@
 <script>
     import { goto } from "$app/navigation";
-    import TopBar from "$lib/Components/ComponentsShop/Topbar.svelte";
-    import RestaurantSidebar from "$lib/Components/ComponentsShop/RestaurantSidebar.svelte";
-    import Orderbar from "$lib/Components/ComponentsShop/Orderbar.svelte";
+    import TopBar from "$lib/Components/restaurant/Topbar.svelte";
+    import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
+    import Orderbar from "$lib/Components/restaurant/Orderbar.svelte";
 
     export let data;
     export let fromMenu;

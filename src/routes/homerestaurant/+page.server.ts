@@ -1,64 +1,59 @@
+import type { PageServerLoad, Actions } from '../$types.js';
+import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
-import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
-const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+import { env as privateEnv } from '$env/dynamic/private';
 
+// ใช้ URL จาก environment variable
 
-export const load = async ({ params }: { params: { id: string } }) => {
-    try {
-        console.log('Loading restaurant and menu for ID:', params.id);
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
-        // Fetch restaurant data
-        const restaurant = await pb.collection('Shop').getOne(params.id, {
-            expand: 'User_Owner_ID'
-        });
+export const load: PageServerLoad = async ({ cookies }) => {
+  const session = cookies.get('session');
+  console.log('Session cookie in homeadmin:', session);
 
-        console.log('Successfully loaded restaurant:', restaurant.name);
+  // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
+  if (!session || !session.match(/^\d+$/)) {
+      console.log('No valid session, redirecting to /admin');
+      // throw redirect(302, '/admin');
+  }
 
-        // Fetch menu items - ใช้ field ที่เชื่อมกับ restaurant ID
-        let menuItems: any[] = [];
-        
-        try {
-            // เอาเมนูทั้งหมดแล้วกรองเอาเฉพาะร้านนี้
-            const allMenus = await pb.collection('Menu').getFullList({
-                sort: 'name'
-            });
-            
-            // กรองเมนูที่เป็นของร้านนี้
-            menuItems = allMenus.filter(menu => 
-                menu.field === params.id || 
-                menu.restaurant_id === params.id ||
-                menu.Shop === params.id
-            );
+  console.log('Session valid, loading homeadmin page');
 
-            console.log('Found menu items:', menuItems.length);
-            
-            // Debug: แสดงข้อมูลเมนูทั้งหมดเพื่อดู category
-            menuItems.forEach((item, index) => {
-                console.log(`Menu ${index + 1}:`, {
-                    name: item.name,
-                    category: item.category || 'ไม่มี category',
-                    id: item.id
-                });
-            });
-            
-            if (menuItems.length > 0) {
-                console.log('Sample menu item:', JSON.stringify(menuItems[0], null, 2));
-            }
-            
-        } catch (menuError) {
-            console.error('Error loading menu:', menuError);
-            menuItems = []; // ถ้าไม่มีเมนูก็ให้เป็น array ว่าง
-        }
+  try {
+    console.log('Attempting to connect to PocketBase...');
+    
+    // Initialize stats object
 
-        return {
-            restaurant,
-            menuItems,
-            success: true
-        };
-
-    } catch (err) {
-        console.error('Error loading restaurant:', err);
-        throw error(404, 'Restaurant not found');
+    let stats = {
+      shops: 0,
     }
+
+    // ดึงข้อมูลรายละเอียดของ Peending
+    let shopData = []
+    try {
+      console.log('Fetching shop count...');
+      const shopCount = await pb.collection('Shop').getFullList({});
+      console.log('Shop count result:', shopCount);
+      console.log('Shop totalItems:', shopCount.length);
+      stats.shops = shopCount.length;
+      shopData = shopCount; // เก็บข้อมูล order แบบละเอียด
+    } catch (error) {
+      console.log('Error fetching shop:', error);
+    }
+
+    const result = {
+      shops: shopData,
+    };
+
+    console.log('Final result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error loading shop data:', error);
+    
+    // Return fallback data if database connection fails
+    return {
+      shops: []
+    };
+  }
 };
