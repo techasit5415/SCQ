@@ -1,9 +1,9 @@
-import type { Actions } from './$types';
+import type { Actions } from './$types.js';
 import { fail, redirect } from '@sveltejs/kit';
 import bcrypt from 'bcrypt';
 import { query } from '$lib/server/db';
 import { serialize } from 'cookie';
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types.js';
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
 
