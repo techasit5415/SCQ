@@ -498,6 +498,7 @@
         background: #f5f7fa !important;
         margin: 0;
         padding: 0;
+        overflow-x: hidden;
     }
 
     .admin-layout {
@@ -512,15 +513,18 @@
         margin-top: 60px;
         padding: 24px;
         min-height: calc(100vh - 60px);
+        overflow-y: auto;
         background: #f5f7fa !important;
     }
 
     .header-section {
-        width: 100%;
-        padding: 20px;
+        width: calc(100% + 48px);
+        padding: 20px 24px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
         margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {
@@ -598,7 +602,7 @@
     }
 
     .users-table-container {
-        overflow-x: auto;
+        overflow-x: hidden;
     }
 
     .users-table {

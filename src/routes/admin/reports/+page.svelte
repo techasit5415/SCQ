@@ -246,29 +246,29 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </svelte:head>
 
-<div class="reports">
-    <!-- Top Navigation -->
-    <TopBar title="Admin Panel - Reports" logoSrc="/SCQ_logo.png" />
-    
-    <!-- Side Navigation -->
-    <AdminSidebar 
-        activeMenu="reports" 
-        shops={data.reports.shopSales || []}
-        on:menuChange={handleMenuChange}
-        on:logout={handleLogout}
-    />
+<!-- Top Navigation -->
+<TopBar title="Admin Panel - Reports" logoSrc="/SCQ_logo.png" />
 
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Header -->
+<!-- Side Navigation -->
+<AdminSidebar 
+    activeMenu="reports" 
+    shops={data.reports.shopSales || []}
+    on:menuChange={handleMenuChange}
+    on:logout={handleLogout}
+/>
+
+<!-- Main Content -->
+<main class="main-content">
+        <!-- Header Section -->
         <div class="header-section">
             <div class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item active">Reports</span>
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item current">Reports</span>
             </div>
-            <h1 class="page-title">รายงานและสถิติ</h1>
-            <p class="page-subtitle">ภาพรวมการดำเนินงานของระบบ</p>
+            <div class="page-title">
+                <h1>รายงานและสถิติ</h1>
+                <p>ภาพรวมการดำเนินงานของระบบ</p>
+            </div>
         </div>
 
         <!-- KPI Cards -->
@@ -402,8 +402,7 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
 <style>
     /* Base Styles */
@@ -417,56 +416,50 @@
         overflow-x: hidden;
     }
 
-    .reports {
-        min-height: 100vh;
-        width: 100vw;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    .main-content {
         font-family: 'Noto Sans Thai', sans-serif;
-    }
-
-    /* Main Content */
-    .content {
         margin-left: 250px;
         margin-top: 60px;
-        padding: 30px 40px;
+        padding: 24px;
         min-height: calc(100vh - 60px);
-        width: calc(100vw - 250px);
         overflow-y: auto;
-        overflow-x: hidden;
+        background: #f5f7fa !important;
     }
 
-    /* Header */
     .header-section {
-        margin-bottom: 40px;
-        text-align: center;
+        width: calc(100% + 48px);
+        padding: 20px 24px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {
-        font-size: 14px;
-        color: #888;
         margin-bottom: 10px;
     }
 
-    .breadcrumb-item.active {
-        color: #ff8c00;
-        font-weight: 600;
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
     }
 
-    .breadcrumb-separator {
-        margin: 0 8px;
+    .breadcrumb-item.current {
+        color: #333438;
     }
 
-    .page-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #2c3e50;
-        margin: 0 0 8px 0;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
     }
 
-    .page-subtitle {
-        color: #666;
-        font-size: 16px;
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
     }
 

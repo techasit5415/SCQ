@@ -243,26 +243,57 @@ function calculateCharts(orders: any[], shops: any[], menus: any[]) {
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
 
-  // Top 5 Dishes by sales
-  const menuSales: { [key: string]: { name: string; sales: number; revenue: number } } = {};
+  // Top 5 Dishes by sales (best seller from each restaurant)
+  const shopMenuSales: { [key: string]: { [key: string]: { name: string; shopName: string; sales: number; revenue: number } } } = {};
+  
   orders.forEach(order => {
-    if (order.Menu_ID && Array.isArray(order.Menu_ID)) {
+    if (order.Menu_ID && Array.isArray(order.Menu_ID) && order.Shop_ID) {
+      const shop = shops.find(s => s.id === order.Shop_ID);
+      const shopName = shop?.name || 'Unknown Shop';
+      
+      if (!shopMenuSales[order.Shop_ID]) {
+        shopMenuSales[order.Shop_ID] = {};
+      }
+      
       order.Menu_ID.forEach((menuId: string) => {
         const menu = menus.find(m => m.id === menuId);
         if (menu) {
-          const key = menu.name;
-          if (!menuSales[key]) {
-            menuSales[key] = { name: key, sales: 0, revenue: 0 };
+          const menuKey = menu.name;
+          if (!shopMenuSales[order.Shop_ID][menuKey]) {
+            shopMenuSales[order.Shop_ID][menuKey] = { 
+              name: menu.name, 
+              shopName: shopName,
+              sales: 0, 
+              revenue: 0 
+            };
           }
-          menuSales[key].sales += 1;
-          menuSales[key].revenue += (parseFloat(menu.Price) || 0);
+          shopMenuSales[order.Shop_ID][menuKey].sales += 1;
+          shopMenuSales[order.Shop_ID][menuKey].revenue += (parseFloat(menu.Price) || 0);
         }
       });
     }
   });
 
-  const topDishes = Object.values(menuSales)
-    .sort((a, b) => b.revenue - a.revenue)
+  // Get best selling dish from each restaurant
+  const topDishesFromEachShop: { name: string; shopName: string; sales: number; revenue: number }[] = [];
+  
+  Object.keys(shopMenuSales).forEach(shopId => {
+    const shopMenus = Object.values(shopMenuSales[shopId]);
+    if (shopMenus.length > 0) {
+      // Get the dish with highest sales (orders) from this shop
+      const bestDish = shopMenus.sort((a, b) => b.sales - a.sales)[0];
+      topDishesFromEachShop.push({
+        name: `${bestDish.name} (${bestDish.shopName})`,
+        shopName: bestDish.shopName,
+        sales: bestDish.sales,
+        revenue: bestDish.revenue
+      });
+    }
+  });
+
+  // Sort by sales (orders) and take top 5
+  const topDishes = topDishesFromEachShop
+    .sort((a, b) => b.sales - a.sales)
     .slice(0, 5);
 
   // Orders by Status
@@ -313,11 +344,11 @@ function getMockCharts() {
       { name: "ลาบหนองคาย", count: 25 }
     ],
     topDishes: [
-      { name: "ข้าวผัดกุ้ง", sales: 25, revenue: 1250 },
-      { name: "ก๋วยเตี๋ยวต้มยำ", sales: 22, revenue: 880 },
-      { name: "ส้มตำไทย", sales: 20, revenue: 800 },
-      { name: "ข้าวมันไก่", sales: 18, revenue: 720 },
-      { name: "ลาบหมู", sales: 15, revenue: 675 }
+      { name: "ข้าวผัดกุ้ง (ร้านข้าวผัดป้าแดง)", shopName: "ร้านข้าวผัดป้าแดง", sales: 25, revenue: 1250 },
+      { name: "ก๋วยเตี๋ยวต้มยำ (ก๋วยเตี๋ยวลูกชิ้น)", shopName: "ก๋วยเตี๋ยวลูกชิ้น", sales: 22, revenue: 880 },
+      { name: "ส้มตำไทย (โซมตำไทย)", shopName: "โซมตำไทย", sales: 20, revenue: 800 },
+      { name: "ข้าวมันไก่ (ข้าวมันไก่ป้าจิ๋ม)", shopName: "ข้าวมันไก่ป้าจิ๋ม", sales: 18, revenue: 720 },
+      { name: "ลาบหมู (ลาบหนองคาย)", shopName: "ลาบหนองคาย", sales: 15, revenue: 675 }
     ],
     ordersByStatus: [
       { status: "Completed", count: 156, percentage: "65.0" },

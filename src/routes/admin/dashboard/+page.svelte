@@ -94,21 +94,19 @@
     <title>Dashboard - SCQ Admin</title>
 </svelte:head>
 
-<!-- Admin Layout -->
-<div class="admin-layout">
-    <!-- Top Navigation -->
-    <TopBar title="SCQ Admin Panel" logoSrc="/SCQ_logo.png" />
-    
-    <!-- Sidebar -->
-    <AdminSidebar 
-        {activeMenu} 
-        shops={data.shops || []}
-        on:menuChange={handleMenuChange}
-        on:viewRestaurant={handleViewRestaurant}
-        on:logout={handleLogout}
-    />
+<!-- Top Navigation -->
+<TopBar title="SCQ Admin Panel" logoSrc="/SCQ_logo.png" />
 
-    <!-- Main Content -->
+<!-- Sidebar -->
+<AdminSidebar 
+    {activeMenu} 
+    shops={data.shops || []}
+    on:menuChange={handleMenuChange}
+    on:viewRestaurant={handleViewRestaurant}
+    on:logout={handleLogout}
+/>
+
+<!-- Main Content -->
     <main class="main-content">
         <!-- Breadcrumb and Title -->
         <div class="header-section">
@@ -271,36 +269,13 @@
                             {#each (charts.topRestaurants || []) as restaurant, index}
                                 <div class="bar-item">
                                     <div class="bar-label">{restaurant.name}</div>
-                                    <div class="bar-container">
+                                    <div class="restaurant-bar-container">
                                         <div 
-                                            class="bar" 
+                                            class="restaurant-bar" 
                                             style="width: {(restaurant.count / (charts.topRestaurants[0]?.count || 1)) * 100}%; background-color: hsl({200 + index * 30}, 70%, 60%)"
                                         ></div>
-                                        <span class="bar-value">{restaurant.count}</span>
+                                        <span class="restaurant-bar-value">{restaurant.count}</span>
                                     </div>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top 5 Dishes -->
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3>Top 5 Dishes</h3>
-                        <p>เมนูที่ขายดีที่สุด (ตามยอดขาย)</p>
-                    </div>
-                    <div class="chart-content">
-                        <div class="bar-chart">
-                            {#each (charts.topDishes || []) as dish, index}
-                                <div class="bar-item vertical">
-                                    <div 
-                                        class="bar vertical" 
-                                        style="height: {(dish.revenue / (charts.topDishes[0]?.revenue || 1)) * 150}px; background-color: hsl({120 + index * 40}, 70%, 60%)"
-                                        title="{dish.name}: {formatCurrency(dish.revenue)}"
-                                    ></div>
-                                    <div class="bar-label vertical">{dish.name}</div>
-                                    <div class="bar-value vertical">{formatCurrency(dish.revenue)}</div>
                                 </div>
                             {/each}
                         </div>
@@ -334,6 +309,37 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 5 Dishes Section -->
+        <div class="top-dishes-section">
+            <div class="section-header">
+                <h2>Top 5 Dishes</h2>
+                <p>เมนูที่ขายดีที่สุดของแต่ละร้าน (ตามจำนวนออเดอร์)</p>
+            </div>
+            
+            <div class="dishes-chart">
+                <div class="chart-bars">
+                    {#each (charts.topDishes || []) as dish, index}
+                        <div class="bar-container">
+                            <div class="bar-wrapper">
+                                <div 
+                                    class="dish-bar-vertical"
+                                    style="height: {(dish.sales / (charts.topDishes[0]?.sales || 1)) * 200}px; background: linear-gradient(135deg, hsl({200 + index * 30}, 70%, 60%), hsl({200 + index * 30}, 70%, 45%))"
+                                    title="{dish.name}: {dish.sales} ออเดอร์, {formatCurrency(dish.revenue)}"
+                                >
+                                    <div class="bar-value-top">{dish.sales}</div>
+                                </div>
+                            </div>
+                            <div class="bar-info">
+                                <div class="bar-rank">#{index + 1}</div>
+                                <div class="bar-name">{dish.name}</div>
+                                <div class="bar-revenue">{formatCurrency(dish.revenue)}</div>
+                            </div>
+                        </div>
+                    {/each}
                 </div>
             </div>
         </div>
@@ -378,7 +384,6 @@
             </div>
         </div>
     </main>
-</div>
 
 <style>
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
@@ -388,13 +393,7 @@
         background: #f5f7fa !important;
         margin: 0;
         padding: 0;
-    }
-
-    .admin-layout {
-        width: 100%;
-        height: 100vh;
-        background: #f5f7fa !important;
-        font-family: 'Noto Sans Thai', sans-serif;
+        overflow-x: hidden;
     }
 
     .main-content {
@@ -404,14 +403,17 @@
         min-height: calc(100vh - 60px);
         overflow-y: auto;
         background: #f5f7fa !important;
+        font-family: 'Noto Sans Thai', sans-serif;
     }
 
     .header-section {
-        width: 100%;
-        padding: 20px;
+        width: calc(100% + 48px);
+        padding: 20px 24px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
         margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {
@@ -662,6 +664,32 @@
         color: #1e293b;
     }
 
+    /* Restaurant Bar Styles */
+    .restaurant-bar-container {
+        flex: 1;
+        position: relative;
+        height: 32px;
+        background: #f1f5f9;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+    }
+
+    .restaurant-bar {
+        height: 100%;
+        border-radius: 16px;
+        position: relative;
+        transition: width 0.8s ease;
+    }
+
+    .restaurant-bar-value {
+        position: absolute;
+        right: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
     /* Vertical Bar Chart */
     .bar-chart:not(.horizontal) {
         flex-direction: row;
@@ -763,6 +791,124 @@
         font-weight: 600;
     }
 
+    /* Top Dishes Section */
+    .top-dishes-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+    }
+
+    .top-dishes-section .section-header {
+        margin-bottom: 24px;
+    }
+
+    .top-dishes-section .section-header p {
+        color: #64748b;
+        font-size: 14px;
+        margin: 4px 0 0 0;
+    }
+
+    .dishes-chart {
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .chart-bars {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        gap: 20px;
+        min-height: 280px;
+        padding: 20px 10px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .bar-container {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        flex: 1;
+        max-width: 150px;
+    }
+
+    .bar-wrapper {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        height: 220px;
+        width: 100%;
+        position: relative;
+    }
+
+    .dish-bar-vertical {
+        width: 60px;
+        min-height: 20px;
+        border-radius: 6px 6px 0 0;
+        transition: all 0.5s ease;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 8px;
+    }
+
+    .dish-bar-vertical:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .bar-value-top {
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .bar-info {
+        margin-bottom: 12px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .bar-rank {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .bar-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        line-height: 1.3;
+        margin-bottom: 4px;
+        word-break: break-word;
+        max-height: 2.6em;
+        overflow: hidden;
+    }
+
+    .bar-revenue {
+        font-size: 14px;
+        font-weight: 700;
+        color: #059669;
+    }
+
     /* Recent Orders */
     .recent-orders-section {
         background: white;
@@ -801,7 +947,7 @@
     }
 
     .table-container {
-        overflow-x: auto;
+        overflow-x: hidden;
     }
 
     .orders-table {

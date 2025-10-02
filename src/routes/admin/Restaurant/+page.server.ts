@@ -49,6 +49,33 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.error('Error fetching shops:', error);
     }
 
+    // ดึงข้อมูลจำนวนคิวของแต่ละร้าน
+    let queueCounts: { [shopId: string]: number } = {};
+    try {
+      console.log('Fetching queue counts...');
+      const orders = await pb.collection('Order').getFullList({
+        filter: 'Status = "In-progress"',
+        fields: 'Shop_ID'
+      });
+      
+      // นับจำนวนคิวแต่ละร้าน
+      queueCounts = orders.reduce((acc: { [key: string]: number }, order: any) => {
+        const shopId = order.Shop_ID;
+        acc[shopId] = (acc[shopId] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log('Queue counts:', queueCounts);
+    } catch (error) {
+      console.error('Error fetching queue counts:', error);
+    }
+
+    // เพิ่มจำนวนคิวเข้าไปในข้อมูลร้าน
+    shops = shops.map(shop => ({
+      ...shop,
+      queueCount: queueCounts[shop.id] || 0
+    }));
+
     // คำนวณสถิติร้านค้า
     const restaurantStats = calculateRestaurantStats(shops);
 

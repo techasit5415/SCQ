@@ -38,16 +38,14 @@
     <title>Edit Restaurant - SCQ Admin</title>
 </svelte:head>
 
-<!-- Admin Layout -->
-<div class="restaurant-page">
-    <!-- Top Navigation -->
-    <TopBar />
-    
-    <!-- Side Navigation -->
-    <AdminSidebar activeMenu="manageRestaurant" />
-    
-    <!-- Main Content -->
-    <div class="content">
+<!-- Top Navigation -->
+<TopBar />
+
+<!-- Side Navigation -->
+<AdminSidebar activeMenu="manageRestaurant" />
+
+<!-- Main Content -->
+    <main class="main-content">
         <!-- Breadcrumb and Title -->
         <div class="header-section">
             <div class="breadcrumb">
@@ -171,8 +169,7 @@
                 </form>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
 <style>
     @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
@@ -182,38 +179,27 @@
         background: #f5f7fa !important;
         margin: 0;
         padding: 0;
-        overflow: hidden;
+        overflow-x: hidden;
     }
 
-    :global(html) {
-        overflow: hidden;
-    }
-
-    .restaurant-page {
-        width: 100%;
-        height: 100vh;
-        position: relative;
-        background: white;
-        overflow: hidden;
+    .main-content {
+        margin-left: 250px;
+        margin-top: 60px;
+        padding: 24px;
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+        background: #f5f7fa !important;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
-    .content {
-        width: calc(100% - 256px);
-        height: calc(100vh - 60px);
-        margin-left: 256px;
-        margin-top: 60px;
-        background: #f5f7fa;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
     .header-section {
-        width: 100%;
-        padding: 20px;
+        width: calc(100% + 48px);
+        padding: 20px 24px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {

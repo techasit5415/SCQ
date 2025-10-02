@@ -262,18 +262,21 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item">Manage Restaurant / </span>
+                <span class="breadcrumb-item current">Restaurant Detail</span>
+            </div>
+            <div class="page-title">
+                <h1>{data.restaurant.name} - Details</h1>
+                <p>รายละเอียดและข้อมูลของร้านอาหาร</p>
+            </div>
+        </div>
+
         <!-- Restaurant Detail Page -->
         {#if data.restaurant}
-            <div class="page-header">
-                <nav class="breadcrumb">
-                    <span class="breadcrumb-item">Home</span>
-                    <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item">Manage Restaurant</span>
-                    <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-item active">Restaurant Detail</span>
-                </nav>
-                <h2>{data.restaurant.name} - Details</h2>
-            </div>
 
             <div class="restaurant-detail-section">
                 <div class="detail-card">
@@ -340,139 +343,142 @@
                             <p>{data.restaurant.Details || 'No description provided'}</p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Analytics Section -->
-                    <div class="analytics-section">
-                        <div class="section-header">
-                            <h3>Analytics Overview</h3>
+                <!-- Analytics Section - Separate Card -->
+                <div class="detail-card">
+                    <div class="section-header">
+                        <h3>Analytics Overview</h3>
+                    </div>
+                    <div class="analytics-grid">
+                        <div class="analytics-card sales">
+                            <div class="analytics-icon">
+                                <span class="material-symbols-outlined">payments</span>
+                            </div>
+                            <div class="analytics-content">
+                                <h4>Total Sales</h4>
+                                <div class="analytics-value">฿{data.totalSales?.toLocaleString() || '0'}</div>
+                            </div>
                         </div>
-                        <div class="analytics-grid">
-                            <div class="analytics-card sales">
-                                <div class="analytics-icon">
-                                    <span class="material-symbols-outlined">payments</span>
-                                </div>
-                                <div class="analytics-content">
-                                    <h4>Total Sales</h4>
-                                    <div class="analytics-value">฿{data.totalSales?.toLocaleString() || '0'}</div>
-                                </div>
+                        
+                        <div class="analytics-card orders">
+                            <div class="analytics-icon">
+                                <span class="material-symbols-outlined">receipt_long</span>
                             </div>
-                            
-                            <div class="analytics-card orders">
-                                <div class="analytics-icon">
-                                    <span class="material-symbols-outlined">receipt_long</span>
-                                </div>
-                                <div class="analytics-content">
-                                    <h4>Total Orders</h4>
-                                    <div class="analytics-value">{data.analytics?.totalOrders || 0}</div>
-                                </div>
+                            <div class="analytics-content">
+                                <h4>Total Orders</h4>
+                                <div class="analytics-value">{data.analytics?.totalOrders || 0}</div>
                             </div>
-                            
-                            <div class="analytics-card completed">
-                                <div class="analytics-icon">
-                                    <span class="material-symbols-outlined">check_circle</span>
-                                </div>
-                                <div class="analytics-content">
-                                    <h4>Completed Orders</h4>
-                                    <div class="analytics-value">{data.analytics?.completedOrders || 0}</div>
-                                </div>
+                        </div>
+                        
+                        <div class="analytics-card completed">
+                            <div class="analytics-icon">
+                                <span class="material-symbols-outlined">check_circle</span>
                             </div>
-                            
-                            <div class="analytics-card menus">
-                                <div class="analytics-icon">
-                                    <span class="material-symbols-outlined">restaurant_menu</span>
-                                </div>
-                                <div class="analytics-content">
-                                    <h4>Total Menus</h4>
-                                    <div class="analytics-value">{data.menus?.length || 0}</div>
-                                </div>
+                            <div class="analytics-content">
+                                <h4>Completed Orders</h4>
+                                <div class="analytics-value">{data.analytics?.completedOrders || 0}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-card menus">
+                            <div class="analytics-icon">
+                                <span class="material-symbols-outlined">restaurant_menu</span>
+                            </div>
+                            <div class="analytics-content">
+                                <h4>Total Menus</h4>
+                                <div class="analytics-value">{data.menus?.length || 0}</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Recent Orders Section -->
-                    <div class="recent-orders-section">
-                        <div class="section-header">
-                            <h3>Recent Orders</h3>
-                        </div>
-                        <div class="orders-container">
-                            {#if data.recentOrders && data.recentOrders.length > 0}
-                                {#each data.recentOrders.slice(0, 5) as order}
-                                    <div class="order-card">
-                                        <div class="order-header">
-                                            <div class="order-id">#{order.id.slice(-8)}</div>
-                                            <div class="order-status status-{order.Status?.toLowerCase()}">
-                                                {order.Status}
-                                            </div>
-                                        </div>
-                                        <div class="order-details">
-                                            <div class="order-amount">฿{order.Total_Amount?.toLocaleString() || '0'}</div>
-                                            <div class="order-date">
-                                                {new Date(order.created).toLocaleDateString('en-US', { 
-                                                    month: 'short', 
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </div>
-                                        </div>
-                                        {#if order.Menu_ID && order.Menu_ID.length > 0}
-                                            <div class="order-items">
-                                                Items: {order.Menu_ID.length}
-                                            </div>
-                                        {/if}
-                                    </div>
-                                {/each}
-                            {:else}
-                                <div class="no-orders">
-                                    <span class="material-symbols-outlined">receipt</span>
-                                    <p>No recent orders</p>
-                                </div>
-                            {/if}
-                        </div>
+                <!-- Popular Menus Section - Separate Card (moved up before Recent Orders) -->
+                <div class="detail-card">
+                    <div class="section-header">
+                        <h3>Popular Menus</h3>
+                        {#if data.popularMenus && data.popularMenus.length === 0}
+                            <span class="section-subtitle">No data available</span>
+                        {:else}
+                            <span class="section-subtitle">{data.popularMenus?.length || 0} items</span>
+                        {/if}
                     </div>
-
-                    <!-- Popular Menus Section -->
-                    <div class="popular-menus-section">
-                        <div class="section-header">
-                            <h3>Popular Menus</h3>
-                            {#if data.popularMenus && data.popularMenus.length === 0}
-                                <span class="section-subtitle">No data available</span>
-                            {:else}
-                                <span class="section-subtitle">{data.popularMenus?.length || 0} items</span>
-                            {/if}
-                        </div>
-                        <div class="menus-container">
-                            {#if data.popularMenus && data.popularMenus.length > 0}
-                                {#each data.popularMenus as menu}
-                                    <div class="menu-card">
-                                        <div class="menu-info">
-                                            <h4>{menu.menuName || 'Unknown Menu'}</h4>
-                                            <div class="menu-details">
-                                                {#if menu.price && menu.price > 0}
-                                                    <span class="menu-price">฿{menu.price}</span>
-                                                {:else}
-                                                    <span class="menu-price">Price not set</span>
-                                                {/if}
-                                                <span class="menu-id">ID: {menu.menuId}</span>
-                                            </div>
-                                        </div>
-                                        <div class="menu-stats">
-                                            <div class="orders-count">
-                                                <span class="material-symbols-outlined">shopping_cart</span>
-                                                {menu.totalOrdered} orders
-                                            </div>
+                    <div class="menus-container">
+                        {#if data.popularMenus && data.popularMenus.length > 0}
+                            {#each data.popularMenus as menu}
+                                <div class="menu-card">
+                                    <div class="menu-info">
+                                        <h4>{menu.menuName || 'Unknown Menu'}</h4>
+                                        <div class="menu-details">
+                                            {#if menu.price && menu.price > 0}
+                                                <span class="menu-price">฿{menu.price}</span>
+                                            {:else}
+                                                <span class="menu-price">Price not set</span>
+                                            {/if}
+                                            <span class="menu-id">ID: {menu.menuId}</span>
                                         </div>
                                     </div>
-                                {/each}
-                            {:else}
-                                <div class="no-menus">
-                                    <span class="material-symbols-outlined">restaurant_menu</span>
-                                    <p>No popular menus data</p>
+                                    <div class="menu-stats">
+                                        <div class="orders-count">
+                                            <span class="material-symbols-outlined">shopping_cart</span>
+                                            {menu.totalOrdered} orders
+                                        </div>
+                                    </div>
                                 </div>
-                            {/if}
-                        </div>
+                            {/each}
+                        {:else}
+                            <div class="no-menus">
+                                <span class="material-symbols-outlined">restaurant_menu</span>
+                                <p>No popular menus data</p>
+                            </div>
+                        {/if}
                     </div>
+                </div>
 
+                <!-- Recent Orders Section - Separate Card (moved down after Popular Menus) -->
+                <div class="detail-card">
+                    <div class="section-header">
+                        <h3>Recent Orders</h3>
+                    </div>
+                    <div class="orders-container">
+                        {#if data.recentOrders && data.recentOrders.length > 0}
+                            {#each data.recentOrders.slice(0, 5) as order}
+                                <div class="order-card">
+                                    <div class="order-header">
+                                        <div class="order-id">#{order.id.slice(-8)}</div>
+                                        <div class="order-status status-{order.Status?.toLowerCase()}">
+                                            {order.Status}
+                                        </div>
+                                    </div>
+                                    <div class="order-details">
+                                        <div class="order-amount">฿{order.Total_Amount?.toLocaleString() || '0'}</div>
+                                        <div class="order-date">
+                                            {new Date(order.created).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </div>
+                                    </div>
+                                    {#if order.Menu_ID && order.Menu_ID.length > 0}
+                                        <div class="order-items">
+                                            Items: {order.Menu_ID.length}
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/each}
+                        {:else}
+                            <div class="no-orders">
+                                <span class="material-symbols-outlined">receipt</span>
+                                <p>No recent orders</p>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+
+                <!-- Action Buttons - Separate Card -->
+                <div class="detail-card">
                     <div class="detail-footer">
                         <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
                             <span class="material-symbols-outlined">arrow_back</span>
@@ -1105,15 +1111,16 @@
 
     /* Section Headers */
     .section-header {
-        padding: 0 30px;
-        margin-bottom: 20px;
+        padding: 24px 30px 20px 30px;
         border-bottom: 1px solid #eee;
-        padding-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .section-header h3 {
         color: #333;
-        margin: 0 0 5px 0;
+        margin: 0;
         font-size: 20px;
         font-weight: 600;
     }
@@ -1207,9 +1214,8 @@
 
     .orders-container {
         display: grid;
-        gap: 1px;
+        gap: 12px;
         padding: 0 30px 30px 30px;
-        background: #f8f9fa;
     }
 
     .order-card {
@@ -1315,9 +1321,8 @@
 
     .menus-container {
         display: grid;
-        gap: 1px;
+        gap: 12px;
         padding: 0 30px 30px 30px;
-        background: #f8f9fa;
     }
 
     .menu-card {
@@ -1403,6 +1408,15 @@
         align-items: center;
     }
 
+    /* Card Spacing */
+    .restaurant-detail-section .detail-card {
+        margin-bottom: 24px;
+    }
+
+    .restaurant-detail-section .detail-card:last-child {
+        margin-bottom: 0;
+    }
+
     @media (max-width: 768px) {
         .analytics-grid {
             grid-template-columns: 1fr;
@@ -1417,5 +1431,52 @@
             width: 100%;
             justify-content: center;
         }
+    }
+
+    .main-content {
+        margin-left: 250px;
+        margin-top: 60px;
+        padding: 24px;
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+        background: #f5f7fa !important;
+    }
+
+    /* Header Section */
+    .header-section {
+        width: calc(100% + 48px);
+        padding: 20px 24px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
+    }
+
+    .breadcrumb-item.current {
+        color: #333438;
+    }
+
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
+    }
+
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
+        margin: 0;
     }
 </style>

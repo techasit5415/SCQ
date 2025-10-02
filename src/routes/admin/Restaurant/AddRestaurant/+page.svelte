@@ -127,16 +127,17 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Add Restaurant Page -->
-        <div class="page-header">
-            <nav class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item">Manage Restaurant</span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item active">Add Restaurant</span>
-            </nav>
-            <h2>Add New Restaurant</h2>
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item">Manage Restaurant / </span>
+                <span class="breadcrumb-item current">Add Restaurant</span>
+            </div>
+            <div class="page-title">
+                <h1>Add New Restaurant</h1>
+                <p>เพิ่มร้านอาหารใหม่เข้าสู่ระบบ</p>
+            </div>
         </div>
 
         <!-- Success Popup -->
@@ -337,47 +338,50 @@
         position: relative;
     }
 
-    /* Main Content */
     .main-content {
         margin-left: 250px;
         margin-top: 60px;
-        padding: 30px 40px 40px 40px;
+        padding: 24px;
         min-height: calc(100vh - 60px);
-        width: calc(100vw - 250px); /* กำหนดความกว้างให้พอดี */
-        overflow-y: auto; /* อนุญาตให้ scroll ในแนวตั้งเฉพาะ main content */
-        overflow-x: hidden; /* ป้องกัน horizontal scroll */
+        overflow-y: auto;
+        background: #f5f7fa !important;
     }
 
-    /* Page Header */
-    .page-header {
-        margin-bottom: 40px;
-        text-align: center;
+    .header-section {
+        width: calc(100% + 48px);
+        padding: 20px 24px;
+        background: white;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {
+        margin-bottom: 10px;
+    }
+
+    .breadcrumb-item {
+        color: #95969A;
         font-size: 13px;
-        color: #888;
-        margin-bottom: 12px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        font-weight: 400;
     }
 
-    .breadcrumb-item.active {
-        color: #ff8c00;
-        font-weight: 600;
+    .breadcrumb-item.current {
+        color: #333438;
     }
 
-    .breadcrumb-separator {
-        margin: 0 8px;
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
     }
 
-    .page-header h2 {
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
-        font-size: 32px;
-        font-weight: 700;
-        color: #2c3e50;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     /* Success Popup */

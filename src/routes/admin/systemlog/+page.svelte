@@ -126,7 +126,7 @@
     <AdminSidebar activeMenu="systemLog" />
     
     <!-- Main Content -->
-    <div class="content">
+    <main class="main-content">
         <!-- Breadcrumb and Title -->
         <div class="header-section">
             <div class="breadcrumb">
@@ -268,7 +268,7 @@
                 {/if}
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <style>
@@ -277,9 +277,7 @@
     .system-log {
         width: 100%;
         height: 100vh;
-        position: relative;
-        background: white;
-        overflow: hidden;
+        background: #f5f7fa !important;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
@@ -287,29 +285,26 @@
         background: #f5f7fa !important;
         margin: 0;
         padding: 0;
-        overflow: hidden;
+        overflow-x: hidden;
     }
 
-    :global(html) {
-        overflow: hidden;
-    }
-
-    .content {
-        width: calc(100% - 256px);
-        height: calc(100vh - 60px);
-        margin-left: 256px;
+    .main-content {
+        margin-left: 250px;
         margin-top: 60px;
-        background: #f5f7fa;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        padding: 24px;
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+        background: #f5f7fa !important;
     }
 
     .header-section {
-        width: 100%;
-        padding: 20px;
+        width: calc(100% + 48px);
+        padding: 20px 24px;
         background: white;
         border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
     .breadcrumb {

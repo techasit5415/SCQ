@@ -115,12 +115,12 @@ export const load: PageServerLoad = async ({ cookies }) => {
       
       // คำนวณ Total Sales จากการชำระที่สำเร็จ
       reportsData.totalSales = payments
-        .filter(payment => payment.status === 'Sus')
+        .filter(payment => payment.status === 'Success')
         .reduce((sum, payment) => sum + (payment.Total_Amount || 0), 0);
       
       // คำนวณ Payment Methods จาก Payment table
       const paymentMethodCounts = payments
-        .filter(payment => payment.status === 'Sus')
+        .filter(payment => payment.status === 'Success')
         .reduce((acc, payment) => {
           const method = payment.Method_Payment;
           if (method === 'Cash') acc.cash++;
@@ -133,7 +133,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
       
       // คำนวณยอดขายของแต่ละร้านจาก Payment data
       const shopSalesMap = payments
-        .filter(payment => payment.status === 'Sus')
+        .filter(payment => payment.status === 'Success')
         .reduce((acc, payment) => {
           const shopId = payment.Shop_ID;
           const shopName = payment.expand?.Shop_ID?.name || 'Unknown Shop';
@@ -220,7 +220,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
       
       // ดึง Payments เพื่อหา Active Users (ผู้ใช้ที่มีการทำรายการ)
       const payments = await pb.collection('Payment').getFullList({
-        filter: 'status = "Sus"'
+        filter: 'status = "Success"'
       });
       
       const activeUserIds = new Set(payments.map(p => p.User_ID));
