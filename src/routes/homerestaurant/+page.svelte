@@ -6,7 +6,7 @@
     export let activeOrderIdx = 0;
 
     function handleRestaurantClick(rest) {
-        goto("/homerestaurant/restaurant/{rest}/dashboard")
+        goto(`/homerestaurant/restaurant/${rest}/dashboard`);
     }
 </script>
 
@@ -58,3 +58,4 @@
         font-weight: 500;
     }
 </style>
+
