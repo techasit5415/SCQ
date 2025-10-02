@@ -51,62 +51,6 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.log('Admin auth failed, trying without auth...');
     }
     
-    // // ดึงจำนวน Users ทั้งหมด
-    // let usersData = [];
-    // try {
-    //   console.log('Fetching users count...');
-    //   const usersCount = await pb.collection('users').getFullList();
-    //   console.log('Users count result:', usersCount);
-    //   console.log('Users totalItems:', usersCount.length);
-    //   stats.users = usersCount.length;
-    //   usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
-    // } catch (error) {
-    //   console.log('Error fetching users:', error);
-    // }
-
-    // // ดึงจำนวน Orders ทั้งหมด
-    // try {
-    //   console.log('Fetching orders count...');
-    //   const ordersCount = await pb.collection('Order').getFullList();
-    //   console.log('Orders count result:', ordersCount);
-    //   stats.orders = ordersCount.length;
-    // } catch (error) {
-    //   console.log('Error fetching orders:', error);
-    // }
-
-    // // ดึงจำนวน Menu/Dishes ทั้งหมด
-    // try {
-    //   console.log('Fetching menu count...');
-    //   const menuCount = await pb.collection('Menu').getFullList();
-    //   console.log('Menu count result:', menuCount);
-    //   stats.dishes = menuCount.length;
-    // } catch (error) {
-    //   console.log('Error fetching menu:', error);
-    // }
-
-    // // ดึงจำนวน Canceled Orders (Status = "error")
-    // try {
-    //   console.log('Fetching canceled orders count...');
-    //   const canceledCount = await pb.collection('Order').getFullList({
-    //     filter: 'Status = "error"'
-    //   });
-    //   console.log('Canceled count result:', canceledCount);
-    //   stats.canceled = canceledCount.length;
-    // } catch (error) {
-    //   console.log('Error fetching canceled orders:', error);
-    // }
-
-    // // ดึงข้อมูล Shops สำหรับแสดงในตาราง
-    // try {
-    //   console.log('Fetching shops...');
-    //   shops = await pb.collection('Shop').getFullList({
-    //     expand: 'User_Owner_ID'
-    //   });
-    //   console.log('Shops result:', shops);
-    // } catch (error) {
-    //   console.log('Error fetching shops:', error);
-    // }
-
     // ดึงข้อมูล New Orders
     try {
       console.log('Fetching new orders count...');

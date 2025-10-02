@@ -56,22 +56,53 @@
             </nav>
             <h2>Reports</h2>
         </div>
-        <div class="dash1">
-            <div class="dash1-com1">
-                <p style="margin-left: 5px;">New Order</p>
+        <div class="reports-components">
+            <div class="stats-grid">
+                <div class="stats-box">
+                    <div class="stat-header">
+                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <h3>Toatal Sales</h3>
+                        </div>
+                    <div class="stat-number">{data.restaurant?.newOrder || 0}</div>
+                </div>
+                <div class="stats-box">
+                    <div class="stat-header">
+                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <h3>Total Orders</h3>
+                        </div>
+                    <div class="stat-number">{data.restaurant?.inProgressOrder || 0}</div>
+                </div>
+                <div class="stats-box">
+                    <div class="stat-header">
+                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <h3>Total Dishes</h3>
+                        </div>
+                    <div class="stat-number">{data.restaurant?.completedOrder || 0}</div>
+                </div>
+                <div class="stats-box">
+                    <div class="stat-header">
+                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <h3>Total Customers</h3>
+                        </div>
+                    <div class="stat-number">฿ {data.restaurant?.todaySale || 0}</div>
+                </div>
             </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">In Progess Order</p>
+            <!-- <div class="dash2">
+                <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
+            </div> -->
+            
+            <!-- Chart Section -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3>Chart Orders</h3>
+                    <select class="chart-filter">
+                        <option>Show by days</option>
+                    </select>
+                </div>
+                <div class="chart-placeholder">
+                    <p>Chart will be displayed here</p>
+                </div>
             </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">Completed Order</p>
-            </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">Today's Sales</p>
-            </div>
-        </div>
-        <div class="dash2">
-            <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
         </div>
     </main>
 </div>
@@ -140,24 +171,95 @@
         color: #333;
     }
 
-    .dash1 {
-        margin-top: 10px;
+    /* About Dashboard */
+    .reports-components {
+        display: grid;
+        gap: 30px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .stats-box {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-header {
         display: flex;
-        height: 100%;
-        width: 100%;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
     }
-    .dash1-com1 {
-        height: 96px;
-        width: 253px;
-        background: rgb(255, 255, 255);
-        margin-left: 17%;
-        border-radius: 15px;
+
+    .stat-header .material-symbols-outlined {
+        color: #ff8c00;
+        font-size: 24px;
     }
-    .dash2 {
-        margin-left: 320px;
-        width: 1300px;
-        height: 200px;
-        border-radius: 15px;
-        background-color: white;
+
+    .stat-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: 600;
+        color: #ff8c00;
+    }
+
+     .chart-section {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .chart-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .chart-filter {
+        padding: 6px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .chart-placeholder {
+        height: 300px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #888;
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+        }
+
+        .dashboard-components {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

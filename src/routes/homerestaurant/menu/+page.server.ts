@@ -71,7 +71,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     
     // Return fallback data if database connection fails
     return {
-      users: [],
+      menus: [],
       cate: {
         category: 0
       }

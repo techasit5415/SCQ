@@ -62,28 +62,28 @@
             <div class="stats-grid">
                 <div class="stats-box">
                     <div class="stat-header">
-                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <!-- <span class="material-symbols-outlined">shopping_cart</span> -->
                             <h3>New Order</h3>
                         </div>
                     <div class="stat-number">{data.restaurant?.newOrder || 0}</div>
                 </div>
                 <div class="stats-box">
                     <div class="stat-header">
-                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <!-- <span class="material-symbols-outlined">shopping_cart</span> -->
                             <h3>In Progress Order</h3>
                         </div>
                     <div class="stat-number">{data.restaurant?.inProgressOrder || 0}</div>
                 </div>
                 <div class="stats-box">
                     <div class="stat-header">
-                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <!-- <span class="material-symbols-outlined">shopping_cart</span> -->
                             <h3>Completed Order</h3>
                         </div>
                     <div class="stat-number">{data.restaurant?.completedOrder || 0}</div>
                 </div>
                 <div class="stats-box">
                     <div class="stat-header">
-                            <span class="material-symbols-outlined">shopping_cart</span>
+                            <!-- <span class="material-symbols-outlined">shopping_cart</span> -->
                             <h3>Today's Sales</h3>
                         </div>
                     <div class="stat-number">฿ {data.restaurant?.todaySale || 0}</div>

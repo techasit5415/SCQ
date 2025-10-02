@@ -46,6 +46,22 @@
             );
         }
     }
+
+    // // สมมุติว่า item.Available เป็น Boolean เช่น true หรือ false
+    // const item = { Available: true }; // หรือ false ก็ได้
+
+    // const checkbox = document.getElementById("toggleSwitch");
+    // checkbox.checked = data.menus.Available; // ตั้งค่าตาม item.Available
+
+    // // ถ้าคุณต้องการให้ทำอะไรบางอย่างเมื่อสลับสถานะ
+    // checkbox.addEventListener('change', function () {
+    //     if (checkbox.checked) {
+    //     console.log("เปิดใช้งาน");
+    //     } else {
+    //     console.log("ปิดใช้งาน");
+    //     }
+    // });
+
 </script>
 
 <!-- on:menuChange={handleMenuChange} -->
@@ -115,14 +131,18 @@
                                     <td>{item.category || "N/A"}</td>
                                     <td>{item.Price || "N/A"}</td>
                                     <td>
-                                        <span
+                                        <!-- <span
                                             class="status-badge"
                                             class:active={item.Available}
                                         >
                                             {item.Available
                                                 ? "Active"
                                                 : "Inactive"}
-                                        </span>
+                                        </span> -->
+                                        <label class="switch">
+                                            <input type="checkbox" id="toggleSwitch">
+                                            <span class="slider round">{item.Available}</span>
+                                        </label>
                                     </td>
                                     <td>
                                         <button
@@ -144,9 +164,9 @@
                             {/each}
                         {:else}
                             <tr>
-                                <td colspan="6" class="no-data"
-                                    >No users found</td
-                                >
+                                <td colspan="6" class="no-data">
+                                    No item found
+                                </td>
                             </tr>
                         {/if}
                     </tbody>
@@ -170,6 +190,7 @@
                         >
                     </button>
                 </div>
+                <div class="line"></div>
                 <table class="category-table">
                     <thead>
                         <tr>
@@ -191,7 +212,7 @@
                                         <button
                                             class="action-btn delete"
                                             on:click={() =>
-                                                handleDeleteItem(item.id)}
+                                            handleDeleteItem(item.id)}
                                         >
                                             Delete
                                         </button>
@@ -200,9 +221,9 @@
                             {/each}
                         {:else}
                             <tr>
-                                <td colspan="6" class="no-data"
-                                    >No users found</td
-                                >
+                                <td colspan="6" class="no-data">
+                                    No category found
+                                </td>
                             </tr>
                         {/if}
                     </tbody>
@@ -413,6 +434,7 @@
         display: flex;
         justify-content: left;
         background-color: #ffffff;
+        margin-bottom: 8px;
     }
     .add-category-btn {
         display: flex;
@@ -426,27 +448,32 @@
         border: none;
         gap: 16px;
     }
+    .line {
+        width: 600px;
+        height: 2px;
+        border-bottom: 2px solid #494A50;
+        margin-bottom: 8px;
+    }
     .category-table {
         width: 600px;
         border-collapse: collapse;
     }
-
-    .category-table th {
-        padding: 12px;
-        text-align: center;
-        border-top: 2px solid #000000;
-        background: #ffffff;
-    }
     
     .category-table td {
         padding: 12px;
-        border-bottom: 1px solid #e0e0e0;
+        border: none;
+        background-color: #EDF0F2;
+        border-top: 8px solid #ffffff;
     }
     .text-left {
         text-align: left;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
     }
     .text-right {
         text-align: right;
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
     }
     .category-table td {
         font-size: 16px;
@@ -455,4 +482,57 @@
     .category-table tbody tr:hover {
         background: #f8f9fa;
     }
+
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        }
+    .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+    input:checked + .slider {
+        background-color: #4CAF50;
+    }
+    input:focus + .slider {
+        box-shadow: 0 0 1px #4CAF50;
+    }
+    input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+    }
+    /* Rounded sliders */
+    .slider.round {
+    border-radius: 34px;
+    }
+    .slider.round:before {
+    border-radius: 50%;
+}
 </style>
