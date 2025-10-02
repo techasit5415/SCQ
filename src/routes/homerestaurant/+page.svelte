@@ -47,7 +47,7 @@
         
         // Navigate to restaurant detail page
         if (restaurant.id) {
-            goto(`/customer/restaurant/${restaurant.id}`);
+            goto(`/homerestaurant/${restaurant.id}`);
         }
     }
     
