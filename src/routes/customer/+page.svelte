@@ -6,6 +6,8 @@
     
     export let data;
     
+
+    
     let isMobile = false;
     
     // Check if device is mobile
@@ -68,8 +70,6 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="content-container">
-
-            
             <!-- Restaurant List -->
             <RestaurantList 
                 restaurants={data.restaurants || []}
@@ -95,6 +95,139 @@
         max-width: 1200px;
         margin: 0 auto;
         min-height: calc(100vh - 70px);
+    }
+    
+    /* Queue Section Styles */
+    .queue-section {
+        margin-bottom: 25px;
+    }
+    
+    .queue-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 25px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        margin-bottom: 20px;
+    }
+    
+    .queue-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .queue-icon {
+        font-size: 28px;
+    }
+    
+    .queue-header h3 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .queue-stats {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        flex: 1;
+    }
+    
+    .stat-number {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #fff;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-divider {
+        width: 1px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 15px;
+    }
+    
+    .user-orders {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .user-orders h4 {
+        margin: 0 0 15px 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .order-id {
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .order-shop {
+        font-size: 12px;
+        opacity: 0.8;
+    }
+    
+    .order-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    
+    .status-in-progress {
+        background: rgba(0, 123, 255, 0.2);
+        color: #007bff;
+        border: 1px solid rgba(0, 123, 255, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
     }
     
     .content-container {

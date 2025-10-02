@@ -51,9 +51,40 @@ export const load = async ({ params }: { params: { id: string } }) => {
             menuItems = []; // ถ้าไม่มีเมนูก็ให้เป็น array ว่าง
         }
 
+        // Fetch reviews for this restaurant
+        let reviews: any[] = [];
+        let averageRating = 0;
+        let totalReviews = 0;
+        
+        try {
+            reviews = await pb.collection('Review').getFullList({
+                filter: `Shop_ID = "${params.id}"`,
+                sort: '-created',
+                expand: 'User_ID'
+            });
+
+            console.log('Found reviews:', reviews.length);
+            
+            if (reviews.length > 0) {
+                // คำนวณคะแนนเฉลี่ย
+                const totalStars = reviews.reduce((sum, review) => sum + (review.Star || 0), 0);
+                averageRating = Math.round((totalStars / reviews.length) * 10) / 10;
+                totalReviews = reviews.length;
+                
+                console.log('Average rating:', averageRating, 'from', totalReviews, 'reviews');
+            }
+            
+        } catch (reviewError) {
+            console.error('Error loading reviews:', reviewError);
+            reviews = [];
+        }
+
         return {
             restaurant,
             menuItems,
+            reviews,
+            averageRating,
+            totalReviews,
             success: true
         };
 

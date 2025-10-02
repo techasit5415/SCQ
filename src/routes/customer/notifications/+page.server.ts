@@ -6,7 +6,7 @@ const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	try {
-		// ใช้ hardcode user ID เหมือนหน้าอื่นๆ
+		// ใช้ User ID เดียวกับที่ใช้ในการสร้าง Order
 		const userId = "5v70v6p91pfakvb";
 		
 		console.log('🔔 Loading notifications for User ID:', userId);
@@ -27,11 +27,11 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${order.id.slice(-8)} ${order.Status ? 'อัปเดตสถานะแล้ว' : 'รอดำเนินการ'}`,
-				status: order.Status ? 'success' : 'pending',
-				amount: order.Total_Price || 0,
+				message: `คำสั่งซื้อ #${order.id.slice(-8)} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
+				status: order.Status === 'Completed' ? 'success' : 'pending',
+				amount: order.Total_Amount || 0,
 				time: order.created,
-				icon: order.Status ? '✅' : '⏳',
+				icon: order.Status === 'Completed' ? '✅' : order.Status === 'In-progress' ? '🍳' : '⏳',
 				read: false
 			});
 		}
@@ -49,11 +49,11 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				id: `payment_${payment.id}`,
 				type: 'payment',
 				title: 'การชำระเงิน',
-				message: `การชำระเงิน #${payment.id.slice(-8)} ${payment.Status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
-				status: payment.Status === 'Success' ? 'success' : 'pending',
-				amount: payment.Total_Price || 0,
+				message: `การชำระเงิน #${payment.id.slice(-8)} ด้วย${payment.Method_Payment} ${payment.status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
+				status: payment.status === 'Success' ? 'success' : 'pending',
+				amount: payment.Total_Amount || 0,
 				time: payment.created,
-				icon: payment.Status === 'Success' ? '💰' : '💳',
+				icon: payment.status === 'Success' ? '💰' : '💳',
 				read: false
 			});
 		}

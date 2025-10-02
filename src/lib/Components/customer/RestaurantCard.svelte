@@ -1,10 +1,15 @@
 <script>
     import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+    import { goto } from '$app/navigation';
     import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
     export let restaurant;
     export let index = 0;
     
     const dispatch = createEventDispatcher();
+
+    function handleViewReviews() {
+        goto(`/customer/restaurant/${restaurant.id}/reviews`);
+    }
     
     // State for image loading
     let imageLoaded = false;
@@ -68,11 +73,15 @@
         }, 3000);
     }
     
-    // Calculate rating display
-    $: rating = restaurant.rating || 3.5; // Default rating
-    $: reviewCount = restaurant.review_count || Math.floor(Math.random() * 200) + 50; // Mock review count
+    // Calculate rating display - ใช้ข้อมูลจริงจาก server
+    $: rating = restaurant.averageRating || 0;
+    $: reviewCount = restaurant.totalReviews || 0;
     $: deliveryTime = restaurant.delivery_time || '15-30';
-    $: QueueM = restaurant.delivery_fee || Math.floor(Math.random() * 20) + 5; // Mock delivery fee
+    $: queueCount = restaurant.queueCount || 0; // จำนวนคิวจริงจาก server
+    
+
+    
+
     
     // Get restaurant image with proper URL handling
     $: restaurantImage = getRestaurantImage(restaurant);
@@ -227,13 +236,34 @@
         
         <div class="restaurant-details">
             <div class="rating">
-                <span class="star">⭐</span>
-                <span class="rating-text">{rating.toFixed(1)} ({reviewCount})</span>
-                <span class="category">{restaurant.Type_Shop || ''}</span>
+                <div class="stars">
+                    {#each [1,2,3,4,5] as starNum}
+                        <span class="star {starNum <= Math.round(rating) ? 'filled' : 'empty'}">★</span>
+                    {/each}
+                </div>
+                <button 
+                    class="rating-text clickable"
+                    on:click|stopPropagation={() => handleViewReviews()}
+                >
+                    {#if reviewCount > 0}
+                        {rating.toFixed(1)} ({reviewCount} รีวิว)
+                    {:else}
+                        ยังไม่มีรีวิว
+                    {/if}
+                </button>
+
+
             </div>
             
-            <div class="Queue">
-                <span class="Queue">{QueueM} Queue</span>
+            <div class="queue-info">
+                <span class="queue-icon">🍳</span>
+                <span class="queue-text">
+                    {#if queueCount > 0}
+                        {queueCount} คิว
+                    {:else}
+                        ไม่มีคิว
+                    {/if}
+                </span>
             </div>
         </div>
         
@@ -398,20 +428,72 @@
         margin-top: 4px;
     }
     
-    .rating {
+    /* Queue Info Styles */
+    .queue-info {
         display: flex;
         align-items: center;
         gap: 4px;
+        font-size: 12px;
+        color: #666;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .queue-icon {
+        font-size: 12px;
+    }
+    
+    .queue-text {
+        font-weight: 500;
+    }
+    
+    .rating {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .stars {
+        display: flex;
+        gap: 1px;
     }
     
     .star {
-        font-size: 14px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+    }
+    
+    .star.filled {
+        color: #FFD700 !important;
+        filter: brightness(1.2);
+        text-shadow: 0 0 3px rgba(255, 215, 0, 0.8);
+    }
+    
+    .star.empty {
+        color: #ddd !important;
+        opacity: 0.5;
     }
     
     .rating-text {
         font-size: 12px;
         color: #666;
         font-weight: 500;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        transition: color 0.2s ease;
+    }
+
+    .rating-text:hover {
+        color: #ff6b35;
+    }
+
+    .rating-text.clickable {
+        cursor: pointer;
     }
     
     .category {
@@ -503,6 +585,16 @@
         .delivery-fee {
             font-size: 10px;
             padding: 3px 6px;
+        }
+        
+        .queue-info {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+        
+        .queue-info {
+            font-size: 10px;
+            padding: 2px 6px;
         }
         
         .restaurant-description {

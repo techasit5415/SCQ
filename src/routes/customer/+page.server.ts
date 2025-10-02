@@ -18,10 +18,73 @@ export const load: PageServerLoad = async ({ cookies }) => {
         });
         
         console.log(`Successfully loaded ${restaurants.length} restaurants`);
-        console.log('First restaurant data:', restaurants[0]); // Debug first restaurant
+        
+        // ดึงรีวิวทั้งหมดแค่ครั้งเดียว
+        let allReviews = [];
+        try {
+            allReviews = await pb.collection('Review').getFullList();
+            console.log(`📊 Found ${allReviews.length} total reviews`);
+        } catch (reviewError) {
+            console.error('Error loading reviews:', reviewError);
+            allReviews = [];
+        }
+        
+        // จัดกลุ่มรีวิวตาม Shop_ID
+        const reviewsByShop = allReviews.reduce((acc, review) => {
+            if (!acc[review.Shop_ID]) {
+                acc[review.Shop_ID] = [];
+            }
+            acc[review.Shop_ID].push(review);
+            return acc;
+        }, {});
+        
+        // ดึงข้อมูลคิวจริงจากฐานข้อมูล - นับ Order ที่มีสถานะ In-progress
+        let queueByShop: any = {};
+        try {
+            const inProgressOrders = await pb.collection('Order').getFullList({
+                filter: 'Status = "In-progress"',
+                fields: 'Shop_ID'
+            });
+            
+            console.log('🍳 Found in-progress orders:', inProgressOrders.length);
+            
+            // นับจำนวนคิวต่อร้าน
+            queueByShop = inProgressOrders.reduce((acc: any, order: any) => {
+                acc[order.Shop_ID] = (acc[order.Shop_ID] || 0) + 1;
+                return acc;
+            }, {});
+            
+            console.log('🍳 Queue by shop:', queueByShop);
+        } catch (queueError) {
+            console.error('Error loading queue info:', queueError);
+        }
+        
+        // คำนวณคะแนนเฉลี่ยและจำนวนคิวสำหรับแต่ละร้าน
+        const restaurantsWithRatings = restaurants.map((restaurant) => {
+            const shopReviews = reviewsByShop[restaurant.id] || [];
+            let averageRating = 0;
+            
+            if (shopReviews.length > 0) {
+                const totalStars = shopReviews.reduce((sum: number, review: any) => sum + (review.Star || 0), 0);
+                averageRating = Math.round((totalStars / shopReviews.length) * 10) / 10;
+                console.log(`⭐ ${restaurant.name}: ${averageRating} ดาว (${shopReviews.length} รีวิว)`);
+            }
+            
+            const queueCount = queueByShop[restaurant.id] || 0;
+            console.log(`🍳 ${restaurant.name}: ${queueCount} คิว`);
+            
+            return {
+                ...restaurant,
+                averageRating,
+                totalReviews: shopReviews.length,
+                queueCount
+            };
+        });
+        
+        console.log('First restaurant with ratings:', restaurantsWithRatings[0]); // Debug first restaurant
         
         return {
-            restaurants: restaurants || [],
+            restaurants: restaurantsWithRatings || [],
             success: true
         };
         

@@ -22,7 +22,7 @@ function getPaymentMethodName(method: string): string {
 export const load: PageServerLoad = async ({ cookies }) => {
 	try {
 		// ดึง User ID จาก session
-		const userId = cookies.get('session') || "2giyhm2due2kb1g"; // fallback สำหรับ debug
+		const userId = "5v70v6p91pfakvb"; // fallback สำหรับ debug
 		
 		console.log('🔍 Loading points for User ID:', userId);
 		
@@ -61,7 +61,7 @@ export const actions: Actions = {
 			
 			// ดึง User ID จาก session cookie
 			// const userId = cookies.get('session');
-			const userId = "2giyhm2due2kb1g";
+			const userId = "userId";
 			if (!userId) {
 				throw new Error('User not authenticated - No session found');
 			}
@@ -95,16 +95,35 @@ export const actions: Actions = {
 				Status: "Pending"
 			};
 			
-			// เพิ่ม optional fields ทีละตัว
-			if (orderData.note && orderData.note.trim()) {
-				createData.Note = orderData.note.trim();
-			}
+			console.log('📝 Final createData (before Note):', JSON.stringify(createData, null, 2));
 			
-			console.log('📝 Final createData:', JSON.stringify(createData, null, 2));
-			
-			// สร้าง Order record
+			// สร้าง Order record ก่อน
 			const orderRecord = await pb.collection('Order').create(createData);
 			console.log('✅ Order created:', orderRecord.id);
+			
+			// เพิ่ม Note หลังจากสร้าง Order เสร็จแล้ว
+			if (orderData.note && orderData.note.trim()) {
+				try {
+					console.log('📝 Creating Note record with Details:', orderData.note.trim());
+					
+					// สร้าง Note record โดยใช้ field ที่ถูกต้อง
+					const noteRecord = await pb.collection('Note').create({
+						Details: orderData.note.trim(),
+						Order_ID: orderRecord.id
+					});
+					
+					// อัพเดท Order ให้เชื่อมโยงกับ Note
+					await pb.collection('Order').update(orderRecord.id, {
+						Note: noteRecord.id
+					});
+					
+					console.log('✅ Note created and linked:', noteRecord.id);
+				} catch (noteError: any) {
+					console.error('❌ Failed to create Note:', noteError);
+					console.error('❌ Note error details:', noteError?.message, noteError?.data);
+					// ถ้าสร้าง Note ไม่ได้ ก็ยังมี Order อยู่
+				}
+			}
 			
 		// สร้าง Payment record ที่เชื่อมโยงกับ Order
 		const paymentData = {

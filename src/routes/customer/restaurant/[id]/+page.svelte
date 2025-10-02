@@ -7,7 +7,7 @@
 	
 	export let data;
 	const pbUrl = PUBLIC_POCKETBASE_URL;
-	const { restaurant, menuItems } = data;
+	const { restaurant, menuItems, reviews, averageRating, totalReviews } = data;
 	
 	let searchTerm = '';
 	let activeTab = 'เมนูแนะนำ';
@@ -77,9 +77,17 @@
 <div class="restaurant-info-card">
 	<h1>{restaurant.name}</h1>
 	<div class="rating-info">
-		<span class="star">⭐</span>
-		<span class="rating">4.5 (123)</span>
-		<span class="arrow">➤</span>
+		<div class="stars">
+			{#each Array(5) as _, i}
+				<span class="star {i < Math.round(averageRating) ? 'filled' : 'empty'}">⭐</span>
+			{/each}
+		</div>
+		<button 
+			class="rating-text clickable-rating"
+			on:click={() => goto(`/customer/restaurant/${restaurant.id}/reviews`)}
+		>
+			{averageRating || 0} ({totalReviews || 0} รีวิว)
+		</button>
 	</div>
 </div>
 
@@ -129,6 +137,78 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Reviews Section -->
+<!-- <div class="reviews-section">
+	<h2 class="section-title">
+		รีวิวและความคิดเห็น
+		{#if totalReviews > 0}
+			<span class="review-count">({totalReviews})</span>
+		{/if}
+	</h2>
+	
+	{#if reviews && reviews.length > 0}
+		<div class="reviews-list">
+			{#each reviews.slice(0, 5) as review}
+				<div class="review-item">
+					<div class="review-header">
+						<div class="reviewer-info">
+							<div class="reviewer-avatar">
+								{#if review.expand?.User_ID?.avatar}
+									<img 
+										src="{pbUrl}/api/files/_pb_users_auth_/{review.expand.User_ID.id}/{review.expand.User_ID.avatar}" 
+										alt="รูปผู้รีวิว"
+									/>
+								{:else}
+									<span class="default-avatar">👤</span>
+								{/if}
+							</div>
+							<div class="reviewer-details">
+								<h4 class="reviewer-name">
+									{review.expand?.User_ID?.name || 'ผู้ใช้ไม่ระบุชื่อ'}
+								</h4>
+								<div class="review-stars">
+									{#each Array(5) as _, i}
+										<span class="star {i < (review.Star || 0) ? 'filled' : 'empty'}">⭐</span>
+									{/each}
+								</div>
+							</div>
+						</div>
+						<div class="review-date">
+							{new Date(review.created).toLocaleDateString('th-TH')}
+						</div>
+					</div>
+					
+					{#if review.Description}
+						<p class="review-comment">{review.Description}</p>
+					{/if}
+				</div>
+			{/each}
+			
+			{#if reviews.length > 5}
+				<button 
+					class="view-all-reviews"
+					on:click={() => goto(`/customer/restaurant/${restaurant.id}/reviews`)}
+				>
+					ดูรีวิวทั้งหมด ({reviews.length} รีวิว)
+				</button>
+			{:else if reviews.length > 0}
+				<button 
+					class="view-all-reviews"
+					on:click={() => goto(`/customer/restaurant/${restaurant.id}/reviews`)}
+				>
+					ดูรีวิวทั้งหมด
+				</button>
+			{/if}
+		</div>
+	{:else}
+		<div class="empty-reviews">
+			<div class="empty-icon">📝</div>
+			<p>ยังไม่มีรีวิว</p>
+			<p class="empty-subtitle">เป็นคนแรกที่รีวิวร้านนี้!</p>
+		</div>
+	{/if}
+</div> -->
 
 <!-- Cart Button (Fixed) -->
 <button 
@@ -215,12 +295,51 @@
 	.rating-info {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 12px;
 		color: #666;
 	}
 	
+	.stars {
+		display: flex;
+		gap: 2px;
+	}
+	
 	.star {
-		font-size: 1.2rem;
+		font-size: 1rem;
+		transition: all 0.2s ease;
+	}
+	
+	.star.filled {
+		color: #FFD700;
+		filter: brightness(1.2);
+	}
+	
+	.star.empty {
+		color: #ddd;
+	}
+	
+	.rating-text {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #666;
+	}
+
+	.clickable-rating {
+		background: none;
+		border: none;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #666;
+		cursor: pointer;
+		text-decoration: underline;
+		transition: color 0.2s ease;
+		padding: 4px 8px;
+		border-radius: 4px;
+	}
+
+	.clickable-rating:hover {
+		color: #ff6b35;
+		background: #f8f9fa;
 	}
 	
 	.rating {
@@ -341,6 +460,135 @@
 	
 	.cart-button:hover {
 		transform: scale(1.1);
+	}
+	
+	/* Reviews Section */
+	.reviews-section {
+		background: white;
+		margin: 20px 16px;
+		padding: 20px;
+		border-radius: 16px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+	}
+	
+	.review-count {
+		color: #666;
+		font-weight: normal;
+		font-size: 0.9rem;
+	}
+	
+	.reviews-list {
+		margin-top: 16px;
+	}
+	
+	.review-item {
+		padding: 16px 0;
+		border-bottom: 1px solid #f0f0f0;
+	}
+	
+	.review-item:last-child {
+		border-bottom: none;
+	}
+	
+	.review-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 8px;
+	}
+	
+	.reviewer-info {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+	}
+	
+	.reviewer-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		overflow: hidden;
+		background: #f0f0f0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.reviewer-avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	
+	.default-avatar {
+		font-size: 18px;
+		color: #999;
+	}
+	
+	.reviewer-name {
+		font-size: 0.9rem;
+		font-weight: 600;
+		margin: 0 0 4px 0;
+		color: #333;
+	}
+	
+	.review-stars {
+		display: flex;
+		gap: 1px;
+	}
+	
+	.review-stars .star {
+		font-size: 0.8rem;
+	}
+	
+	.review-date {
+		font-size: 0.8rem;
+		color: #999;
+		flex-shrink: 0;
+	}
+	
+	.review-comment {
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: #666;
+		margin: 0;
+	}
+	
+	.view-all-reviews {
+		width: 100%;
+		padding: 12px;
+		background: #f8f9fa;
+		border: none;
+		border-radius: 8px;
+		color: #ff6b35;
+		font-weight: 500;
+		cursor: pointer;
+		margin-top: 16px;
+		transition: background 0.2s ease;
+	}
+	
+	.view-all-reviews:hover {
+		background: #e9ecef;
+	}
+	
+	.empty-reviews {
+		text-align: center;
+		padding: 40px 20px;
+		color: #999;
+	}
+	
+	.empty-icon {
+		font-size: 3rem;
+		margin-bottom: 16px;
+	}
+	
+	.empty-reviews p {
+		margin: 8px 0;
+	}
+	
+	.empty-subtitle {
+		font-size: 0.9rem;
+		opacity: 0.7;
 		box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
 	}
 

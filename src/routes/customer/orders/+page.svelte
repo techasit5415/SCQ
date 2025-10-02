@@ -111,8 +111,16 @@
 							</h3>
 							<p class="order-date">{formatDate(order.created)}</p>
 						</div>
-						<div class="order-status" style="color: {getStatusColor(order.Status)}">
-							{getStatusText(order.Status)}
+						<div class="order-status-section">
+							<div class="order-status" style="color: {getStatusColor(order.Status)}">
+								{getStatusText(order.Status)}
+							</div>
+							{#if order.queuePosition && (order.Status === 'Pending' || order.Status === 'In-progress')}
+								<div class="queue-position">
+									<span class="queue-icon">🍳</span>
+									<span class="queue-text">คิวที่ {order.queuePosition}</span>
+								</div>
+							{/if}
 						</div>
 					</div>
 
@@ -338,6 +346,13 @@
 		font-family: 'Noto Sans Thai', sans-serif;
 	}
 
+	.order-status-section {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 8px;
+	}
+
 	.order-status {
 		font-size: 0.875rem;
 		font-weight: 600;
@@ -345,6 +360,26 @@
 		border-radius: 12px;
 		background: rgba(255, 107, 53, 0.1);
 		font-family: 'Noto Sans Thai', sans-serif;
+	}
+	
+	.queue-position {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		background: #f8f9fa;
+		padding: 4px 8px;
+		border-radius: 12px;
+		border: 1px solid #e9ecef;
+	}
+	
+	.queue-icon {
+		font-size: 12px;
+	}
+	
+	.queue-text {
+		font-size: 11px;
+		font-weight: 600;
+		color: #666;
 	}
 
 	.menu-items {

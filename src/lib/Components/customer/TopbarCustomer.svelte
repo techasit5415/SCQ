@@ -42,7 +42,8 @@
                 <button 
                     class="nav-icon notification-btn"
                     on:click={handleNotificationClick}
-                    aria-label="Notifications"
+                    aria-label="การแจ้งเตือน"
+                    title="การแจ้งเตือน"
                 >
                     <span class="material-symbols-outlined">notifications</span>
                 </button>
@@ -52,7 +53,8 @@
                 <button 
                     class="nav-icon bookmark-btn"
                     on:click={handleBookmarkClick}
-                    aria-label="Bookmarks"
+                    aria-label="คำสั่งซื้อ"
+                    title="ประวัติคำสั่งซื้อ"
                 >
                     <span class="material-symbols-outlined">bookmark</span>
                 </button>
@@ -62,7 +64,8 @@
                 <button 
                     class="nav-icon profile-btn"
                     on:click={handleProfileClick}
-                    aria-label="Profile"
+                    aria-label="โปรไฟล์"
+                    title="โปรไฟล์ของฉัน"
                 >
                     <span class="material-symbols-outlined">account_circle</span>
                 </button>
