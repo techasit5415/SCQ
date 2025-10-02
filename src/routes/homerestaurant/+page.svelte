@@ -4,6 +4,10 @@
 
     export let data;
     export let activeOrderIdx = 0;
+
+    function handleRestaurantClick(rest) {
+        goto("/homerestaurant/restaurant/{rest}/dashboard")
+    }
 </script>
 
 <div class="customer-layout">
@@ -14,7 +18,10 @@
         <tbody>
             {#if data.shops && data.shops.length > 0}
                 {#each data.shops as item, index}
-                    <tr>
+                    <tr 
+                        class:active={activeOrderIdx === index}
+                        on:click={() => handleRestaurantClick(item.id)}
+                    >
                         <td>{item.name || "N/A"}</td>
                     </tr>
                 {/each}
@@ -28,4 +35,26 @@
 </div>
 
 <style>
+        .order-list-table {
+        border-collapse: collapse;
+    }
+    .order-list-table td {
+        width: 500px;
+        padding: 12px;
+        text-align: left;
+        border-top: 1px solid #e0e0e0;
+    }
+    /* .order-list-table tr{
+        display: flex;
+        gap: 10px
+    } */
+    .order-list-table tbody tr:hover {
+        background: #d9d9d9;
+        cursor: pointer;
+    }
+
+    .order-list-table tbody tr.active {
+        background: #D9D9D9;
+        font-weight: 500;
+    }
 </style>
