@@ -1,633 +1,306 @@
 <script>
-    import { goto } from "$app/navigation";
-    import TopBar from '$lib/ComponentsShop/Topbar.svelte';
-    import RestaurantSidebar from '$lib/ComponentsShop/RestaurantSidebar.svelte';
-
-    let activeMenu = "dashboard";
-    let titleHeader2 = "Dashboard";
-    let pathPra = "Home / Dashboard";
-    let last = "dashboard";
-    let addItem = "addItem";
-
-    function listOrder() {
-        var x = document.getElementById("hiddenbar-container");
-        if (x) {
-            if (x.style.display === "none" || x.style.display === "") {
-                x.style.display = "block";
-            } else {
-                x.style.display = "none";
-            }
+    import CustomerHeader from '$lib/components/customer/TopbarCustomer.svelte';
+    import RestaurantList from '$lib/components/customer/RestaurantList.svelte';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    
+    export let data;
+    
+    let isMobile = false;
+    
+    // Check if device is mobile
+    onMount(() => {
+        const checkMobile = () => {
+            isMobile = window.innerWidth < 768;
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+        };
+    });
+    
+    // Event handlers
+    function handleNotification() {
+        console.log('Notification clicked');
+        // Navigate to notifications page
+        goto('/customer/notifications');
+    }
+    
+    function handleBookmark() {
+        console.log('View orders clicked');
+        // Navigate to orders history page
+        goto('/customer/orders');
+    }
+    
+    function handleProfile() {
+        console.log('Profile clicked');
+        // Navigate to profile page
+        goto('/customer/profile');
+    }
+    
+    function handleRestaurantSelect(event) {
+        const { restaurant } = event.detail;
+        console.log('Selected restaurant:', restaurant);
+        
+        // Navigate to restaurant detail page
+        if (restaurant.id) {
+            goto(`/customer/restaurant/${restaurant.id}`);
         }
     }
-
-    function openAnyPage() {
-        var thisPage = document.getElementById(activeMenu);
-        var lastPage = document.getElementById(last);
-        if(lastPage) {
-            lastPage.style.display = "none";
-        }
-        if (thisPage) {
-            if(activeMenu == "dashboard") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "orderbar") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "orderNew") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "orderInProgress") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "orderCompleted") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "menu") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "reports") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            else if(activeMenu == "setting") {
-                if (thisPage.style.display === "none" || thisPage.style.display === "") {
-                    thisPage.style.display = "block";
-                } else {
-                    thisPage.style.display = "none";
-                }
-            }
-            last = activeMenu;
-        }
+    
+    function handleRetry() {
+        // Reload the page to retry loading data
+        window.location.reload();
     }
-
-
 </script>
 
-<div id="menubar" class="menubar">
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "dashboard"}
-        on:click={() => (activeMenu = "dashboard")}
-        on:click={() => (titleHeader2 = "Dashboard")}
-        on:click={() => (pathPra = "Home / Dashboard")}
-        on:click={openAnyPage}
-    >
-        <span class="material-symbols-outlined">dashboard</span>
-        <span class="btn-text">Dashboard</span>
-    </button>
-
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "orderNew"}
-        on:click={() => (activeMenu = "orderNew")}
-        on:click={() => (titleHeader2 = "Order")}
-        on:click={() => (pathPra = "Home / Order")}
-        on:click={openAnyPage}
-    >
-        <span class="material-symbols-outlined"> storefront </span>
-        <span class="btn-text">Order</span>
-    </button>
-
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "menu"}
-        on:click={() => (activeMenu = "menu")}
-        on:click={() => (titleHeader2 = "Menu")}
-        on:click={() => (pathPra = "Home / Menu")} 
-        on:click={openAnyPage}
-    >
-        <span class="material-symbols-outlined"> fork_spoon </span>
-        <span class="btn-text">Menu</span>
-    </button>
-
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "reports"}
-        on:click={() => (activeMenu = "reports")}
-        on:click={() => (titleHeader2 = "Reports")}
-        on:click={() => (pathPra = "Home / Reports")}
-        on:click={openAnyPage}
-    >
-        <span class="material-symbols-outlined"> assignment </span>
-        <span class="btn-text">Reports</span>
-    </button>
-
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "setting"}
-        on:click={() => (activeMenu = "setting")}
-        on:click={() => (titleHeader2 = "Settings")}
-        on:click={() => (pathPra = "Home / Settings")}
-        on:click={openAnyPage}
-    >
-        <span class="material-symbols-outlined"> settings </span>
-        <span class="btn-text">Settings</span>
-    </button>
-
-    <button
-        type="button"
-        class="menu-btn"
-        class:active={activeMenu === "logout"}
-        on:click={() => (activeMenu = "logout")}
-        on:click={() => (titleHeader2 = "Logout")}
-    >
-        <span class="material-symbols-outlined"> logout </span>
-        <span class="btn-text">Logout</span>
-    </button>
-</div>
-
-<div class="header">
-    <div class="photo">
-        <img src="/Photo/Icon.png" alt="icon" />
-    </div>
-    <div class="headtext">
-        <h1>Restaurant panel</h1>
-    </div>
-</div>
-
-<div class="header2">
-    <div class="path">
-        <p style="padding-top: 70px;">{pathPra}</p>
-    </div>
-    <div class="headtext2">
-        <h2 id="title">{titleHeader2}</h2>
-    </div>
-</div>
-
-<!-- หน้า Dashboard ร้านอาหาร -->
-<div id="dashboard" class="dashboard">
-    <div class="dash1">
-        <div class="dash1-com1">
-            <p style="margin-left: 5px;">New Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">In Progess Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">Completed Order</p>
-        </div>
-        <div class="dash1-com1" style="margin-left: 5%;">
-            <p style="margin-left: 5px;">Today's Sales</p>
-        </div>
-    </div>
-    <div class="dash2">
-        <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
-    </div>
-</div>
-
-<!-- หน้า Pending Orders ร้านอาหาร -->
-<div id="orderNew" class="orderNew" hidden>
-    <div class="orderNew1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span style="color:#2B7FFF; font-size: 19px;">Pending Orders</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Active Orders</span>
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Order History</span>
-            </button>
-        </div>
-    </div>
-    <div class="lineMenu">
-        <div class="lineMenu1" style="background-color: #2B7FFF;"></div>
-        <div class="lineMenu2" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu3" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
-    </div>
-    <div class="orderNewDetail">
-        <div class="orderID">
-            <h2>
-                Order <span style="word-spacing: 400px;">ID ราคา</span>
-            </h2>
-            
-        </div>
-        <div class="orderIDDetail">
-
-        </div>
-    </div>
-</div>
-
-<!-- หน้า Active Orders ร้านอาหาร -->
-<div id="orderInProgress" class="orderInProgress" hidden>
-    <div class="orderInProgress1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Pending Orders</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    <span style="color:#2B7FFF; font-size: 19px">Active Orders</span>
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Order History</span>
-            </button>
-        </div>
-    </div>
-    <div class="lineMenu">
-        <div class="lineMenu1" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu2" style="background-color: #2B7FFF;"></div>
-        <div class="lineMenu3" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
-    </div>
-</div>
-
-<!-- หน้า Order History ร้านอาหาร -->
-<div id="orderCompleted" class="orderCompleted" hidden>
-    <div class="orderCompleted1">
-        <div class="new">
-            <button type="button" class="orderNew-btn"
-                class:active={activeMenu === "orderNew"}
-                on:click={() => (activeMenu = "orderNew")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Pending Orders</span>
-            </button>
-        </div>
-        <div class="inProgress" style="margin-left: 20px">
-            <button type="button" class="orderInProgress-btn"
-                class:active={activeMenu === "orderInProgress"}
-                on:click={() => (activeMenu = "orderInProgress")}
-                on:click={openAnyPage}>
-                    <span style="color: black; font-size: 19px;">Active Orders</span>
-            </button>
-        </div>
-        <div class="completed" style="margin-left: 20px">
-            <button type="button" class="orderCompleted-btn"
-                class:active={activeMenu === "orderCompleted"}
-                on:click={() => (activeMenu = "orderCompleted")}
-                on:click={openAnyPage}>
-                    <span style="color: #2B7FFF; font-size: 19px">Order History</span>
-            </button>
-        </div>
-    </div>
-    <div class="lineMenu">
-        <div class="lineMenu1" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu2" style="background-color: #bcbbbb;"></div>
-        <div class="lineMenu3" style="background-color: #2B7FFF;"></div>
-        <div class="lineMenu4" style="background-color: #bcbbbb;"></div>
-    </div>
-</div>
-
-<!-- หน้า Menu ร้านอาหาร -->
-<div id="menu" class="menu" hidden>
-    <div class="menu1">
-        <div class="menuItem" style="margin-top: 10px;">
-            <div style="display: flex; gap: 45vh;">
-                <button type="button" class="addItem-btn">
-                    <span class="material-symbols-outlined" style="color: white;"> add_2 </span>
-                    <span class="btn-text" style="color: white; font-size: 20px">Add Item</span>
-                </button>
-                <input type="text" 
-                    placeholder="Search"
-                    name="search"
-                    class="searchItem"
-                />
-            </div>
-            
-            
-        </div>
-        <div class="menuCategory" style="margin-top: 10px;">
-
-        </div>
-    </div>
-</div>
-
-<!-- หน้า Roprts ร้านอาหาร -->
-<div id="reports" class="reports" hidden>
+<div class="customer-layout" class:mobile={isMobile}>
+    <CustomerHeader 
+        {isMobile}
+        on:notification={handleNotification}
+        on:bookmark={handleBookmark}
+        on:profile={handleProfile}
+    />
     
-</div>
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-container">
 
-<!-- หน้า Setting ร้านอาหาร -->
-<div id="setting" class="setting" hidden>
-    
+            
+            <!-- Restaurant List -->
+            <RestaurantList 
+                restaurants={data.restaurants || []}
+                loading={false}
+                error={data.success === false ? data.error : null}
+                on:restaurantSelect={handleRestaurantSelect}
+                on:retry={handleRetry}
+            />
+        </div>
+    </main>
 </div>
-
-<body></body>
 
 <style>
-    /* Icon  */
-    .material-symbols-outlined {
-        font-variation-settings:
-            "FILL" 0,
-            "wght" 400,
-            "GRAD" 0,
-            "opsz" 24;
-        margin-right: 10px;
+    .customer-layout {
+        min-height: 100vh;
+        background: #f9f9f9;
+        font-family: 'Noto Sans Thai', sans-serif;
     }
     
-    .btn-text {
-        font-family: "Noto Sans Thai";
+    .main-content {
+        padding-top: 70px; /* Account for fixed header */
+        padding: 90px 20px 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        min-height: calc(100vh - 70px);
+    }
+    
+    .content-container {
+        width: 100%;
+    }
+    
+    /* Welcome Section */
+    .welcome-section {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .welcome-section h2 {
+        font-size: 28px;
+        color: #333;
+        margin: 0 0 10px 0;
+        font-weight: 600;
+    }
+    
+    .welcome-section p {
         font-size: 16px;
-        font-weight: 400;
-        line-height: 19.2px;
-        color: black;
+        color: #ff8c00;
+        margin: 0;
     }
-    .header {
-        display: flex;
-        height: 60px;
-        width: 100%;
-        border-bottom: 2px solid rgb(221, 221, 221);
-        background: white;
-        position: fixed;
-        top: 0;
-        left: 0;
-        align-items: center;
+    
+    /* Mobile Responsive */
+    .customer-layout.mobile .main-content {
+        padding: 80px 15px 20px;
     }
-
-    .header2 {
-        height: 150px;
-        width: 84.3%;
-        border-bottom: 2px solid rgb(221, 221, 221);
-        background: white;
-        padding-left: 32vh;
-        align-items: center;
-    }
-
-    .menubar {
-        height: 100vh; /* เต็มความสูงของ viewport */
-        width: 30vh;
-        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
-        background: white;
-        position: fixed;
-        top: 0;
-        left: 0;
-        padding-top: 70px;
-    }
-
-    .dash1 {
-        margin-top: 10px;
-        display: flex;
-        height: 100%;
-        width: 100%;
-        /* background-color: red; */
-    }
-    .dash1-com1 {
-        height: 96px;
-        width: 253px;
-        background: rgb(255, 255, 255);
-        margin-left: 17%;
-        border-radius: 15px;
-        /* align-items: center; */
-    }
-    .dash2 {
-        margin-left: 320px;
-        width: 1300px;
-        height: 200px;
-        border-radius: 15px;
-        background-color: white;
-    }
-
-    /* หน้า Pending Orders */
-    .orderNew1 {
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-    }
-    .lineMenu {
-        display: flex;
-    }
-    .lineMenu1 {
-        width: 175px;
-        height: 3px;
-        margin-left: 17.5%;
-    }
-    .lineMenu2 {
-        width: 175px;
-        height: 3px;
-    }
-    .lineMenu3 {
-        width: 175px;
-        height: 3px;
-    }
-    .lineMenu4 {
-        width: 995px;
-        height: 3px;
-        margin-bottom: 20px;
-    }
-    .orderNewDetail {
-        display: flex;
-        margin-left: 17.5%;
-    }
-
-    .orderID {
-        padding: 16px;
-        width: 550px;
-        height: 623px;
-        background: white;
-        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
-        border-radius: 16px;
-    }
-    .orderIDDetail {
-        padding: 16px;
-        width: 850px;
-        height: 623px;
-        margin-left: 3.5%;
-        background: white;
-        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
-        border-radius: 16px;
-    }
-
-    /* หน้า Active Orders */
-    .orderInProgress1 {
-        width: 1300px;
-        height: 40px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-    }
-
-    /* หน้า Order History */
-    .orderCompleted1 {
-        width: 1300px;
-        height: 40px;
-        margin-top: 10px;
-        margin-left: 17%;
-        display: flex;
-    }
-
-    /* หน้า Menu */
-    .menu1 {
-        margin-top: 10px;
-        margin-left: 16%;
-        display: flex;
-    }
-    .menuItem {
-        width: 100vh;
-        height: 77vh;
-        background-color: rgb(255, 255, 255);
-        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
-        border-radius: 16px;
-    }
-    .addItem-btn {
-        display: flex;
-        width: 20vh;
-        height: 7vh;
-        margin-left: 2%;
-        margin-top: 20px;
-        background-color: orange;
-        border-radius: 16px;
-        justify-content: center;      /*  จัดแนวนอน */
-    }
-    .searchItem {
-        display: flex;
-        width: 25vh;
-        height: 7vh;
-        margin-top: 20px;
-        padding-left: 10px;
-        border-radius: 16px;
-        border: 1px solid #ccc;
-        border-color: #333;
-    }
-    .menuCategory {
-        width: 60vh;
-        height: 77vh;
-        margin-left: 2%;
-        background-color: rgb(255, 255, 255);
-        box-shadow: 0 0px 10px rgba(0, 0, 0, 0.3);
-        border-radius: 15px;
-    }
+    
+    /* Tablet Responsive */
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 80px 15px 20px;
+        }
         
-
-    body {
-        background-color: #EDF0F2;
+        .welcome-section {
+            margin-bottom: 30px;
+            padding: 25px 15px;
+        }
+        
+        .welcome-section h2 {
+            font-size: 24px;
+        }
+        
+        .welcome-section p {
+            font-size: 15px;
+        }
     }
-
-
-    /* label {
-        display: flex;
-    } */
-
-    button {
-        display: flex;
-        align-items: center;
-        text-align: left;
-        height: 40px;
+    
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 75px 10px 15px;
+        }
+        
+        .welcome-section {
+            margin-bottom: 25px;
+            padding: 20px 15px;
+            border-radius: 8px;
+        }
+        
+        .welcome-section h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-section p {
+            font-size: 14px;
+        }
+    }
+    
+    .content-container {
         width: 100%;
-        padding: 1rem;
-        /* background-color: rgb(255, 255, 255); */
-        background-color: transparent;
-        border: none;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
     }
-
-    h1 {
+    
+    /* Welcome Section */
+    .welcome-section {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .welcome-section h2 {
+        font-size: 28px;
         color: #333;
-        font-family: "Noto Sans Thai";
+        margin: 0 0 10px 0;
+        font-weight: 600;
+    }
+    
+    .welcome-section p {
         font-size: 16px;
-        font-style: regular;
-        font-weight: 400;
-        line-height: 19.2px;
+        color: #ff8c00;
+        margin: 0;
     }
-
-    h2 {
-        color: #333;
-        font-family: "Noto Sans Thai";
-        font-size: 20px;
-        font-style: regular;
-        font-weight: 400;
-        line-height: 19.2px;
+    
+    /* Mobile Responsive */
+    .customer-layout.mobile .main-content {
+        padding: 80px 15px 20px;
     }
-
-    p {
-        color: #333;
-        font-family: "Noto Sans Thai";
-        font-size: 16px;
-        font-style: regular;
-        font-weight: 400;
-        line-height: 19.2px;
-        /* padding-top: 70px; */
+    
+    /* Tablet Responsive */
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 80px 15px 20px;
+        }
+        
+        .welcome-section {
+            margin-bottom: 30px;
+            padding: 25px 15px;
+        }
+        
+        .welcome-section h2 {
+            font-size: 24px;
+        }
+        
+        .welcome-section p {
+            font-size: 15px;
+        }
+        
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .content-card {
+            padding: 25px 20px;
+        }
+        
+        .content-card h3 {
+            font-size: 18px;
+        }
     }
-
-    button:hover {
-        background-color: #f0f0f0;
+    
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 75px 10px 15px;
+        }
+        
+        .welcome-section {
+            margin-bottom: 25px;
+            padding: 20px 15px;
+            border-radius: 8px;
+        }
+        
+        .welcome-section h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-section p {
+            font-size: 14px;
+        }
+        
+        .content-grid {
+            gap: 12px;
+        }
+        
+        .content-card {
+            padding: 20px 15px;
+            border-radius: 8px;
+        }
+        
+        .content-card h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .content-card p {
+            font-size: 13px;
+        }
     }
-
-    /* button:active { */
-    /* background: orange; ตอนกด */
-    /* } */
-
-    .photo img {
-        width: 48px;
-        height: auto;
+    
+    /* Extra Small Mobile */
+    @media (max-width: 360px) {
+        .main-content {
+            padding: 70px 8px 15px;
+        }
+        
+        .welcome-section {
+            padding: 18px 12px;
+        }
+        
+        .content-card {
+            padding: 18px 12px;
+        }
     }
-
-    .material-symbols-outlined {
-        font-variation-settings:
-            "FILL" 0,
-            "wght" 400,
-            "GRAD" 0,
-            "opsz" ;
-        color: black;
-    }
-    button.active {
-        /* background: orange; */
-        color: white;
-    }
-
-    button.active .material-symbols-outlined {
-        color: orange;
-    }
-    button.active .btn-text {
-        color: orange;
+    
+    /* Touch-friendly interactions on mobile */
+    @media (hover: none) and (pointer: coarse) {
+        .content-card:hover {
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .content-card:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+        }
     }
 </style>

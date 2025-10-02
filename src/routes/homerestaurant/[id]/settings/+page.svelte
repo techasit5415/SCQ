@@ -3,8 +3,8 @@
     import TopBar from '$lib/ComponentsShop/Topbar.svelte';
     import RestaurantSidebar from '$lib/ComponentsShop/RestaurantSidebar.svelte';
 
-    export let data;
-    export let form;
+    export let data../../settings/$types.js;
+    export let form../../settings/$types.js;
 
     let activeMenu = "settings";
 

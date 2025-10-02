@@ -4,7 +4,7 @@
     import RestaurantSidebar from "$lib/ComponentsShop/RestaurantSidebar.svelte";
     import Orderbar from "$lib/ComponentsShop/Orderbar.svelte";
 
-    export let data;
+    export let data../../order/pending/$types.js;
     export let fromMenu;
     export let activeOrderIdx = 0;
 

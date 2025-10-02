@@ -4,11 +4,11 @@
     import RestaurantSidebar from '$lib/ComponentsShop/RestaurantSidebar.svelte';
     import Orderbar from '$lib/ComponentsShop/Orderbar.svelte';
 
-    export let data;
-    export let form;
+    export let data../../order/active/$types.js;
+    export let form../../order/active/$types.js;
 
     let activeMenu = "pending";
-    let activeOrderMenu = "history";
+    let activeOrderMenu = "active";
 
     function listOrder() {
         var x = document.getElementById("hiddenbar-container");
@@ -37,7 +37,7 @@
     }
 </script>
 
-<!-- หน้า History Order -->
+<!-- หน้า Active Order -->
 <div id="restaurant-layout" class="restaurant-layout">
     <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar 
@@ -89,7 +89,26 @@
                         <div class="list-detail">
                             <span>รายการอาหาร</span>
                         </div>
-                    </div> 
+                    </div>
+                </div>
+                <div class="menu-detail">
+
+                </div>
+                <div class="detail-btn">
+                    <div class="btn-part-1">
+                        <button class="ready-order-btn">
+                                <span>พร้อมรับอาหาร</span>
+                        </button>
+                    </div>
+                    <div class="btn-part-2">
+                        <button type="button" class="cancel-order-btn">
+                            <span>ยกเลิกออเดอร์</span>
+                        </button>
+                        <button type="button" class="print-receipt-btn">
+                            <span>พิมม์ใบเสร็จ</span>
+                        </button>
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -215,7 +234,48 @@
     .list-detail {
         font-size: 25px;
     }
-    
+
+    .detail-btn {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+    }
+    .ready-order-btn {
+        width: 942px;
+        height: 48px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-family: 'Noto Sans Thai', sans-serif;
+        background-color: orange;
+        color: white;
+        border: 0px solid white;
+    }
+    .cancel-order-btn {
+        width: 350px;
+        height: 48px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-family: 'Noto Sans Thai', sans-serif;
+        background-color: white;
+        color: #68696E;
+        border: 2px solid #68696E;
+    }
+    .print-receipt-btn {
+        width: 576px;
+        height: 48px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-family: 'Noto Sans Thai', sans-serif;
+        background-color: #68696E;
+        color: white;
+        border: 0px solid white;
+    }
+    .btn-part-2 {
+        display: flex;
+        gap: 16px;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .main-content {
