@@ -1,9 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
     import { goto } from "$app/navigation";
-    // import { load } from '$lib/server/order';
 
-    // export let data;
     export let activeOrderMenu = "pending";
     const dispatch = createEventDispatcher();
     let data;

@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
 
   if (session) {
-    throw redirect(303, '/homerestaurant'); // หรือหน้า login
+    throw redirect(303, '/homerestaurant/login'); // หรือหน้า login
   }
 
   // ถ้าต้องการ ตรวจสอบ session กับฐานข้อมูลก็ทำตรงนี้
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 export const actions: Actions = {
   default: async ({ request, cookies }) => {
-    console.log('Action /admin called');
+    console.log('Action /restaurant called');
     const form = await request.formData();
     const username = String(form.get('username') ?? '').trim();
     const password = String(form.get('password') ?? '');

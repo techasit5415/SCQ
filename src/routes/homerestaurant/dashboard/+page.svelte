@@ -199,10 +199,10 @@
         margin-bottom: 16px;
     }
 
-    .stat-header .material-symbols-outlined {
+    /* .stat-header .material-symbols-outlined {
         color: #ff8c00;
         font-size: 24px;
-    }
+    } */
 
     .stat-header h3 {
         margin: 0;

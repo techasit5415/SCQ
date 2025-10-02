@@ -8,6 +8,11 @@ import { env as privateEnv } from '$env/dynamic/private';
 
 const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
+// server/order.ts
+export function someFunction() {
+    return 'Hello from order.ts';
+}
+
 export const load: PageServerLoad = async () => {
   try {
     console.log('Attempting to connect to PocketBase...');
