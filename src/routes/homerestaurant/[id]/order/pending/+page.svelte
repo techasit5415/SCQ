@@ -1,10 +1,10 @@
 <script>
     import { goto } from "$app/navigation";
-    import TopBar from "$lib/ComponentsShop/Topbar.svelte";
-    import RestaurantSidebar from "$lib/ComponentsShop/RestaurantSidebar.svelte";
-    import Orderbar from "$lib/ComponentsShop/Orderbar.svelte";
+    import TopBar from "$lib/Components/ComponentsShop/Topbar.svelte";
+    import RestaurantSidebar from "$lib/Components/ComponentsShop/RestaurantSidebar.svelte";
+    import Orderbar from "$lib/Components/ComponentsShop/Orderbar.svelte";
 
-    export let data../../order/pending/$types.js;
+    export let data;
     export let fromMenu;
     export let activeOrderIdx = 0;
 
