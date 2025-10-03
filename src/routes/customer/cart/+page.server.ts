@@ -61,7 +61,7 @@ export const actions: Actions = {
 			
 			// ดึง User ID จาก session cookie
 			// const userId = cookies.get('session');
-			const userId = "userId";
+			const userId = "5v70v6p91pfakvb"; // ใช้ User ID เดียวกับที่ใช้ในที่อื่น
 			if (!userId) {
 				throw new Error('User not authenticated - No session found');
 			}
@@ -89,6 +89,7 @@ export const actions: Actions = {
 			
 			// ส่งข้อมูลตาม PocketBase schema
 			const createData: any = {
+				User_ID: userId,
 				Shop_ID: shopId,
 				Menu_ID: menuIds,
 				Total_Amount: orderData.total + 5,

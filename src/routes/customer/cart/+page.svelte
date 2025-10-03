@@ -197,7 +197,9 @@
 						goto('/customer');
 					} else {
 						console.error('❌ Form error:', result);
-						alert('เกิดข้อผิดพลาด: ' + (result.data?.error || 'ไม่สามารถสร้างคำสั่งซื้อได้'));
+						console.error('❌ Error details:', result.data?.details);
+						const errorMsg = result.data?.details || result.data?.error || 'ไม่สามารถสร้างคำสั่งซื้อได้';
+						alert('เกิดข้อผิดพลาด: ' + errorMsg);
 					}
 					isSubmitting = false;
 				};

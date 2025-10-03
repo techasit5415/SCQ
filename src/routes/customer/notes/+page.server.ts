@@ -7,7 +7,7 @@ const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 export const load: PageServerLoad = async ({ cookies }) => {
 	try {
 		// ดึง User ID จาก session
-		const userId = cookies.get('session') || "2giyhm2due2kb1g"; // fallback สำหรับ debug
+		const userId = "5v70v6p91pfakvb"; // ใช้ User ID เดียวกับที่ใช้ในที่อื่น
 		
 		console.log('📝 Loading notes for User ID:', userId);
 		
