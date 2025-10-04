@@ -1,14 +1,11 @@
-import type { PageServerLoad, Actions } from '../$types.js';
-import { redirect, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 import { env as privateEnv } from '$env/dynamic/private';
 
-// ใช้ URL จาก environment variable
-
 const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load = async ({ cookies }: any) => {
   const session = cookies.get('session');
   console.log('Session cookie in homeadmin:', session);
 
@@ -38,6 +35,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
       inProgressOrder: 0,
       completedOrder: 0,
       todaySale: 0
+    };
+
+    let analytics: any = {
+      dailyOrders: [],
+      weeklyRevenue: [],
+      popularMenus: [],
+      orderStatusChart: [],
+      hourlyOrders: []
     };
 
     // Authenticate as admin first
@@ -87,26 +92,140 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.log('Error fetching completed orders:', error);
     }
 
-    // ดึงข้อมูล Total Today Sale
+    // ดึงข้อมูล Total Today Sale (รวมทั้ง Completed และ In-progress)
     try {
-      console.log('Fetching completed orders count...');
-      const completedOrderCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "Completed"'
+      console.log('Fetching today orders for sales calculation...');
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      // ดึง orders ทั้ง Completed และ In-progress ของวันนี้
+      const todayOrders = await pb.collection('Order').getFullList({
+        filter: `(Status = "Completed" || Status = "In-progress") && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
       });
       
-      restaurant.todaySale = completedOrderCount.reduce((sum, order) => {
+      console.log('Today orders for sales:', todayOrders.map(o => ({ 
+        id: o.id, 
+        status: o.Status, 
+        amount: o.Total_Amount, 
+        created: o.created 
+      })));
+      
+      restaurant.todaySale = todayOrders.reduce((sum, order) => {
         return sum + (order.Total_Amount || 0)
       }, 0);
-      console.log('Total today sale from completed orders:', restaurant.todaySale);
+      console.log('Total today sale (Completed + In-progress):', restaurant.todaySale);
     } catch (error) {
-      console.log('Error fetching completed orders:', error);
+      console.log('Error fetching today sales:', error);
+    }
+
+    // ดึงข้อมูลสำหรับกราฟ Daily Orders (7 วันที่ผ่านมา)
+    try {
+      console.log('Fetching daily orders data...');
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+        
+        const dayOrders = await pb.collection('Order').getFullList({
+          filter: `created >= "${dayStart.toISOString()}" && created < "${dayEnd.toISOString()}"`
+        });
+        
+        last7Days.push({
+          date: dayStart.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
+          orders: dayOrders.length,
+          revenue: dayOrders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0)
+        });
+      }
+      analytics.dailyOrders = last7Days;
+      console.log('Daily orders data:', JSON.stringify(last7Days, null, 2));
+    } catch (error) {
+      console.log('Error fetching daily orders:', error);
+    }
+
+    // ดึงข้อมูลเมนูยอดนิยม (Top 5)
+    try {
+      console.log('Fetching popular menus...');
+      const allOrders = await pb.collection('Order').getFullList({
+        expand: 'Menu_ID'
+      });
+      
+      const menuCount: any = {};
+      allOrders.forEach(order => {
+        if (order.expand?.Menu_ID) {
+          order.expand.Menu_ID.forEach((menu: any) => {
+            const menuName = menu.name || 'Unknown';
+            menuCount[menuName] = (menuCount[menuName] || 0) + 1;
+          });
+        }
+      });
+      
+      analytics.popularMenus = Object.entries(menuCount)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a: any, b: any) => b.count - a.count)
+        .slice(0, 5);
+    } catch (error) {
+      console.log('Error fetching popular menus:', error);
+    }
+
+    // ดึงข้อมูลสถานะคำสั่งซื้อสำหรับ Pie Chart
+    try {
+      console.log('Fetching order status data...');
+      const allOrders = await pb.collection('Order').getFullList();
+      
+      const statusCount = {
+        'Pending': 0,
+        'In-progress': 0,
+        'Completed': 0,
+        'Cancelled': 0
+      };
+      
+      allOrders.forEach(order => {
+        const status = order.Status || 'Unknown';
+        if (statusCount.hasOwnProperty(status)) {
+          (statusCount as any)[status]++;
+        }
+      });
+      
+      analytics.orderStatusChart = Object.entries(statusCount).map(([status, count]) => ({
+        status,
+        count,
+        percentage: allOrders.length > 0 ? ((count / allOrders.length) * 100).toFixed(1) : 0
+      }));
+    } catch (error) {
+      console.log('Error fetching order status data:', error);
+    }
+
+    // ดึงข้อมูลคำสั่งซื้อตามชั่วโมง (วันนี้)
+    try {
+      console.log('Fetching hourly orders data...');
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const todayOrders = await pb.collection('Order').getFullList({
+        filter: `created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
+      });
+      
+      const hourlyCount = Array(24).fill(0);
+      todayOrders.forEach(order => {
+        const hour = new Date(order.created).getHours();
+        hourlyCount[hour]++;
+      });
+      
+      analytics.hourlyOrders = hourlyCount.map((count, hour) => ({
+        hour: `${hour.toString().padStart(2, '0')}:00`,
+        orders: count
+      }));
+    } catch (error) {
+      console.log('Error fetching hourly orders:', error);
     }
 
     const result = {
-      // stats,
-      restaurant
-      // shops,
-      // users: usersData // เพิ่มข้อมูล users แบบละเอียด
+      restaurant,
+      analytics
     };
 
     console.log('Final result:', result);
@@ -116,24 +235,25 @@ export const load: PageServerLoad = async ({ cookies }) => {
     
     // Return fallback data if database connection fails
     return {
-      // stats: {
-      //   users: 0,
-      //   orders: 0,
-      //   dishes: 0,
-      //   canceled: 0
-      // },
       restaurant: {
         newOrder: 0,
         inProgressOrder: 0,
         completedOrder: 0,
         todaySale: 0
+      },
+      analytics: {
+        dailyOrders: [],
+        weeklyRevenue: [],
+        popularMenus: [],
+        orderStatusChart: [],
+        hourlyOrders: []
       }
     };
   }
 };
 
-export const actions: Actions = {
-  addRestaurant: async ({ request }) => {
+export const actions = {
+  addRestaurant: async ({ request }: any) => {
     const formData = await request.formData();
     
     const restaurantData = {
