@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
     import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
-    import { enhance } from '$app/forms';
+    import { enhance } from "$app/forms";
     import TopBar from "$lib/Components/restaurant/Topbar.svelte";
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
     import PocketBase from "pocketbase";
@@ -67,6 +67,8 @@
     function handleAddItemSuccess() {
         showAddItem = false;
         addingItem = null;
+        // Refresh page to show updated data
+        setTimeout(() => window.location.reload(), 1000);
     }
 
     function handleEditItem(item) {
@@ -78,7 +80,7 @@
     }
     function closeEditItem() {
         showEditItem = false;
-        editingItem = null
+        editingItem = null;
     }
     function handleUpdateItemSuccess() {
         showEditItem = false;
@@ -103,11 +105,9 @@
     }
 
     // Category management function
-
-
 </script>
 
-<!-- หน้า Menu ร้านอาหาร -->
+<!-- หน้า Dashboard ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
@@ -127,7 +127,7 @@
             <!-- ส่วนของ Item -->
             <div class="menu-item">
                 <div class="item-btn-content">
-                    <button type="button" class="add-item-btn">
+                    <button type="button" class="add-item-btn" on:click={() => handleAddItem()}>
                         <span
                             class="material-symbols-outlined"
                             style="color: white;"
@@ -293,27 +293,27 @@
     </main>
 </div>
 
-<!-- Add Item -->
-<!-- {#if showAddItem && addingItem}
+<!-- Add Menu -->
+{#if showAddItem}
     <div class="item-modal">
         <div class="item-modal-content">
             <div class="header-item-modal">
-                <span>Edit Menu</span>
-                <button
-                    type="button"
-                    class="close-modal"
-                    on:click={closeAddItem}
-                >
+                <span>Add Menu</span>
+                <button type="button" class="close-modal" on:click={closeAddItem}>
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form method="POST" action="?/addMenu" use:enhance={() => {
-                return async ({ result }) => {
-                    if (result.type === 'success') {
-                        handleAddItemSuccess();
-                    }
-                };
-            }}>
+            <form
+                method="POST"
+                action="?/addMenu"
+                use:enhance={() => {
+                    return async ({ result }) => {
+                        if (result.type === "success") {
+                            handleAddItemSuccess();
+                        }
+                    };
+                }}
+            >
                 <div class="item-name-field">
                     <div class="header-item-modal-component">
                         <span>Name</span>
@@ -343,8 +343,8 @@
                         <span>Select Category</span>
                     </div>
                     <select class="role-select" name="category">
-                        <option value="" disabled selected hidden
-                            >เลือก ... </option
+                        <option value="" selected hidden
+                            >เลือก ...</option
                         >
                         {#if Array.isArray(data.cate) && data.cate.length > 0}
                             {#each data.cate as item}
@@ -381,41 +381,45 @@
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" on:click={closeEditItem}>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        on:click={closeAddItem}
+                    >
                         <span class="material-symbols-outlined">close</span>
                         ยกเลิก
                     </button>
                     <button type="submit" class="btn-primary">
-                        <span class="material-symbols-outlined">add</span>
-                        บันทึกเพิ่มเมนู
+                        <span class="material-symbols-outlined">save</span>
+                        เพิ่มเมนู
                     </button>
                 </div>
             </form>
-        </div>
+        </div>  
     </div>
-{/if} -->
+{/if}
 
-<!-- Edit Item -->
+<!-- Edit Menu -->
 {#if showEditItem && editingItem}
     <div class="item-modal">
         <div class="item-modal-content">
             <div class="header-item-modal">
                 <span>Edit Menu</span>
-                <button
-                    type="button"
-                    class="close-modal"
-                    on:click={closeEditItem}
-                >
+                <button type="button" class="close-modal" on:click={closeEditItem}>
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form method="POST" action="?/updateMenu" use:enhance={() => {
-                return async ({ result }) => {
-                    if (result.type === 'success') {
-                        handleUpdateItemSuccess();
-                    }
-                };
-            }}>
+            <form
+                method="POST"
+                action="?/updateMenu"
+                use:enhance={() => {
+                    return async ({ result }) => {
+                        if (result.type === "success") {
+                            handleUpdateItemSuccess();
+                        }
+                    };
+                }}
+            >
                 <input type="hidden" name="menuId" value={editingItem.id} />
                 <div class="item-name-field">
                     <div class="header-item-modal-component">
@@ -448,8 +452,8 @@
                         <span>Select Category</span>
                     </div>
                     <select class="role-select" name="category">
-                        <option value="" disabled selected hidden
-                            >{editingItem.category} </option
+                        <option value={editingItem.category} selected hidden
+                            >{editingItem.category}</option
                         >
                         {#if Array.isArray(data.cate) && data.cate.length > 0}
                             {#each data.cate as item}
@@ -488,7 +492,11 @@
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" on:click={closeEditItem}>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        on:click={closeEditItem}
+                    >
                         <span class="material-symbols-outlined">close</span>
                         ยกเลิก
                     </button>
@@ -505,8 +513,6 @@
 <!-- Delete User Modal -->
 {#if showDeleteItem && deletingItem}
     <div class="item-delete-modal">
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div class="item-delete-modal-content">
             <div class="modal-header">
                 <span>Delete Menu</span>
@@ -518,7 +524,7 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            
+
             <div class="item-delete-modal-body">
                 <p class="confirm-text">คุณแน่ใจหรือไม่ที่จะลบเมนูนี้?</p>
                 <div class="user-details">
@@ -537,26 +543,39 @@
                 </div>
                 <div class="warning-box">
                     <span class="material-symbols-outlined">error</span>
-                    <p class="warning-text">การดำเนินการนี้ไม่สามารถยกเลิกได้ ข้อมูลทั้งหมดของเมนูนี้จะถูกลบถาวร</p>
+                    <p class="warning-text">
+                        การดำเนินการนี้ไม่สามารถยกเลิกได้
+                        ข้อมูลทั้งหมดของเมนูนี้จะถูกลบถาวร
+                    </p>
                 </div>
             </div>
-            
-            <form method="POST" action="?/deleteMenu" use:enhance={() => {
-                return async ({ result }) => {
-                    if (result.type === 'success') {
-                        handleDeleteItemSuccess();
-                    }
-                };
-            }}>
+
+            <form
+                method="POST"
+                action="?/deleteMenu"
+                use:enhance={() => {
+                    return async ({ result }) => {
+                        if (result.type === "success") {
+                            handleDeleteItemSuccess();
+                        }
+                    };
+                }}
+            >
                 <input type="hidden" name="menuId" value={deletingItem.id} />
-                
+
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" on:click={closeDeleteItem}>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        on:click={closeDeleteItem}
+                    >
                         <span class="material-symbols-outlined">close</span>
                         ยกเลิก
                     </button>
                     <button type="submit" class="btn-danger">
-                        <span class="material-symbols-outlined">delete_forever</span>
+                        <span class="material-symbols-outlined"
+                            >delete_forever</span
+                        >
                         ลบผู้ใช้
                     </button>
                 </div>
@@ -666,6 +685,10 @@
         justify-content: center; /*  จัดแนวนอน */
         border: none;
         gap: 16px;
+        cursor: pointer;
+    }
+    .add-item-btn:hover{
+        background-color:#2196f3;
     }
     .search-item-btn {
         display: flex;
@@ -944,8 +967,6 @@
         font-family: "Noto Sans Thai", sans-serif;
     }
 
-
-
     /* Modal Styles */
     .item-delete-modal {
         position: fixed;
@@ -1212,7 +1233,7 @@
     /* Button ripple effect */
     .btn-primary::before,
     .btn-danger::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 50%;
         left: 50%;
@@ -1220,7 +1241,11 @@
         height: 0;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.3);
-        transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
+        transition:
+            width 0.3s,
+            height 0.3s,
+            top 0.3s,
+            left 0.3s;
         transform: translate(-50%, -50%);
     }
 
@@ -1232,7 +1257,10 @@
 
     /* Material Icons */
     .material-symbols-outlined {
-        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+        font-variation-settings:
+            "FILL" 0,
+            "wght" 400,
+            "GRAD" 0,
+            "opsz" 24;
     }
-
 </style>

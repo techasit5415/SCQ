@@ -1,4 +1,4 @@
-import type { PageServerLoad, Actions } from './$types.js';
+import type { PageServerLoad, Actions } from '../$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
@@ -75,62 +75,58 @@ export const load = async ({ params }: { params: { id: string } }) => {
 };
 
 export const actions: Actions = {
-  // addMenu: async ({ request }) => {
-  //   try {
-  //     const formData = await request.formData();
-  //     const menuId = formData.get('menuId') as string;
-  //     const name = formData.get('name') as string;
-  //     const detail = formData.get('detail') as string;
-  //     const category = formData.get('category') as string;
-  //     const price = formData.get('price') as string;
-  //     const status = formData.get('status') as string;
+  addMenu: async ({ request }) => {
+      try {
+        const formData = await request.formData();
+        // const menuId = formData.get('menuId') as string;
+        const name = formData.get('name') as string;
+        const detail = formData.get('detail') as string;
+        const category = formData.get('category') as string;
+        const price = formData.get('price') as string;
+        const statusRaw = formData.get('status') as string;
+        const status = statusRaw === 'on';  // ✅ true หรือ false ตาม checkbox
 
-  //     console.log('Adding menu:', { name, detail, category, price, status });
-
-  //     // Try to authenticate - skip if fails since PocketBase might allow public updates
-  //     try {
-  //       const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
-  //       const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
-  //       console.log('Attempting admin login with:', adminEmail);
-
-  //       await pb.admins.authWithPassword(adminEmail, adminPassword);
-  //       console.log('Admin authenticated successfully');
-  //     } catch (authError) {
-  //       console.log('Admin auth failed, continuing without auth...');
-  //       // PocketBase might be configured to allow updates without admin auth
-  //       // This is common in development environments
-  //     }
-
-  //     // Update user
-  //     const addData: any = {
-  //       name,
-  //       detail,
-  //       category,
-  //       Price: price,
-  //       Available: status
-  //     };
-
-  //     // Only add role if roleId is provided and not empty
-  //     // if (roleId && roleId.trim() !== '') {
-  //     //   updateData.Role = roleId;
-  //     // }
-
-  //     console.log('Update data:', addData);
-  //     const addMenu = await pb.collection('Menu').create(addData);
-  //     console.log('Menu added successfully:', addMenu);
-
-  //     return {
-  //       success: true,
-  //       message: 'เพิ่มข้อมูลเมนูสำเร็จ'
-  //     };
-
-  //   } catch (error: any) {
-  //     console.error('Error adding menu:', error);
-  //     return fail(400, {
-  //       error: 'ไม่สามารถเพิ่มข้อมูลเมนูได้: ' + (error.message || 'Unknown error')
-  //     });
-  //   }
-  // },
+        console.log('Adding user:', { name, detail, category, price, status});
+  
+        // Try to authenticate - skip if fails since PocketBase might allow public updates
+        try {
+          const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
+          const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+          console.log('Attempting admin login with:', adminEmail);
+          
+          await pb.admins.authWithPassword(adminEmail, adminPassword);
+          console.log('Admin authenticated successfully');
+        } catch (authError) {
+          console.log('Admin auth failed, continuing without auth...');
+          // PocketBase might be configured to allow updates without admin auth
+          // This is common in development environments
+        }
+  
+        // Update user
+        const addData: any = {
+          name,
+          detail,
+          category,
+          Price: price,
+          Available: status
+        };
+  
+        console.log('Add data:', addData);
+        const addMenu = await pb.collection('Menu').create(addData);
+        console.log('Menu added successfully:', addMenu);
+  
+        return {
+          success: true,
+          message: 'เพิ่มข้อมูลเมนูสำเร็จ'
+        };
+  
+      } catch (error: any) {
+        console.error('Error updating menu:', error);
+        return fail(400, {
+          error: 'ไม่สามารถเพิ่มข้อมูลเมนูได้: ' + (error.message || 'Unknown error')
+        });
+      }
+    },
 
   updateMenu: async ({ request }) => {
       try {
@@ -140,9 +136,10 @@ export const actions: Actions = {
         const detail = formData.get('detail') as string;
         const category = formData.get('category') as string;
         const price = formData.get('price') as string;
-        const status = formData.get('status') as string;
+        const statusRaw = formData.get('status') as string;
+        const status = statusRaw === 'on';  // ✅ true หรือ false ตาม checkbox
 
-        console.log('Updating menu:', { menuId, name, detail, category, price, status});
+        console.log('Updating user:', { menuId, name, detail, category, price, status});
   
         // Try to authenticate - skip if fails since PocketBase might allow public updates
         try {
@@ -166,11 +163,6 @@ export const actions: Actions = {
           Price: price,
           Available: status
         };
-  
-        // Only add role if roleId is provided and not empty
-        // if (roleId && roleId.trim() !== '') {
-        //   updateData.Role = roleId;
-        // }
   
         console.log('Update data:', updateData);
         const updatedMenu = await pb.collection('Menu').update(menuId, updateData);
