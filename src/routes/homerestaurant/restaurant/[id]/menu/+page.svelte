@@ -314,6 +314,7 @@
                     };
                 }}
             >
+                <input type="hidden" name="field"/>
                 <div class="item-name-field">
                     <div class="header-item-modal-component">
                         <span>Name</span>
