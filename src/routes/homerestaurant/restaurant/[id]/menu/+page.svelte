@@ -2,6 +2,7 @@
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
     import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
+    import { enhance } from '$app/forms';
     import TopBar from "$lib/Components/restaurant/Topbar.svelte";
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
     import PocketBase from "pocketbase";
@@ -10,11 +11,10 @@
 
     export let data;
 
-    const pbUrl = PUBLIC_POCKETBASE_URL;
-
     let activeMenu = "menu";
     let showEditItem = false;
-    let editingMenu = null;
+    let editingItem = null;
+    let searchItem = "";
 
     async function handleLogout() {
         try {
@@ -26,19 +26,27 @@
         }
     }
 
+    $: filteredItem = data.menus.filter((menu) => {
+        // const matchesRole = selectedRole === 'all' ||
+        //                   (user.expand?.Role?.name?.toLowerCase() === selectedRole.toLowerCase());
+
+        const matchesSearch =
+            searchItem === "" ||
+            menu.name?.toLowerCase().includes(searchItem.toLowerCase());
+
+        return matchesSearch;
+    });
+
     async function handleSwitchAvailable(index, newStatus) {
         // ดึง record id ของรายการที่ต้องการอัปเดต
         const item = data.menus[index];
-
         try {
             // เรียก API ของ PocketBase เพื่ออัปเดต
             const updated = await pb.collection("Menu").update(item.id, {
                 Available: newStatus,
             });
-
             // อัปเดตใน UI ด้วยค่าที่กลับมาจากฐานข้อมูล (optional)
             data.menus[index] = updated;
-
             console.log("อัปเดตสำเร็จ:", updated);
         } catch (error) {
             console.error("อัปเดตล้มเหลว:", error);
@@ -46,15 +54,14 @@
         }
     }
 
-    
-
     // User management functions
-    function handleEditItem(menuId) {
+    function handleEditItem(item) {
         // alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
-        editingMenu = {};
+        editingItem = {
+            ...item,
+        };
         showEditItem = true;
     }
-
     function handleDeleteItem(menuId) {
         if (confirm("Are you sure you want to delete this user?")) {
             alert(
@@ -62,14 +69,16 @@
             );
         }
     }
-
+    function handleItemUpdateSuccess() {
+        showEditItem = false;
+        editingItem = null;
+        // Refresh page to show updated data
+        setTimeout(() => window.location.reload(), 1000);
+    }
     function closeEditItem() {
         showEditItem = false;
     }
 </script>
-
-<!-- on:menuChange={handleMenuChange} -->
-<!-- on:viewRestaurant={handleViewRestaurant} -->
 
 <!-- หน้า Dashboard ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
@@ -108,8 +117,8 @@
                     <input
                         type="text"
                         placeholder="Search"
-                        name="search"
                         class="search-item-btn"
+                        bind:value={searchItem}
                     />
                 </div>
                 <table class="item-table">
@@ -125,14 +134,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#if data.menus && data.menus.length > 0}
-                            {#each data.menus as item, index}
+                        {#if filteredItem && filteredItem.length > 0}
+                            {#each filteredItem as item, index}
                                 <tr>
                                     <td>{index + 1}</td>
                                     <td>
                                         {#if item.Photo}
                                             <!-- <img src={item.Photo} style="width: 10px; height: auto;" /> -->
-                                            <img src={item.Photo} />
+                                            <!-- <img src={item.Photo} /> -->
                                         {:else}
                                             N/A
                                         {/if}
@@ -159,7 +168,7 @@
                                         <button
                                             class="item-btn-edit"
                                             on:click={() =>
-                                                handleEditItem(item.id)}
+                                                handleEditItem(item)}
                                         >
                                             <span
                                                 class="material-symbols-outlined"
@@ -257,7 +266,7 @@
     </main>
 </div>
 
-{#if showEditItem}
+{#if showEditItem && editingItem}
     <div class="item-modal">
         <div class="item-modal-content">
             <div class="header-item-modal">
@@ -270,42 +279,86 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="item-name-field">
-                <div class="header-item-modal-component">
-                    <span>Name</span>
+            <form method="POST" action="?/updateUser" use:enhance={() => {
+                return async ({ result }) => {
+                    if (result.type === 'success') {
+                        handleItemUpdateSuccess();
+                    }
+                };
+            }}>
+                <div class="item-name-field">
+                    <div class="header-item-modal-component">
+                        <span>Name</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="item-input-name"
+                        class="item-input"
+                        bind:value={editingItem.name}
+                    />
                 </div>
-                <input 
-                    type="text"
-                    placeholder="รายละเอียด"
-                    required
-                    name="item-input-name"
-                    class="item-input"
-                />
-            </div>
-            <div class="item-detail-field">
-                <div class="header-item-modal-component">
-                    <span>Detail</span>
+                <div class="item-detail-field">
+                    <div class="header-item-modal-component">
+                        <span>Detail</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="item-input-detail"
+                        class="item-input"
+                        bind:value={editingItem.detail}
+                    />
                 </div>
-                <input 
-                    type="text"
-                    placeholder="รายละเอียด"
-                    required
-                    name="item-input-detail"
-                    class="item-input"
-                />
-            </div>
-            <div class="item-detail-field">
-                <div class="header-item-modal-component">
-                    <span>Detail</span>
+                <div class="item-select-field">
+                    <div class="header-item-modal-component">
+                        <span>Select Category</span>
+                    </div>
+                    <select class="role-select">
+                        <option value="" disabled selected hidden
+                            >{editingItem.category}</option
+                        >
+                        {#if Array.isArray(data.cate) && data.cate.length > 0}
+                            {#each data.cate as item}
+                                <option value={item.category}
+                                    >{item.category}</option
+                                >
+                            {/each}
+                        {/if}
+                    </select>
                 </div>
-                <input 
-                    type="text"
-                    placeholder="รายละเอียด"
-                    required
-                    name="item-input-detail"
-                    class="item-input"
-                />
-            </div>
+                <div class="item-price-field">
+                    <div class="header-item-modal-component">
+                        <span>Price</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="item-input-detail"
+                        class="item-input"
+                        bind:value={editingItem.Price}
+                    />
+                </div>
+                <div class="item-price-field">
+                    <div class="header-item-modal-component">
+                        <span>Status</span>
+                    </div>
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            id="toggleSwitch"
+                            bind:checked={editingItem.Available}
+                        />
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div>
+                    
+                </div>
+            </form>
         </div>
     </div>
 {/if}
@@ -673,9 +726,18 @@
     .item-input {
         width: 648px;
         height: 44px;
-        border: 1px solid #B4B5B7;
+        border: 1px solid #b4b5b7;
         border-radius: 8px;
         padding: 12px 16px;
+        font-size: 13px;
+        font-family: "Noto Sans Thai", sans-serif;
+    }
+    .role-select {
+        width: 648px;
+        height: 44px;
+        border: 1px solid #b4b5b7;
+        border-radius: 8px;
+        padding: 12px 12px 12px 16px;
         font-size: 13px;
         font-family: "Noto Sans Thai", sans-serif;
     }
