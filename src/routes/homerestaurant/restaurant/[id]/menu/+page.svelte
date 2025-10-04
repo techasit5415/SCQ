@@ -12,8 +12,12 @@
     export let data;
 
     let activeMenu = "menu";
+    let showAddItem = false;
     let showEditItem = false;
+    let showDeleteItem = false;
+    let addingItem = null;
     let editingItem = null;
+    let deletingItem = null;
     let searchItem = "";
 
     async function handleLogout() {
@@ -29,11 +33,9 @@
     $: filteredItem = data.menus.filter((menu) => {
         // const matchesRole = selectedRole === 'all' ||
         //                   (user.expand?.Role?.name?.toLowerCase() === selectedRole.toLowerCase());
-
         const matchesSearch =
             searchItem === "" ||
             menu.name?.toLowerCase().includes(searchItem.toLowerCase());
-
         return matchesSearch;
     });
 
@@ -54,7 +56,19 @@
         }
     }
 
-    // User management functions
+    // Item management functions
+    function handleAddItem() {
+        showAddItem = true;
+    }
+    function closeAddItem() {
+        showAddItem = false;
+        addingItem = null;
+    }
+    function handleAddItemSuccess() {
+        showAddItem = false;
+        addingItem = null;
+    }
+
     function handleEditItem(item) {
         // alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
         editingItem = {
@@ -62,25 +76,38 @@
         };
         showEditItem = true;
     }
-    function handleDeleteItem(menuId) {
-        if (confirm("Are you sure you want to delete this user?")) {
-            alert(
-                `Delete user functionality for ID: ${menuId} (Coming soon...)`,
-            );
-        }
+    function closeEditItem() {
+        showEditItem = false;
+        editingItem = null
     }
-    function handleItemUpdateSuccess() {
+    function handleUpdateItemSuccess() {
         showEditItem = false;
         editingItem = null;
         // Refresh page to show updated data
         setTimeout(() => window.location.reload(), 1000);
     }
-    function closeEditItem() {
-        showEditItem = false;
+
+    function handleDeleteItem(item) {
+        deletingItem = item;
+        showDeleteItem = true;
     }
+    function closeDeleteItem() {
+        showDeleteItem = false;
+        deletingItem = null;
+    }
+    function handleDeleteItemSuccess() {
+        showDeleteItem = false;
+        deletingItem = null;
+        // Refresh page to show updated data
+        setTimeout(() => window.location.reload(), 1000);
+    }
+
+    // Category management function
+
+
 </script>
 
-<!-- หน้า Dashboard ร้านอาหาร -->
+<!-- หน้า Menu ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
@@ -178,7 +205,7 @@
                                         <button
                                             class="item-btn-delete"
                                             on:click={() =>
-                                                handleDeleteItem(item.id)}
+                                                handleDeleteItem(item)}
                                         >
                                             <span
                                                 class="material-symbols-outlined"
@@ -266,7 +293,8 @@
     </main>
 </div>
 
-{#if showEditItem && editingItem}
+<!-- Add Item -->
+<!-- {#if showAddItem && addingItem}
     <div class="item-modal">
         <div class="item-modal-content">
             <div class="header-item-modal">
@@ -274,15 +302,15 @@
                 <button
                     type="button"
                     class="close-modal"
-                    on:click={closeEditItem}
+                    on:click={closeAddItem}
                 >
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form method="POST" action="?/updateUser" use:enhance={() => {
+            <form method="POST" action="?/addMenu" use:enhance={() => {
                 return async ({ result }) => {
                     if (result.type === 'success') {
-                        handleItemUpdateSuccess();
+                        handleAddItemSuccess();
                     }
                 };
             }}>
@@ -294,9 +322,8 @@
                         type="text"
                         placeholder="รายละเอียด"
                         required
-                        name="item-input-name"
+                        name="name"
                         class="item-input"
-                        bind:value={editingItem.name}
                     />
                 </div>
                 <div class="item-detail-field">
@@ -307,18 +334,17 @@
                         type="text"
                         placeholder="รายละเอียด"
                         required
-                        name="item-input-detail"
+                        name="detail"
                         class="item-input"
-                        bind:value={editingItem.detail}
                     />
                 </div>
                 <div class="item-select-field">
                     <div class="header-item-modal-component">
                         <span>Select Category</span>
                     </div>
-                    <select class="role-select">
+                    <select class="role-select" name="category">
                         <option value="" disabled selected hidden
-                            >{editingItem.category}</option
+                            >เลือก ... </option
                         >
                         {#if Array.isArray(data.cate) && data.cate.length > 0}
                             {#each data.cate as item}
@@ -337,7 +363,112 @@
                         type="text"
                         placeholder="รายละเอียด"
                         required
-                        name="item-input-detail"
+                        name="price"
+                        class="item-input"
+                    />
+                </div>
+                <div class="item-price-field">
+                    <div class="header-item-modal-component">
+                        <span>Status</span>
+                    </div>
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            id="toggleSwitch"
+                            name="status"
+                        />
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" on:click={closeEditItem}>
+                        <span class="material-symbols-outlined">close</span>
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <span class="material-symbols-outlined">add</span>
+                        บันทึกเพิ่มเมนู
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{/if} -->
+
+<!-- Edit Item -->
+{#if showEditItem && editingItem}
+    <div class="item-modal">
+        <div class="item-modal-content">
+            <div class="header-item-modal">
+                <span>Edit Menu</span>
+                <button
+                    type="button"
+                    class="close-modal"
+                    on:click={closeEditItem}
+                >
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form method="POST" action="?/updateMenu" use:enhance={() => {
+                return async ({ result }) => {
+                    if (result.type === 'success') {
+                        handleUpdateItemSuccess();
+                    }
+                };
+            }}>
+                <input type="hidden" name="menuId" value={editingItem.id} />
+                <div class="item-name-field">
+                    <div class="header-item-modal-component">
+                        <span>Name</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="name"
+                        class="item-input"
+                        bind:value={editingItem.name}
+                    />
+                </div>
+                <div class="item-detail-field">
+                    <div class="header-item-modal-component">
+                        <span>Detail</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="detail"
+                        class="item-input"
+                        bind:value={editingItem.detail}
+                    />
+                </div>
+                <div class="item-select-field">
+                    <div class="header-item-modal-component">
+                        <span>Select Category</span>
+                    </div>
+                    <select class="role-select" name="category">
+                        <option value="" disabled selected hidden
+                            >{editingItem.category} </option
+                        >
+                        {#if Array.isArray(data.cate) && data.cate.length > 0}
+                            {#each data.cate as item}
+                                <option value={item.category}
+                                    >{item.category}</option
+                                >
+                            {/each}
+                        {/if}
+                    </select>
+                </div>
+                <div class="item-price-field">
+                    <div class="header-item-modal-component">
+                        <span>Price</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="รายละเอียด"
+                        required
+                        name="price"
                         class="item-input"
                         bind:value={editingItem.Price}
                     />
@@ -350,13 +481,84 @@
                         <input
                             type="checkbox"
                             id="toggleSwitch"
+                            name="status"
                             bind:checked={editingItem.Available}
                         />
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div>
-                    
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" on:click={closeEditItem}>
+                        <span class="material-symbols-outlined">close</span>
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <span class="material-symbols-outlined">save</span>
+                        บันทึกการเปลี่ยนแปลง
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{/if}
+
+<!-- Delete User Modal -->
+{#if showDeleteItem && deletingItem}
+    <div class="item-delete-modal">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div class="item-delete-modal-content">
+            <div class="modal-header">
+                <span>Delete Menu</span>
+                <button
+                    type="button"
+                    class="close-modal"
+                    on:click={closeDeleteItem}
+                >
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="item-delete-modal-body">
+                <p class="confirm-text">คุณแน่ใจหรือไม่ที่จะลบเมนูนี้?</p>
+                <div class="user-details">
+                    <div class="user-info-card">
+                        <!-- <div class="user-avatar">
+                            <span class="material-symbols-outlined">person</span>
+                        </div> -->
+                        <div class="user-info-text">
+                            <div class="user-name">
+                                <span>
+                                    {deletingItem.name}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="warning-box">
+                    <span class="material-symbols-outlined">error</span>
+                    <p class="warning-text">การดำเนินการนี้ไม่สามารถยกเลิกได้ ข้อมูลทั้งหมดของเมนูนี้จะถูกลบถาวร</p>
+                </div>
+            </div>
+            
+            <form method="POST" action="?/deleteMenu" use:enhance={() => {
+                return async ({ result }) => {
+                    if (result.type === 'success') {
+                        handleDeleteItemSuccess();
+                    }
+                };
+            }}>
+                <input type="hidden" name="menuId" value={deletingItem.id} />
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" on:click={closeDeleteItem}>
+                        <span class="material-symbols-outlined">close</span>
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="btn-danger">
+                        <span class="material-symbols-outlined">delete_forever</span>
+                        ลบผู้ใช้
+                    </button>
                 </div>
             </form>
         </div>
@@ -741,4 +943,296 @@
         font-size: 13px;
         font-family: "Noto Sans Thai", sans-serif;
     }
+
+
+
+    /* Modal Styles */
+    .item-delete-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .item-delete-modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 550px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.95);
+        animation: slideIn 0.3s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: scale(0.95) translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 24px 28px;
+        border-bottom: 1px solid #e0e0e0;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: #f5f5f5;
+        border: none;
+        cursor: pointer;
+        color: #666;
+        padding: 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #e0e0e0;
+        color: #333;
+        transform: scale(1.1);
+    }
+
+    .delete-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+    }
+
+    .item-delete-modal-body {
+        padding: 28px;
+    }
+
+    .confirm-text {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .user-details {
+        margin: 20px 0;
+    }
+
+    .user-info-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+
+    .user-info-text {
+        flex: 1;
+    }
+
+    .user-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .user-email {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 2px;
+    }
+
+    .user-phone {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 8px;
+    }
+
+    .warning-box {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%);
+        padding: 16px;
+        border-radius: 10px;
+        border-left: 4px solid #ff9800;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .warning-box .material-symbols-outlined {
+        color: #f57c00;
+        font-size: 20px;
+        margin-top: 2px;
+    }
+
+    .warning-text {
+        color: #e65100;
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 24px 28px;
+        border-top: 1px solid #e0e0e0;
+        background: #fafafa;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+        box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+        background: #f5f5f5;
+        border-color: #bdbdbd;
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(244, 67, 54, 0.3);
+    }
+
+    .btn-danger:active {
+        transform: translateY(0);
+    }
+
+    /* Button ripple effect */
+    .btn-primary::before,
+    .btn-danger::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
+        transform: translate(-50%, -50%);
+    }
+
+    .btn-primary:active::before,
+    .btn-danger:active::before {
+        width: 200px;
+        height: 200px;
+    }
+
+    /* Material Icons */
+    .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    }
+
 </style>
