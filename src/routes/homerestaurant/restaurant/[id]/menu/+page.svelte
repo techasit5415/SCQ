@@ -1,9 +1,12 @@
 <script>
     import { goto } from "$app/navigation";
-    import { page } from '$app/stores';
-    import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+    import { page } from "$app/stores";
+    import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
     import TopBar from "$lib/Components/restaurant/Topbar.svelte";
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
+    import PocketBase from "pocketbase";
+
+    const pb = new PocketBase("http://10.1.1.113:8080");
 
     export let data;
     let activeMenu = "menu";
@@ -18,15 +21,31 @@
         }
     }
 
-
     // function handleViewRestaurant(event) {
     //     // Navigate to restaurant page
     //     goto('/homeadmin/rester');
     // }
 
-    function handleSwitchAvailable(id, status) {
+    async function handleSwitchAvailable(index, newStatus) {
+        // ดึง record id ของรายการที่ต้องการอัปเดต
+        const item = data.menus[index];
 
+        try {
+            // เรียก API ของ PocketBase เพื่ออัปเดต
+            const updated = await pb.collection("Menu").update(item.id, {
+                Available: newStatus,
+            });
+
+            // อัปเดตใน UI ด้วยค่าที่กลับมาจากฐานข้อมูล (optional)
+            data.menus[index] = updated;
+
+            console.log("อัปเดตสำเร็จ:", updated);
+        } catch (error) {
+            console.error("อัปเดตล้มเหลว:", error);
+            // แนะนำ: rollback UI หรือแสดงข้อความ error ให้ผู้ใช้
+        }
     }
+
     // User management functions
     function handleEditItem(menuId) {
         alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
@@ -48,11 +67,7 @@
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
-    <RestaurantSidebar
-        {activeMenu}
-        
-        on:logout={handleLogout}
-    />
+    <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
     <!-- Main Content -->
     <main class="main-content">
         <!-- Menu -->
@@ -111,34 +126,40 @@
                                     <td>{item.category || "N/A"}</td>
                                     <td>{item.Price || "N/A"}</td>
                                     <td>
-                                        <!-- <span
-                                            class="status-badge"
-                                            class:active={item.Available}
-                                        >
-                                            {item.Available
-                                                ? "Active"
-                                                : "Inactive"}
-                                        </span> -->
                                         <label class="switch">
-                                            <input type="checkbox" id="toggleSwitch" 
-                                                bind:checked={item.Available}>
-                                                <!-- on:change={() => handleSwitchAvailable(item.id, item.Available)} -->
+                                            <input
+                                                type="checkbox"
+                                                id="toggleSwitch"
+                                                bind:checked={item.Available}
+                                                on:change={() =>
+                                                    handleSwitchAvailable(
+                                                        index,
+                                                        item.Available,
+                                                    )}
+                                            />
                                             <span class="slider round"></span>
                                         </label>
                                     </td>
                                     <td>
                                         <button
-                                            class="action-btn edit"
+                                            class="item-btn-edit"
                                             on:click={() =>
                                                 handleEditItem(item.id)}
                                         >
-                                            Edit
+                                            <span
+                                                class="material-symbols-outlined"
+                                                >edit</span
+                                            >
                                         </button>
                                         <button
-                                            class="action-btn delete"
-                                            on:click={() => handleDeleteItem(item.id)}
+                                            class="item-btn-delete"
+                                            on:click={() =>
+                                                handleDeleteItem(item.id)}
                                         >
-                                            Delete
+                                            <span
+                                                class="material-symbols-outlined"
+                                                >delete</span
+                                            >
                                         </button>
                                     </td>
                                 </tr>
@@ -174,28 +195,35 @@
                 <div class="line"></div>
                 <table class="category-table">
                     <thead>
-                        <tr>
-                        </tr>
+                        <tr> </tr>
                     </thead>
                     <tbody>
                         {#if Array.isArray(data.cate) && data.cate.length > 0}
                             {#each data.cate as item}
                                 <tr>
-                                    <td class="text-left">{item.category || "N/A"}</td>
+                                    <td class="text-left"
+                                        >{item.category || "N/A"}</td
+                                    >
                                     <td class="text-right">
                                         <button
-                                            class="action-btn edit"
+                                            class="category-btn-edit"
                                             on:click={() =>
                                                 handleEditItem(item.id)}
                                         >
-                                            Edit
+                                            <span
+                                                class="material-symbols-outlined"
+                                                >edit</span
+                                            >
                                         </button>
                                         <button
-                                            class="action-btn delete"
+                                            class="category-btn-delete"
                                             on:click={() =>
-                                            handleDeleteItem(item.id)}
+                                                handleDeleteItem(item.id)}
                                         >
-                                            Delete
+                                            <span
+                                                class="material-symbols-outlined"
+                                                >delete</span
+                                            >
                                         </button>
                                     </td>
                                 </tr>
@@ -214,7 +242,15 @@
     </main>
 </div>
 
-<body></body>
+<!-- <div id="my-modal" class="myModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>ยืนยันการลบ</h2>
+        <p>คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?</p>
+        <button id="confirm-delete">ลบ</button>
+        <button id="cancel">ยกเลิก</button>
+    </div>
+</div> -->
 
 <style>
     /* Reset and Base */
@@ -236,6 +272,7 @@
         margin-top: auto;
         color: #d32f2f !important;
     }
+
     /* Main Content */
     .main-content {
         margin-left: 250px;
@@ -332,7 +369,7 @@
     .item-table th {
         padding: 12px;
         text-align: center;
-        border-bottom: 2px solid #494A50;
+        border-bottom: 2px solid #494a50;
     }
     .item-table td {
         padding: 12px;
@@ -356,40 +393,31 @@
         background: #f8f9fa;
     }
 
-    .status-badge {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 500;
-        background: #ffebee;
-        color: #d32f2f;
-    }
-
-    .status-badge.active {
-        background: #e8f5e8;
-        color: #2e7d32;
-    }
-
-    .action-btn {
-        padding: 4px 8px;
-        border: none;
-        border-radius: 4px;
-        font-size: 12px;
+    .item-btn-edit {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #333438;
+        border-radius: 50%;
+        color: #333438;
+        justify-content: center;
         cursor: pointer;
-        margin-right: 8px;
-        text-decoration: underline;
         background: none;
     }
 
-    .action-btn.edit {
-        color: #2b7fff;
-    }
-
-    .action-btn.delete {
+    .item-btn-delete {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #d32f2f;
+        border-radius: 50%;
         color: #d32f2f;
+        justify-content: center;
+        cursor: pointer;
+        background: none;
     }
-
-    .action-btn:hover {
+    .item-btn-edit:hover {
+        opacity: 0.7;
+    }
+    .item-btn-delete:hover {
         opacity: 0.7;
     }
 
@@ -432,18 +460,18 @@
     .line {
         width: 600px;
         height: 2px;
-        border-bottom: 2px solid #494A50;
+        border-bottom: 2px solid #494a50;
         margin-bottom: 8px;
     }
     .category-table {
         width: 600px;
         border-collapse: collapse;
     }
-    
+
     .category-table td {
         padding: 12px;
         border: none;
-        background-color: #EDF0F2;
+        background-color: #edf0f2;
         border-top: 8px solid #ffffff;
     }
     .text-left {
@@ -464,14 +492,40 @@
         background: #f8f9fa;
     }
 
+    .category-btn-edit {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #333438;
+        border-radius: 50%;
+        color: #333438;
+        justify-content: center;
+        cursor: pointer;
+        background: none;
+    }
+    .category-btn-delete {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #d32f2f;
+        border-radius: 50%;
+        color: #d32f2f;
+        justify-content: center;
+        background: none;
+    }
+    .category-btn-edit:hover {
+        opacity: 0.7;
+    }
+    .category-btn-delete:hover {
+        opacity: 0.7;
+    }
 
+    /* ส่วนของ Switch */
     .switch {
         position: relative;
         display: inline-block;
         width: 60px;
         height: 34px;
-        }
-    .switch input { 
+    }
+    .switch input {
         opacity: 0;
         width: 0;
         height: 0;
@@ -484,8 +538,8 @@
         right: 0;
         bottom: 0;
         background-color: #ccc;
-        -webkit-transition: .4s;
-        transition: .4s;
+        -webkit-transition: 0.4s;
+        transition: 0.4s;
     }
     .slider:before {
         position: absolute;
@@ -495,14 +549,14 @@
         left: 4px;
         bottom: 4px;
         background-color: white;
-        -webkit-transition: .4s;
-        transition: .4s;
+        -webkit-transition: 0.4s;
+        transition: 0.4s;
     }
     input:checked + .slider {
-        background-color: #4CAF50;
+        background-color: #4caf50;
     }
     input:focus + .slider {
-        box-shadow: 0 0 1px #4CAF50;
+        box-shadow: 0 0 1px #4caf50;
     }
     input:checked + .slider:before {
         -webkit-transform: translateX(26px);
@@ -511,9 +565,9 @@
     }
     /* Rounded sliders */
     .slider.round {
-    border-radius: 34px;
+        border-radius: 34px;
     }
     .slider.round:before {
-    border-radius: 50%;
-}
+        border-radius: 50%;
+    }
 </style>
