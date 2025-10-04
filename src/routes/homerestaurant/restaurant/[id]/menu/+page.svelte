@@ -9,7 +9,12 @@
     const pb = new PocketBase("http://10.1.1.113:8080");
 
     export let data;
+
+    const pbUrl = PUBLIC_POCKETBASE_URL;
+
     let activeMenu = "menu";
+    let showEditItem = false;
+    let editingMenu = null;
 
     async function handleLogout() {
         try {
@@ -20,11 +25,6 @@
             window.location.href = "/admin";
         }
     }
-
-    // function handleViewRestaurant(event) {
-    //     // Navigate to restaurant page
-    //     goto('/homeadmin/rester');
-    // }
 
     async function handleSwitchAvailable(index, newStatus) {
         // ดึง record id ของรายการที่ต้องการอัปเดต
@@ -46,9 +46,13 @@
         }
     }
 
+    
+
     // User management functions
     function handleEditItem(menuId) {
-        alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
+        // alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
+        editingMenu = {};
+        showEditItem = true;
     }
 
     function handleDeleteItem(menuId) {
@@ -57,6 +61,10 @@
                 `Delete user functionality for ID: ${menuId} (Coming soon...)`,
             );
         }
+    }
+
+    function closeEditItem() {
+        showEditItem = false;
     }
 </script>
 
@@ -121,7 +129,14 @@
                             {#each data.menus as item, index}
                                 <tr>
                                     <td>{index + 1}</td>
-                                    <td>{item.photo || "N/A"}</td>
+                                    <td>
+                                        {#if item.Photo}
+                                            <!-- <img src={item.Photo} style="width: 10px; height: auto;" /> -->
+                                            <img src={item.Photo} />
+                                        {:else}
+                                            N/A
+                                        {/if}
+                                    </td>
                                     <td>{item.name || "N/A"}</td>
                                     <td>{item.category || "N/A"}</td>
                                     <td>{item.Price || "N/A"}</td>
@@ -242,15 +257,60 @@
     </main>
 </div>
 
-<!-- <div id="my-modal" class="myModal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>ยืนยันการลบ</h2>
-        <p>คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?</p>
-        <button id="confirm-delete">ลบ</button>
-        <button id="cancel">ยกเลิก</button>
+{#if showEditItem}
+    <div class="item-modal">
+        <div class="item-modal-content">
+            <div class="header-item-modal">
+                <span>Edit Menu</span>
+                <button
+                    type="button"
+                    class="close-modal"
+                    on:click={closeEditItem}
+                >
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="item-name-field">
+                <div class="header-item-modal-component">
+                    <span>Name</span>
+                </div>
+                <input 
+                    type="text"
+                    placeholder="รายละเอียด"
+                    required
+                    name="item-input-name"
+                    class="item-input"
+                />
+            </div>
+            <div class="item-detail-field">
+                <div class="header-item-modal-component">
+                    <span>Detail</span>
+                </div>
+                <input 
+                    type="text"
+                    placeholder="รายละเอียด"
+                    required
+                    name="item-input-detail"
+                    class="item-input"
+                />
+            </div>
+            <div class="item-detail-field">
+                <div class="header-item-modal-component">
+                    <span>Detail</span>
+                </div>
+                <input 
+                    type="text"
+                    placeholder="รายละเอียด"
+                    required
+                    name="item-input-detail"
+                    class="item-input"
+                />
+            </div>
+        </div>
     </div>
-</div> -->
+{/if}
+
+<body></body>
 
 <style>
     /* Reset and Base */
@@ -569,5 +629,54 @@
     }
     .slider.round:before {
         border-radius: 50%;
+    }
+
+    .item-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .item-modal-content {
+        background: rgb(255, 255, 255);
+        border-radius: 16px;
+        width: 712px;
+        height: 866px;
+        /* overflow-y: auto; */
+        padding: 32px;
+        gap: 20px;
+        font-family: "Noto Sans Thai", sans-serif;
+    }
+    .header-item-modal {
+        display: flex;
+        font-size: 20px;
+        color: #494a50;
+        font-weight: bold;
+        justify-content: space-between;
+    }
+    .close-modal {
+        border: none;
+        background: none;
+        cursor: pointer;
+    }
+    .header-item-modal-component {
+        font-size: 16px;
+        color: Foundation/Grey/G300;
+        font-family: "Noto Sans Thai", sans-serif;
+    }
+    .item-input {
+        width: 648px;
+        height: 44px;
+        border: 1px solid #B4B5B7;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 13px;
+        font-family: "Noto Sans Thai", sans-serif;
     }
 </style>
