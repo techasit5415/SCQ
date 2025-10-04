@@ -8,12 +8,6 @@
     export let data;
     let activeMenu = "menu";
 
-    const pbUrl = PUBLIC_POCKETBASE_URL;
-	const { restaurant, menuItems } = data;
-
-    let searchTerm = '';
-	let activeTab = 'เมนูแนะนำ';
-
     async function handleLogout() {
         try {
             await fetch("/logout");
@@ -24,65 +18,31 @@
         }
     }
 
+
+    // function handleViewRestaurant(event) {
+    //     // Navigate to restaurant page
+    //     goto('/homeadmin/rester');
+    // }
+
+    function handleSwitchAvailable(id, status) {
+
+    }
     // User management functions
-    // function handleEditItem(menuId) {
-    //     alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
-    // }
+    function handleEditItem(menuId) {
+        alert(`Edit user functionality for ID: ${menuId} (Coming soon...)`);
+    }
 
-    // function handleDeleteItem(menuId) {
-    //     if (confirm("Are you sure you want to delete this user?")) {
-    //         alert(
-    //             `Delete user functionality for ID: ${menuId} (Coming soon...)`,
-    //         );
-    //     }
-    // }
-
-    // สร้าง tabs แบบ dynamic จาก categories ที่มีจริงใน menuItems
-	$: uniqueCategories = [...new Set(menuItems.map((item: any) => item.category).filter(Boolean))];
-	$: tabs = ['เมนูแนะนำ', ...uniqueCategories];
-	
-	// Debug: log categories and active tab
-	$: console.log('Available categories:', uniqueCategories);
-	$: console.log('Current active tab:', activeTab);
-	$: console.log('Filtered menus count:', filteredMenus.length);
-	
-	// Filter menu items based on search and category
-	$: filteredMenus = menuItems.filter((item: any) => {
-		const matchesSearch = (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-							 (item.Details && item.Details.toLowerCase().includes(searchTerm.toLowerCase()));
-		
-		if (activeTab === 'เมนูแนะนำ') {
-			return matchesSearch; // Show all for recommended
-		}
-		
-		// Filter by category if not "แนะนำ"
-		return matchesSearch && item.category === activeTab;
-	});
-	
-	// Debug: log filtered items when activeTab changes
-	$: if (activeTab) {
-		console.log(`=== Tab changed to: ${activeTab} ===`);
-		console.log('Filtered items:', filteredMenus.map(item => ({
-			id: item.id,
-			name: item.name,
-			category: item.category,
-			Photo: item.Photo
-		})));
-	}
-	
-	// function goBack() {
-	// 	goto('/customer');
-	// }
-	
-	// function getRestaurantImageUrl(): string {
-	// 	if (restaurant.field) {
-	// 		return `${pbUrl}/api/files/Shop/${restaurant.id}/${restaurant.field}`;
-	// 	}
-	// 	return '/Photo/Icon.png'; // แก้ path ให้ถูกต้อง
-	// }
+    function handleDeleteItem(menuId) {
+        if (confirm("Are you sure you want to delete this user?")) {
+            alert(
+                `Delete user functionality for ID: ${menuId} (Coming soon...)`,
+            );
+        }
+    }
 </script>
 
 <!-- on:menuChange={handleMenuChange} -->
+<!-- on:viewRestaurant={handleViewRestaurant} -->
 
 <!-- หน้า Dashboard ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
@@ -90,7 +50,7 @@
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar
         {activeMenu}
-        on:viewRestaurant={handleViewRestaurant}
+        
         on:logout={handleLogout}
     />
     <!-- Main Content -->
@@ -117,8 +77,10 @@
                         </span>
                         <span
                             class="btn-text"
-                            style="color: white; font-size: 20px">Add Item</span
+                            style="color: white; font-size: 20px"
                         >
+                            Add Item
+                        </span>
                     </button>
                     <input
                         type="text"
@@ -140,8 +102,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#if data.restaurant && data.restaurant.length > 0}
-                            {#each filteredMenus as item, index}
+                        {#if data.menus && data.menus.length > 0}
+                            {#each data.menus as item, index}
                                 <tr>
                                     <td>{index + 1}</td>
                                     <td>{item.photo || "N/A"}</td>
@@ -158,8 +120,10 @@
                                                 : "Inactive"}
                                         </span> -->
                                         <label class="switch">
-                                            <input type="checkbox" id="toggleSwitch">
-                                            <span class="slider round">{item.Available}</span>
+                                            <input type="checkbox" id="toggleSwitch" 
+                                                bind:checked={item.Available}>
+                                                <!-- on:change={() => handleSwitchAvailable(item.id, item.Available)} -->
+                                            <span class="slider round"></span>
                                         </label>
                                     </td>
                                     <td>
@@ -172,8 +136,7 @@
                                         </button>
                                         <button
                                             class="action-btn delete"
-                                            on:click={() =>
-                                                handleDeleteItem(item.id)}
+                                            on:click={() => handleDeleteItem(item.id)}
                                         >
                                             Delete
                                         </button>
@@ -209,7 +172,7 @@
                     </button>
                 </div>
                 <div class="line"></div>
-                <!-- <table class="category-table">
+                <table class="category-table">
                     <thead>
                         <tr>
                         </tr>
@@ -245,7 +208,7 @@
                             </tr>
                         {/if}
                     </tbody>
-                </table> -->
+                </table>
             </div>
         </div>
     </main>
