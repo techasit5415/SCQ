@@ -1,15 +1,43 @@
 <script>
+    import { createEventDispatcher } from "svelte";
     import { goto } from "$app/navigation";
+    import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
     import TopBar from "$lib/Components/restaurant/Topbar.svelte";
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
     import Orderbar from "$lib/Components/restaurant/Orderbar.svelte";
+    import PocketBase from "pocketbase"
+
+    
+    const pb = new PocketBase("http://10.1.1.113:8080");
+    const pbUrl = PUBLIC_POCKETBASE_URL;
+    const dispatch = createEventDispatcher();
 
     export let data;
-    export let fromMenu;
     export let activeOrderIdx = 0;
 
     let activeMenu = "pending";
     let activeOrderMenu = "pending";
+    let paymentPending =  data.payments?.filter(p => p.expand?.Order_ID?.Status === "Pending");
+    let paymentInprogress =  data.payments?.filter(p => p.expand?.Order_ID?.Status === "In-progress");
+    let paymentCompleted =  data.payments?.filter(p => p.expand?.Order_ID?.Status === "Completed");
+
+    function handleOrderClick(menu, rest) {
+        if (menu !== activeOrderMenu) {
+            activeOrderMenu = menu;
+            dispatch("menuChange", { menu });
+            switch (menu) {
+                case "pending":
+                    goto(`/homerestaurant/restaurant/${rest}/order/pending`);
+                    break;
+                case "active":
+                    goto(`/homerestaurant/restaurant/${rest}/order/active`);
+                    break;
+                case "history":
+                    goto(`/homerestaurant/restaurant/${rest}/order/history`);
+                    break;
+            }
+        }
+    }
 
     function handleViewRestaurant(event) {
         // Navigate to restaurant page
@@ -56,8 +84,42 @@
         activeOrderIdx = orderList;
     }
 
-    function getMenuDetails(id) {
-        return data.menus.find((menu) => menu.id === id);
+    async function handleCancelOrder() {
+        // ดึง record id ของรายการที่ต้องการอัปเดต
+        const item = paymentPending[activeOrderIdx].expand.Order_ID;
+        try {
+            // เรียก API ของ PocketBase เพื่ออัปเดต
+            const updated = await pb.collection("Order").update(item.id, {
+                Status: "Canceled"
+            });
+            // อัปเดตใน UI ด้วยค่าที่กลับมาจากฐานข้อมูล (optional)
+            data.menus[activeOrderIdx] = updated;
+            console.log("อัปเดตสำเร็จ:", updated);
+        } catch (error) {
+            console.error("อัปเดตล้มเหลว:", error);
+            // แนะนำ: rollback UI หรือแสดงข้อความ error ให้ผู้ใช้
+        }
+        // Refresh page to show updated data
+        setTimeout(() => window.location.reload(), 1000);
+    }
+
+    async function handleAcceptOrder() {
+        // ดึง record id ของรายการที่ต้องการอัปเดต
+        const item = paymentPending[activeOrderIdx].expand.Order_ID;
+        try {
+            // เรียก API ของ PocketBase เพื่ออัปเดต
+            const updated = await pb.collection("Order").update(item.id, {
+                Status: "In-progress"
+            });
+            // อัปเดตใน UI ด้วยค่าที่กลับมาจากฐานข้อมูล (optional)
+            data.menus[activeOrderIdx] = updated;
+            console.log("อัปเดตสำเร็จ:", updated);
+        } catch (error) {
+            console.error("อัปเดตล้มเหลว:", error);
+            // แนะนำ: rollback UI หรือแสดงข้อความ error ให้ผู้ใช้
+        }
+        // Refresh page to show updated data
+        setTimeout(() => window.location.reload(), 1000);
     }
 </script>
 
@@ -81,11 +143,55 @@
             </nav>
             <h2>Order</h2>
         </div>
-        <Orderbar
+
+        <!-- <Orderbar
             {activeOrderMenu}
             on:viewRestaurant={handleViewRestaurant}
             on:logout={handleLogout}
-        />
+        /> -->
+        <nav class="orderbar">
+            <div class="orderbar-content">
+                <div class="btn-content">
+                    <!-- Pending Orders -->
+                    <button
+                        class="order-btn"
+                        class:active={activeOrderMenu === "pending"}
+                        on:click={() => handleOrderClick("pending", paymentPending[activeOrderIdx].Shop_ID)}
+                    >
+                        <span>Pending Orders </span>
+                        <span style="color: #2b7fff;">({paymentPending.length})</span>
+                    </button>
+
+                    <!-- Active Orders -->
+                    <button
+                        class="order-btn"
+                        class:active={activeOrderMenu === "active"}
+                        on:click={() => handleOrderClick("active", paymentInprogress[activeOrderIdx].Shop_ID)}
+                    >
+                        <span>Active Orders </span>
+                        <span style="color: #2b7fff;">({paymentInprogress.length})</span>
+                    </button>
+
+                    <!-- Order History -->
+                    <button
+                        class="order-btn"
+                        class:active={activeOrderMenu === "history"}
+                        on:click={() => handleOrderClick("history", paymentCompleted[activeOrderIdx].Shop_ID)}
+                    >
+                        <span>History Order</span>
+                        <span style="color: #2b7fff;">({paymentCompleted.length})</span>
+                    </button>
+                </div>
+                <div class="line-content">
+                    <div class="line" class:active={activeOrderMenu === "pending"}></div>
+                    <div class="line" class:active={activeOrderMenu === "active"}></div>
+                    <div class="line" class:active={activeOrderMenu === "history"}></div>
+                    <div class="line4"></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- ส่วนของรายการ และรายละเอียด -->
         <div class="order-content">
             <div class="orderList">
                 <div class="headList">
@@ -99,8 +205,8 @@
                 <div class="table-part">
                     <table class="order-list-table">
                         <tbody>
-                            {#if data.orders && data.orders.length > 0}
-                                {#each data.orders as item, index}
+                            {#if paymentPending && paymentPending.length > 0}
+                                {#each paymentPending as item, index}
                                     <tr
                                         class:active={activeOrderIdx === index}
                                         on:click={() => handleListClick(index)}
@@ -108,7 +214,7 @@
                                         <td
                                             >#{item.id || "N/A"}<br
                                             />{listDateTime(item.created)}
-                                            {item?.Menu_ID.length || 0} รายการ</td
+                                            {item.expand?.Order_ID?.expand?.Menu_ID?.length || 0} รายการ</td
                                         >
                                         <td>฿{item.Total_Amount || "N/A"}</td>
                                     </tr>
@@ -124,27 +230,21 @@
                     </table>
                 </div>
             </div>
+
             <div class="orderDetail">
                 <div class="headDetail">
                     <div class="head-detail">
                         <div class="orderID-detail">
-                            <span>Order: </span>
-                            <span
-                                >{Array.isArray(data.orders) &&
-                                data.orders.length > 0
-                                    ? data.orders[activeOrderIdx].id
-                                    : "-"}</span
-                            >
+                            <span>
+                                Order: {paymentPending[activeOrderIdx].Order_ID || "N/A"}
+                            </span>
                         </div>
                         <div class="customer-detail">
                             <span>
-                                ชื่อลูกค้า {Array.isArray(data.orders) &&
-                                    data.orders.length > 0
-                                    ? data.orders[activeOrderIdx].User_ID
-                                    : "-"}</span
-                            >
+                                ชื่อลูกค้า: {paymentPending[activeOrderIdx].expand?.User_ID?.name}
+                            </span>
                             <span>
-                                {detailDateTime(data.orders[activeOrderIdx].created)}
+                                {detailDateTime(paymentPending[activeOrderIdx].created)}
                             </span>
                         </div>
                         <div class="line1"></div>
@@ -158,12 +258,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {#if data.orders[activeOrderIdx].Menu_ID && data.orders[activeOrderIdx].Menu_ID.length > 0}
-                                {#each data.orders[activeOrderIdx].Menu_ID as menuID, index}
+                            {#if paymentPending[activeOrderIdx].expand.Order_ID.expand.Menu_ID.length > 0}
+                                {#each paymentPending[activeOrderIdx].expand?.Order_ID?.expand?.Menu_ID as menu}
                                     <tr>
-                                        <td>{getMenuDetails(menuID).name ||"N/A"}</td>
-                                        <td>฿{getMenuDetails(menuID).Price || "0"}</td>
-                                        <td>{getMenuDetails(menuID).option || "0"}</td>
+                                        <td>{menu.name}</td>
+                                        <td>{menu.option}</td>
+                                        <td>{menu.Price}</td>
                                     </tr>
                                 {/each}
                             {:else}
@@ -176,11 +276,21 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="detail-totalAmount">
+                    <span>วิธีชำระเงิน: {paymentPending[activeOrderIdx].Method_Payment}</span>
+                    <span>สถานะการชำระเงิน: {paymentPending[activeOrderIdx].status}</span>
+                    <div class="detail-summary-totalAmount">
+                        <span>ราคารวม</span>
+                        <span style="font-size:30px; color:#FF8C00;">฿{paymentPending[activeOrderIdx].Total_Amount}</span>
+                    </div>
+                </div>
                 <div class="detail-btn">
-                    <button type="button" class="cancel-order-btn">
+                    <button type="button" class="cancel-order-btn" 
+                    on:click={handleCancelOrder}>
                         <span>ยกเลิกออเดอร์</span>
                     </button>
-                    <button type="button" class="accept-order-btn">
+                    <button type="button" class="accept-order-btn"
+                    on:click={handleAcceptOrder}>
                         <span>รับออเดอร์</span>
                     </button>
                 </div>
@@ -220,6 +330,48 @@
         padding-top: 30px;
         padding-right: 22px;
         /* min-height: calc(100vh - 60px); */
+    }
+
+    /* ส่วนของ Orderbar */
+    .btn-content {
+        display: flex;
+        gap: 40px;
+        margin-bottom: 8px;
+    }
+    .order-btn {
+        border: none;
+        background: none;
+        align-items: left;
+        font-size: 19px;
+        color: #333438;
+        cursor: pointer;
+    }
+
+    .order-btn:hover {
+        color: #333;
+    }
+
+    .order-btn.active {
+        color: #2b7fff;
+        font-weight: 500;
+    }
+
+    .line-content {
+        display: flex;
+    }
+
+    .line {
+        width: 190px;
+        height: 0px;
+        border: 2px solid #95969a;
+    }
+    .line.active {
+        border: 2px solid #2b7fff;
+    }
+    .line4 {
+        width: 1030px;
+        height: 0px;
+        border: 2px solid #95969a;
     }
 
     /* Page Header */
@@ -266,7 +418,6 @@
         height: 680px;
         background-color: rgb(255, 255, 255);
         border-radius: 16px;
-
         gap: 8px;
     }
     .headList {
@@ -283,6 +434,7 @@
     .orderID-list {
         width: 357px;
     }
+
     .table-part {
         /* background-color: green; */
         /* width: 500px; */
@@ -344,11 +496,23 @@
         height: 1px;
         background-color: #b4b5b7;
     }
+    
     .menu-detail {
         overflow: auto;
-        background-color: rgb(255, 255, 255);
+        background-color: rgb(255, 0, 0);
         height: 600px;
         font-size: 25px;
+    }
+    .detail-totalAmount {
+        display: flex;
+        flex-direction: column;
+        font-size: 20px;
+        color: #333438;
+    }
+    .detail-summary-totalAmount {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .detail-btn {
@@ -365,6 +529,12 @@
         background-color: white;
         color: #68696e;
         border: 2px solid #68696e;
+        cursor: pointer;
+    }
+    .cancel-order-btn:hover {
+        background-color: #68696e;
+        color: #ffffff;
+        border: 2px solid #ffffff;
     }
     .accept-order-btn {
         width: 576px;
@@ -375,6 +545,12 @@
         background-color: orange;
         color: white;
         border: 2px solid white;
+        cursor: pointer;
+    }
+    .accept-order-btn:hover {
+        background-color: rgb(255, 255, 255);
+        color: orange;
+        border: 2px solid orange;
     }
 
     /* Responsive */

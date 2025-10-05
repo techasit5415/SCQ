@@ -8,6 +8,7 @@
     import PocketBase from "pocketbase";
 
     const pb = new PocketBase("http://10.1.1.113:8080");
+    const pbUrl = PUBLIC_POCKETBASE_URL;
 
     export let data;
 
@@ -15,9 +16,15 @@
     let showAddItem = false;
     let showEditItem = false;
     let showDeleteItem = false;
+    let showAddCategory= false;
+    let showEditCategory= false;
+    let showDeleteCategory= false;
     let addingItem = null;
     let editingItem = null;
     let deletingItem = null;
+    let addingCategory= null;
+    let editingCategory= null;
+    let deletingCategory= null;
     let searchItem = "";
 
     async function handleLogout() {
@@ -31,8 +38,6 @@
     }
 
     $: filteredItem = data.menus.filter((menu) => {
-        // const matchesRole = selectedRole === 'all' ||
-        //                   (user.expand?.Role?.name?.toLowerCase() === selectedRole.toLowerCase());
         const matchesSearch =
             searchItem === "" ||
             menu.name?.toLowerCase().includes(searchItem.toLowerCase());
@@ -57,6 +62,11 @@
     }
 
     // Item management functions
+    let file = null;
+
+    function handleFileChange(event) {
+        file = event.target.files[0];
+    }
     function handleAddItem() {
         showAddItem = true;
     }
@@ -105,9 +115,18 @@
     }
 
     // Category management function
+
+
+
+    function getRestaurantImageUrl(item) {
+        if(item && item.Photo) {
+            return `${pbUrl}/api/files/Menu/${item.id}/${item.Photo}`;
+        }
+		return '/Photo/Icon.png'; // หรือ default รูป
+	}
 </script>
 
-<!-- หน้า Dashboard ร้านอาหาร -->
+<!-- หน้า Menu ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
@@ -167,8 +186,9 @@
                                     <td>{index + 1}</td>
                                     <td>
                                         {#if item.Photo}
-                                            <!-- <img src={item.Photo} style="width: 10px; height: auto;" /> -->
-                                            <!-- <img src={item.Photo} /> -->
+                                            <div>
+                                                <img src={getRestaurantImageUrl(filteredItem[index])} alt="Menu_Picture" style="width: 80px; height: auto;"/>
+                                            </div>
                                         {:else}
                                             N/A
                                         {/if}
@@ -293,7 +313,7 @@
     </main>
 </div>
 
-<!-- Add Menu -->
+<!-- Add Item -->
 {#if showAddItem}
     <div class="item-modal">
         <div class="item-modal-content">
@@ -315,6 +335,13 @@
                 }}
             >
                 <input type="hidden" name="field"/>
+                <div class="item-name-field">
+                    <div class="header-item-modal-component">
+                        <span>Upload Image</span>
+                    </div>
+                    <input type="file" name="photo" accept="image/*" on:change={handleFileChange} />
+                </div>
+                
                 <div class="item-name-field">
                     <div class="header-item-modal-component">
                         <span>Name</span>
@@ -400,7 +427,7 @@
     </div>
 {/if}
 
-<!-- Edit Menu -->
+<!-- Edit Item -->
 {#if showEditItem && editingItem}
     <div class="item-modal">
         <div class="item-modal-content">
@@ -511,7 +538,7 @@
     </div>
 {/if}
 
-<!-- Delete User Modal -->
+<!-- Delete Item -->
 {#if showDeleteItem && deletingItem}
     <div class="item-delete-modal">
         <div class="item-delete-modal-content">
@@ -1098,18 +1125,6 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
-    .user-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 24px;
-    }
-
     .user-info-text {
         flex: 1;
     }
@@ -1119,18 +1134,6 @@
         font-weight: 600;
         color: #333;
         margin-bottom: 4px;
-    }
-
-    .user-email {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 2px;
-    }
-
-    .user-phone {
-        font-size: 13px;
-        color: #888;
-        margin-bottom: 8px;
     }
 
     .warning-box {

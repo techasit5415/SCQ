@@ -78,8 +78,8 @@ export const actions: Actions = {
   addMenu: async ({ request, params }: { params: { id: string } }) => {
     try {
       const formData = await request.formData();
-      // const menuId = formData.get('menuId') as string;
       const field = params.id;
+      const photo = formData.get('photo') as File | null;
       const name = formData.get('name') as string;
       const detail = formData.get('detail') as string;
       const category = formData.get('category') as string;
@@ -87,7 +87,7 @@ export const actions: Actions = {
       const statusRaw = formData.get('status') as string;
       const status = statusRaw === 'on';  // ✅ true หรือ false ตาม checkbox
 
-      console.log('Adding user:', { name, detail, category, price, status });
+      console.log('Adding menu:', {name, detail, category, price, status});
 
       // Try to authenticate - skip if fails since PocketBase might allow public updates
       try {
@@ -106,6 +106,7 @@ export const actions: Actions = {
       // Update user
       const addData: any = {
         field,
+        Photo: photo,
         name,
         detail,
         category,

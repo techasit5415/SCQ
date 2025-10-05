@@ -3,22 +3,14 @@ import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 import { env as privateEnv } from '$env/dynamic/private';
+import { page } from '$app/state';
 
 // ใช้ URL จาก environment variable
-
 const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async ({ cookies }) => {
-  const session = cookies.get('session');
-  console.log('Session cookie in homeadmin:', session);
-
-  // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
-  if (!session || !session.match(/^\d+$/)) {
-      console.log('No valid session, redirecting to /admin');
-      // throw redirect(302, '/admin');
-  }
-
+export const load: PageServerLoad = async ({ params }: { params: { id: string } }) => {
   console.log('Session valid, loading homeadmin page');
+  console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
@@ -26,30 +18,34 @@ export const load: PageServerLoad = async ({ cookies }) => {
     // Initialize stats object
 
     let stats = {
+      payments: 0,
       orders: 0,
       menus: 0
     }
 
-    // ดึงข้อมูลรายละเอียดของ Peending
-    let orderData = []
+    // ดึงข้อมูลรายละเอียดของ Payment
+    let paymentData = []
     try {
-      console.log('Fetching orders count...');
-      const orderCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "Pending"'
+      console.log('Fetching payments count...');
+      const paymentCount = await pb.collection('Payment').getFullList({
+        filter: `Shop_ID = "${params.id}"`,
+        expand: 'Order_ID, Order_ID.Menu_ID, User_ID'
     });
-      console.log('Orders count result:', orderCount);
-      console.log('Orders totalItems:', orderCount.length);
-      stats.orders = orderCount.length;
-      orderData = orderCount; // เก็บข้อมูล order แบบละเอียด
+      console.log('Payments count result:', paymentCount);
+      console.log('Payments totalItems:', paymentCount.length);
+      stats.payments = paymentCount.length;
+      paymentData = paymentCount; // เก็บข้อมูล payment แบบละเอียด
     } catch (error) {
-      console.log('Error fetching users:', error);
+      console.log('Error fetching payment:', error);
     }
 
     // ดึงข้อมูลรายละเอียดของ Menu
     let menuData = []
     try {
       console.log('Fetching orders count...');
-      const menuCount = await pb.collection('Menu').getFullList({});
+      const menuCount = await pb.collection('Menu').getFullList({
+        filter: `Shop_ID = "${params.id}"`
+      });
       console.log('Menu count result:', menuCount);
       console.log('Menu totalItems:', menuCount.length);
       stats.menus = menuCount.length;
@@ -59,7 +55,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     }
 
     const result = {
-      orders: orderData,
+      payments: paymentData,
       menus: menuData
     };
 
@@ -70,7 +66,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     
     // Return fallback data if database connection fails
     return {
-      orders: [],
+      payments: [],
       menus: []
     };
   }

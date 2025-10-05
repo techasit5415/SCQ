@@ -6,19 +6,19 @@
     const dispatch = createEventDispatcher();
     let data;
 
-    function handleOrderClick(menu) {
+    function handleOrderClick(menu, rest) {
         if (menu !== activeOrderMenu) {
             activeOrderMenu = menu;
             dispatch("menuChange", { menu });
             switch (menu) {
                 case "pending":
-                    goto("/homerestaurant/order/pending");
+                    goto(`/homerestaurant/restaurant/${rest}/order/pending`);
                     break;
                 case "active":
-                    goto("/homerestaurant/order/active");
+                    goto(`/homerestaurant/restaurant/${rest}/order/active`);
                     break;
                 case "history":
-                    goto("/homerestaurant/order/history");
+                    goto(`/homerestaurant/restaurant/${rest}/order/history`);
                     break;
             }
         }
