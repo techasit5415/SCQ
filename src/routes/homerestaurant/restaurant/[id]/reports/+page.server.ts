@@ -6,8 +6,10 @@ import { POCKETBASE_ADMIN_EMAIL, POCKETBASE_ADMIN_PASSWORD } from '$env/static/p
 
 const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async ({ locals, cookies }) => {
+export const load: PageServerLoad = async ({ locals, cookies, params }) => {
   console.log('=== Loading Reports Page ===');
+  const shopId = params.id; // ดึง shop ID จาก URL
+  console.log('Shop ID:', shopId);
 
   // Initialize data structures
   let reports: any = {
@@ -33,10 +35,10 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   }
 
   try {
-    // 1. ดึงข้อมูล Total Sales (ยอดขายรวมทั้งหมด)
-    console.log('Fetching total sales...');
+    // 1. ดึงข้อมูล Total Sales (ยอดขายรวมทั้งหมด - เฉพาะร้านนี้)
+    console.log('Fetching total sales for shop:', shopId);
     const allCompletedOrders = await pb.collection('Order').getFullList({
-      filter: 'Status = "Completed"'
+      filter: `Status = "Completed" && Shop_ID = "${shopId}"`
     });
     
     reports.totalSales = allCompletedOrders.reduce((sum, order) => {
@@ -44,22 +46,24 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     }, 0);
     console.log('Total sales:', reports.totalSales);
 
-    // 2. ดึงข้อมูล Total Orders (จำนวนออร์เดอร์ทั้งหมด)
-    console.log('Fetching total orders...');
-    const allOrders = await pb.collection('Order').getFullList();
+    // 2. ดึงข้อมูล Total Orders (จำนวนออร์เดอร์ทั้งหมด - เฉพาะร้านนี้)
+    console.log('Fetching total orders for shop:', shopId);
+    const allOrders = await pb.collection('Order').getFullList({
+      filter: `Shop_ID = "${shopId}"`
+    });
     reports.totalOrders = allOrders.length;
     console.log('Total orders:', reports.totalOrders);
 
-    // 3. ดึงข้อมูล Total Dishes (จำนวนเมนูทั้งหมด)
-    console.log('Fetching total dishes...');
+    // 3. ดึงข้อมูล Total Dishes (จำนวนเมนูทั้งหมด - เฉพาะร้านนี้)
+    console.log('Fetching total dishes for shop:', shopId);
     const allMenus = await pb.collection('Menu').getFullList({
-      filter: 'Available = true'
+      filter: `Available = true && field = "${shopId}"`
     });
     reports.totalDishes = allMenus.length;
     console.log('Total dishes:', reports.totalDishes);
 
-    // 4. ดึงข้อมูล Total Customers (จำนวนลูกค้าที่เคยสั่งอาหาร)
-    console.log('Fetching total customers...');
+    // 4. ดึงข้อมูล Total Customers (จำนวนลูกค้าที่เคยสั่งอาหาร - เฉพาะร้านนี้)
+    console.log('Fetching total customers for shop:', shopId);
     const uniqueCustomers = new Set();
     allOrders.forEach(order => {
       if (order.User_ID) {
@@ -69,8 +73,8 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     reports.totalCustomers = uniqueCustomers.size;
     console.log('Total customers:', reports.totalCustomers);
 
-    // 5. ดึงข้อมูล Monthly Revenue (รายได้ 6 เดือนย้อนหลัง)
-    console.log('Fetching monthly revenue...');
+    // 5. ดึงข้อมูล Monthly Revenue (รายได้ 6 เดือนย้อนหลัง - เฉพาะร้านนี้)
+    console.log('Fetching monthly revenue for shop:', shopId);
     const monthlyRevenue = [];
     const today = new Date();
     
@@ -79,7 +83,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       const nextMonthDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
       
       const monthOrders = await pb.collection('Order').getFullList({
-        filter: `Status = "Completed" && created >= "${monthDate.toISOString()}" && created < "${nextMonthDate.toISOString()}"`
+        filter: `Status = "Completed" && Shop_ID = "${shopId}" && created >= "${monthDate.toISOString()}" && created < "${nextMonthDate.toISOString()}"`
       });
       
       const revenue = monthOrders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0);
@@ -93,9 +97,11 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     reports.monthlyRevenue = monthlyRevenue;
     console.log('Monthly revenue:', monthlyRevenue);
 
-    // 6. ดึงข้อมูล Payment Methods (วิธีการชำระเงิน)
-    console.log('Fetching payment methods...');
-    const allPayments = await pb.collection('Payment').getFullList();
+    // 6. ดึงข้อมูล Payment Methods (วิธีการชำระเงิน - เฉพาะร้านนี้)
+    console.log('Fetching payment methods for shop:', shopId);
+    const allPayments = await pb.collection('Payment').getFullList({
+      filter: `Shop_ID = "${shopId}"`
+    });
     
     const paymentMethodsMap = new Map();
     allPayments.forEach(payment => {
@@ -116,10 +122,11 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     
     console.log('Payment methods:', reports.paymentMethods);
 
-    // 7. ดึงข้อมูล Top Customers (ลูกค้าที่สั่งมากที่สุด)
-    console.log('Fetching top customers...');
+    // 7. ดึงข้อมูล Top Customers (ลูกค้าที่สั่งมากที่สุด - เฉพาะร้านนี้)
+    console.log('Fetching top customers for shop:', shopId);
     const customerOrdersMap = new Map();
     
+    // ใช้ allOrders ที่กรองด้วย shopId แล้วจากด้านบน
     for (const order of allOrders) {
       if (order.User_ID) {
         const current = customerOrdersMap.get(order.User_ID) || { 

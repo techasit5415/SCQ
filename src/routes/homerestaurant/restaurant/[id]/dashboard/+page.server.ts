@@ -5,9 +5,11 @@ import { env as privateEnv } from '$env/dynamic/private';
 
 const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
-export const load = async ({ cookies }: any) => {
+export const load = async ({ cookies, params }: any) => {
   const session = cookies.get('session');
-  console.log('Session cookie in homeadmin:', session);
+  const shopId = params.id; // ดึง shop ID จาก URL
+  console.log('Session cookie in dashboard:', session);
+  console.log('Shop ID:', shopId);
 
   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
   if (!session || !session.match(/^\d+$/)) {
@@ -15,7 +17,7 @@ export const load = async ({ cookies }: any) => {
       // throw redirect(302, '/admin');
   }
 
-  console.log('Session valid, loading homeadmin page');
+  console.log('Session valid, loading dashboard page for shop:', shopId);
 
   try {
     console.log('Attempting to connect to PocketBase...');
@@ -56,11 +58,11 @@ export const load = async ({ cookies }: any) => {
       console.log('Admin auth failed, trying without auth...');
     }
     
-    // ดึงข้อมูล New Orders
+    // ดึงข้อมูล New Orders (เฉพาะร้านนี้)
     try {
-      console.log('Fetching new orders count...');
+      console.log('Fetching new orders count for shop:', shopId);
       const newOrderCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "Pending"'
+        filter: `Status = "Pending" && Shop_ID = "${shopId}"`
       });
       console.log('New orders count result:', newOrderCount);
       restaurant.newOrder = newOrderCount.length;
@@ -68,11 +70,11 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching new orders:', error);
     }
 
-    // ดึงข้อมูล In Progress Orders
+    // ดึงข้อมูล In Progress Orders (เฉพาะร้านนี้)
     try {
-      console.log('Fetching in-progress orders count...');
+      console.log('Fetching in-progress orders count for shop:', shopId);
       const inProgressOrderCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "In-progress"'
+        filter: `Status = "In-progress" && Shop_ID = "${shopId}"`
       });
       console.log('In-progress orders count result:', inProgressOrderCount);
       restaurant.inProgressOrder = inProgressOrderCount.length;
@@ -80,11 +82,11 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching in-progress orders:', error);
     }
 
-    // ดึงข้อมูล Completed Orders
+    // ดึงข้อมูล Completed Orders (เฉพาะร้านนี้)
     try {
-      console.log('Fetching completed orders count...');
+      console.log('Fetching completed orders count for shop:', shopId);
       const completedOrderCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "Completed"'
+        filter: `Status = "Completed" && Shop_ID = "${shopId}"`
       });
       console.log('Completed orders count result:', completedOrderCount);
       restaurant.completedOrder = completedOrderCount.length;
@@ -92,16 +94,16 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching completed orders:', error);
     }
 
-    // ดึงข้อมูล Total Today Sale (รวมทั้ง Completed และ In-progress)
+    // ดึงข้อมูล Total Today Sale (รวมทั้ง Completed และ In-progress - เฉพาะร้านนี้)
     try {
-      console.log('Fetching today orders for sales calculation...');
+      console.log('Fetching today orders for sales calculation for shop:', shopId);
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
       
-      // ดึง orders ทั้ง Completed และ In-progress ของวันนี้
+      // ดึง orders ทั้ง Completed และ In-progress ของวันนี้ (เฉพาะร้านนี้)
       const todayOrders = await pb.collection('Order').getFullList({
-        filter: `(Status = "Completed" || Status = "In-progress") && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
+        filter: `(Status = "Completed" || Status = "In-progress") && Shop_ID = "${shopId}" && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
       });
       
       console.log('Today orders for sales:', todayOrders.map(o => ({ 
@@ -119,9 +121,9 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching today sales:', error);
     }
 
-    // ดึงข้อมูลสำหรับกราฟ Daily Orders (7 วันที่ผ่านมา)
+    // ดึงข้อมูลสำหรับกราฟ Daily Orders (7 วันที่ผ่านมา - เฉพาะร้านนี้)
     try {
-      console.log('Fetching daily orders data...');
+      console.log('Fetching daily orders data for shop:', shopId);
       const last7Days = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
@@ -130,7 +132,7 @@ export const load = async ({ cookies }: any) => {
         const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
         
         const dayOrders = await pb.collection('Order').getFullList({
-          filter: `created >= "${dayStart.toISOString()}" && created < "${dayEnd.toISOString()}"`
+          filter: `Shop_ID = "${shopId}" && created >= "${dayStart.toISOString()}" && created < "${dayEnd.toISOString()}"`
         });
         
         last7Days.push({
@@ -145,10 +147,11 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching daily orders:', error);
     }
 
-    // ดึงข้อมูลเมนูยอดนิยม (Top 5)
+    // ดึงข้อมูลเมนูยอดนิยม (Top 5 - เฉพาะร้านนี้)
     try {
-      console.log('Fetching popular menus...');
+      console.log('Fetching popular menus for shop:', shopId);
       const allOrders = await pb.collection('Order').getFullList({
+        filter: `Shop_ID = "${shopId}"`,
         expand: 'Menu_ID'
       });
       
@@ -170,10 +173,12 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching popular menus:', error);
     }
 
-    // ดึงข้อมูลสถานะคำสั่งซื้อสำหรับ Pie Chart
+    // ดึงข้อมูลสถานะคำสั่งซื้อสำหรับ Pie Chart (เฉพาะร้านนี้)
     try {
-      console.log('Fetching order status data...');
-      const allOrders = await pb.collection('Order').getFullList();
+      console.log('Fetching order status data for shop:', shopId);
+      const allOrders = await pb.collection('Order').getFullList({
+        filter: `Shop_ID = "${shopId}"`
+      });
       
       const statusCount = {
         'Pending': 0,
@@ -198,15 +203,15 @@ export const load = async ({ cookies }: any) => {
       console.log('Error fetching order status data:', error);
     }
 
-    // ดึงข้อมูลคำสั่งซื้อตามชั่วโมง (วันนี้)
+    // ดึงข้อมูลคำสั่งซื้อตามชั่วโมง (วันนี้ - เฉพาะร้านนี้)
     try {
-      console.log('Fetching hourly orders data...');
+      console.log('Fetching hourly orders data for shop:', shopId);
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
       
       const todayOrders = await pb.collection('Order').getFullList({
-        filter: `created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
+        filter: `Shop_ID = "${shopId}" && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
       });
       
       const hourlyCount = Array(24).fill(0);
