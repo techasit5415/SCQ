@@ -11,8 +11,9 @@
 </script>
 
 <div class="customer-layout">
-    <div style="width: 100; height: 100px;">
-        Use this for go any restaurant by ID
+    <div class="page-header">
+        <h1>เลือกร้านอาหาร</h1>
+        <p class="subtitle">Select Restaurant to Manage</p>
     </div>
     <table class="order-list-table">
         <tbody>
@@ -35,27 +36,64 @@
 </div>
 
 <style>
-        .order-list-table {
+    .customer-layout {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+    }
+
+    .page-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 16px;
+        color: #666;
+        margin: 0;
+    }
+
+    .order-list-table {
         border-collapse: collapse;
+        width: 100%;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .order-list-table td {
         width: 500px;
-        padding: 12px;
+        padding: 16px 20px;
         text-align: left;
         border-top: 1px solid #e0e0e0;
+        font-size: 16px;
+        color: #333;
     }
-    /* .order-list-table tr{
-        display: flex;
-        gap: 10px
-    } */
+    
     .order-list-table tbody tr:hover {
-        background: #d9d9d9;
+        background: #f5f5f5;
         cursor: pointer;
+        transition: background 0.2s ease;
     }
 
     .order-list-table tbody tr.active {
-        background: #D9D9D9;
+        background: #e3f2fd;
         font-weight: 500;
+        color: #1976d2;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #999;
+        padding: 40px !important;
     }
 </style>
 
