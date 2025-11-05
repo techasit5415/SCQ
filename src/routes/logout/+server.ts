@@ -16,5 +16,5 @@ export const GET: RequestHandler = ({ cookies }) => {
   
   console.log('Session cookie deleted');
   
-  throw redirect(303, '/admin');
+  throw redirect(303, '/login');
 };
