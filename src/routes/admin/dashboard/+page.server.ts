@@ -9,7 +9,7 @@ const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
-  console.log('Session cookie in homeadmin:', session);
+  console.log('Session cookie in dashboard:', session);
 
   // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
   if (!session || !session.match(/^\d+$/)) {
@@ -17,20 +17,25 @@ export const load: PageServerLoad = async ({ cookies }) => {
       // throw redirect(302, '/admin');
   }
 
-  console.log('Session valid, loading homeadmin page');
+  console.log('Session valid, loading dashboard page');
   console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
 
   try {
     console.log('Attempting to connect to PocketBase...');
     
-    // Initialize stats object
-    let stats = {
-      users: 0,
-      orders: 0,
-      dishes: 0,
-      canceled: 0
-    };
-    let shops = [];
+    // Set date ranges for calculations
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Convert to ISO strings for PocketBase filter
+    const todayStartISO = todayStart.toISOString();
+    const monthStartISO = monthStart.toISOString();
+
+    // Initialize data objects
+    let kpis: any = {};
+    let charts: any = {};
+    let shops: any[] = [];
 
     // Authenticate as admin first
     try {
@@ -43,89 +48,319 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.log('Admin auth failed, trying without auth...');
     }
     
-    // ดึงจำนวน Users ทั้งหมด
-    let usersData = [];
+    // Fetch all orders with expanded relations
+    let orders: any[] = [];
     try {
-      console.log('Fetching users count...');
-      const usersCount = await pb.collection('users').getFullList();
-      console.log('Users count result:', usersCount);
-      console.log('Users totalItems:', usersCount.length);
-      stats.users = usersCount.length;
-      usersData = usersCount; // เก็บข้อมูล users แบบละเอียด
-    } catch (error) {
-      console.log('Error fetching users:', error);
-    }
-
-    // ดึงจำนวน Orders ทั้งหมด
-    try {
-      console.log('Fetching orders count...');
-      const ordersCount = await pb.collection('Order').getFullList();
-      console.log('Orders count result:', ordersCount);
-      stats.orders = ordersCount.length;
-    } catch (error) {
-      console.log('Error fetching orders:', error);
-    }
-
-    // ดึงจำนวน Menu/Dishes ทั้งหมด
-    try {
-      console.log('Fetching menu count...');
-      const menuCount = await pb.collection('Menu').getFullList();
-      console.log('Menu count result:', menuCount);
-      stats.dishes = menuCount.length;
-    } catch (error) {
-      console.log('Error fetching menu:', error);
-    }
-
-    // ดึงจำนวน Canceled Orders (Status = "error")
-    try {
-      console.log('Fetching canceled orders count...');
-      const canceledCount = await pb.collection('Order').getFullList({
-        filter: 'Status = "error"'
+      console.log('Fetching orders...');
+      orders = await pb.collection('Order').getFullList({
+        expand: 'Shop_ID,Menu_ID',
+        sort: '-created'
       });
-      console.log('Canceled count result:', canceledCount);
-      stats.canceled = canceledCount.length;
+      console.log('Orders fetched:', orders.length);
     } catch (error) {
-      console.log('Error fetching canceled orders:', error);
+      console.error('Error fetching orders:', error);
     }
 
-    // ดึงข้อมูล Shops สำหรับแสดงในตาราง
+    // Fetch shops
     try {
       console.log('Fetching shops...');
       shops = await pb.collection('Shop').getFullList({
-        expand: 'User_Owner_ID'
+        expand: 'User_Owner_ID',
+        sort: 'name'
       });
-      console.log('Shops result:', shops);
+      console.log('Shops fetched:', shops.length);
     } catch (error) {
-      console.log('Error fetching shops:', error);
+      console.error('Error fetching shops:', error);
+    }
+    
+    // Fetch menus
+    let menus: any[] = [];
+    try {
+      console.log('Fetching menus...');
+      menus = await pb.collection('Menu').getFullList({
+        expand: 'field',
+        sort: 'name'
+      });
+      console.log('Menus fetched:', menus.length);
+    } catch (error) {
+      console.error('Error fetching menus:', error);
     }
 
+    // Fetch users
+    let users: any[] = [];
+    try {
+      console.log('Fetching users...');
+      users = await pb.collection('users').getFullList();
+      console.log('Users fetched:', users.length);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+
+    // Calculate KPIs
+    kpis = calculateKPIs(orders, todayStartISO, monthStartISO);
+    
+    // Debug logging
+    console.log('KPIs calculated:', {
+      activeOrders: kpis.activeOrders,
+      avgPreparationTime: kpis.avgPreparationTime,
+      avgFulfillmentTime: kpis.avgFulfillmentTime
+    });
+    
+    // Calculate charts data
+    charts = calculateCharts(orders, shops, menus);
+
     const result = {
-      stats,
+      kpis,
+      charts,
       shops,
-      users: usersData // เพิ่มข้อมูล users แบบละเอียด
+      users,
+      totalOrders: orders.length,
+      recentOrders: orders.slice(0, 10)
     };
 
-    console.log('Final result:', result);
+    console.log('Dashboard data loaded successfully');
     return result;
   } catch (error) {
     console.error('Error loading dashboard data:', error);
     
-    // Return fallback data if database connection fails
+    // Return fallback data for development
     return {
-      stats: {
-        users: 0,
-        orders: 0,
-        dishes: 0,
-        canceled: 0
-      },
+      kpis: getMockKPIs(),
+      charts: getMockCharts(),
       shops: [],
-      users: []
+      users: [],
+      totalOrders: 0,
+      recentOrders: []
     };
   }
 };
 
+function calculateKPIs(orders: any[], todayStartISO: string, monthStartISO: string) {
+  const now = new Date();
+  
+  // Filter orders by date
+  const todayOrders = orders.filter(order => 
+    new Date(order.created) >= new Date(todayStartISO)
+  );
+  
+  const monthOrders = orders.filter(order => 
+    new Date(order.created) >= new Date(monthStartISO)
+  );
+
+  // Active Orders (In-progress, Pending)
+  const activeOrders = orders.filter(order => 
+    ['In-progress', 'Pending'].includes(order.Status)
+  ).length;
+
+  // Orders Today/MTD
+  const ordersToday = todayOrders.length;
+  const ordersMTD = monthOrders.length;
+
+  // Revenue Today/MTD
+  const revenueToday = todayOrders.reduce((sum, order) => 
+    sum + (parseFloat(order.Total_Amount) || 0), 0
+  );
+  const revenueMTD = monthOrders.reduce((sum, order) => 
+    sum + (parseFloat(order.Total_Amount) || 0), 0
+  );
+
+  // Cancel Rate
+  const totalOrders = orders.length;
+  const canceledOrders = orders.filter(order => 
+    order.Status === 'Canceled'
+  ).length;
+  const cancelRate = totalOrders > 0 ? (canceledOrders / totalOrders * 100).toFixed(1) : '0';
+
+  // Average Order Value
+  const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order.Total_Amount) || 0), 0);
+  const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0';
+
+  // Calculate Average Preparation Time (in minutes)
+  const ordersWithPrepTime = orders.filter(order => 
+    order.preparation_start_time && order.preparation_end_time
+  );
+  
+  let avgPreparationTime = 0;
+  if (ordersWithPrepTime.length > 0) {
+    const totalPrepTime = ordersWithPrepTime.reduce((sum, order) => {
+      const startTime = new Date(order.preparation_start_time);
+      const endTime = new Date(order.preparation_end_time);
+      const diffMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert to minutes
+      return sum + diffMinutes;
+    }, 0);
+    avgPreparationTime = Math.round(totalPrepTime / ordersWithPrepTime.length);
+  }
+
+  // Calculate Average Fulfillment Time (from order time to completion)
+  const completedOrders = orders.filter(order => 
+    order.Status === 'Completed' && order.completed_time && order.Order_Time
+  );
+  
+  let avgFulfillmentTime = 0;
+  if (completedOrders.length > 0) {
+    const totalFulfillmentTime = completedOrders.reduce((sum, order) => {
+      const orderTime = new Date(order.Order_Time);
+      const completedTime = new Date(order.completed_time);
+      const diffMinutes = (completedTime.getTime() - orderTime.getTime()) / (1000 * 60); // Convert to minutes
+      return sum + Math.max(diffMinutes, 0); // Ensure positive values only
+    }, 0);
+    avgFulfillmentTime = Math.round(totalFulfillmentTime / completedOrders.length);
+  }
+
+  return {
+    activeOrders,
+    ordersToday,
+    ordersMTD,
+    revenueToday: revenueToday.toFixed(2),
+    revenueMTD: revenueMTD.toFixed(2),
+    avgOrderValue,
+    cancelRate,
+    avgPreparationTime,
+    avgFulfillmentTime
+  };
+}
+
+function calculateCharts(orders: any[], shops: any[], menus: any[]) {
+  // Hourly heatmap
+  const hourlyData = Array(24).fill(0);
+  orders.forEach(order => {
+    const hour = new Date(order.created).getHours();
+    hourlyData[hour]++;
+  });
+
+  // Top 5 Restaurants by orders
+  const shopOrderCounts: { [key: string]: number } = {};
+  orders.forEach(order => {
+    const shopId = order.Shop_ID;
+    const shop = shops.find(s => s.id === shopId);
+    if (shop) {
+      shopOrderCounts[shop.name] = (shopOrderCounts[shop.name] || 0) + 1;
+    }
+  });
+  
+  const topRestaurants = Object.entries(shopOrderCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+
+  // Top 5 Dishes by sales (best seller from each restaurant)
+  const shopMenuSales: { [key: string]: { [key: string]: { name: string; shopName: string; sales: number; revenue: number } } } = {};
+  
+  orders.forEach(order => {
+    if (order.Menu_ID && Array.isArray(order.Menu_ID) && order.Shop_ID) {
+      const shop = shops.find(s => s.id === order.Shop_ID);
+      const shopName = shop?.name || 'Unknown Shop';
+      
+      if (!shopMenuSales[order.Shop_ID]) {
+        shopMenuSales[order.Shop_ID] = {};
+      }
+      
+      order.Menu_ID.forEach((menuId: string) => {
+        const menu = menus.find(m => m.id === menuId);
+        if (menu) {
+          const menuKey = menu.name;
+          if (!shopMenuSales[order.Shop_ID][menuKey]) {
+            shopMenuSales[order.Shop_ID][menuKey] = { 
+              name: menu.name, 
+              shopName: shopName,
+              sales: 0, 
+              revenue: 0 
+            };
+          }
+          shopMenuSales[order.Shop_ID][menuKey].sales += 1;
+          shopMenuSales[order.Shop_ID][menuKey].revenue += (parseFloat(menu.Price) || 0);
+        }
+      });
+    }
+  });
+
+  // Get best selling dish from each restaurant
+  const topDishesFromEachShop: { name: string; shopName: string; sales: number; revenue: number }[] = [];
+  
+  Object.keys(shopMenuSales).forEach(shopId => {
+    const shopMenus = Object.values(shopMenuSales[shopId]);
+    if (shopMenus.length > 0) {
+      // Get the dish with highest sales (orders) from this shop
+      const bestDish = shopMenus.sort((a, b) => b.sales - a.sales)[0];
+      topDishesFromEachShop.push({
+        name: `${bestDish.name} (${bestDish.shopName})`,
+        shopName: bestDish.shopName,
+        sales: bestDish.sales,
+        revenue: bestDish.revenue
+      });
+    }
+  });
+
+  // Sort by sales (orders) and take top 5
+  const topDishes = topDishesFromEachShop
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 5);
+
+  // Orders by Status
+  const statusCounts: { [key: string]: number } = {};
+  orders.forEach(order => {
+    const status = order.Status || 'Unknown';
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+  });
+
+  return {
+    hourlyHeatmap: hourlyData.map((count, hour) => ({ hour, count })),
+    topRestaurants,
+    topDishes,
+    ordersByStatus: Object.entries(statusCounts).map(([status, count]) => ({
+      status,
+      count,
+      percentage: orders.length > 0 ? ((count / orders.length) * 100).toFixed(1) : '0'
+    }))
+  };
+}
+
+// Mock data functions for development/fallback
+function getMockKPIs() {
+  return {
+    activeOrders: 12,
+    ordersToday: 45,
+    ordersMTD: 890,
+    revenueToday: "15420.50",
+    revenueMTD: "234560.75",
+    avgOrderValue: "342.50",
+    cancelRate: "5.2",
+    avgPreparationTime: 0, // Will show 0 until real data is available
+    avgFulfillmentTime: 0  // Will show 0 until real data is available
+  };
+}
+
+function getMockCharts() {
+  return {
+    hourlyHeatmap: Array(24).fill(0).map((_, hour) => ({
+      hour,
+      count: Math.floor(Math.random() * 20) + (hour >= 11 && hour <= 14 ? 15 : 0) + (hour >= 18 && hour <= 21 ? 12 : 0)
+    })),
+    topRestaurants: [
+      { name: "ร้านข้าวผัดป้าแดง", count: 45 },
+      { name: "ก๋วยเตี๋ยวลูกชิ้น", count: 38 },
+      { name: "โซมตำไทย", count: 32 },
+      { name: "ข้าวมันไก่ป้าจิ๋ม", count: 28 },
+      { name: "ลาบหนองคาย", count: 25 }
+    ],
+    topDishes: [
+      { name: "ข้าวผัดกุ้ง (ร้านข้าวผัดป้าแดง)", shopName: "ร้านข้าวผัดป้าแดง", sales: 25, revenue: 1250 },
+      { name: "ก๋วยเตี๋ยวต้มยำ (ก๋วยเตี๋ยวลูกชิ้น)", shopName: "ก๋วยเตี๋ยวลูกชิ้น", sales: 22, revenue: 880 },
+      { name: "ส้มตำไทย (โซมตำไทย)", shopName: "โซมตำไทย", sales: 20, revenue: 800 },
+      { name: "ข้าวมันไก่ (ข้าวมันไก่ป้าจิ๋ม)", shopName: "ข้าวมันไก่ป้าจิ๋ม", sales: 18, revenue: 720 },
+      { name: "ลาบหมู (ลาบหนองคาย)", shopName: "ลาบหนองคาย", sales: 15, revenue: 675 }
+    ],
+    ordersByStatus: [
+      { status: "Completed", count: 156, percentage: "65.0" },
+      { status: "In-progress", count: 28, percentage: "11.7" },
+      { status: "Canceled", count: 15, percentage: "6.3" },
+      { status: "Pending", count: 41, percentage: "17.1" }
+    ]
+  };
+}
+
 export const actions: Actions = {
-  addRestaurant: async ({ request }) => {
+  addRestaurant: async ({ request }: { request: any }) => {
     const formData = await request.formData();
     
     const restaurantData = {
