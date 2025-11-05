@@ -49,14 +49,14 @@
 />
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
+        <!-- Header Section -->
+        <div class="header-section">
             <nav class="breadcrumb">
                 <span class="breadcrumb-item">Home</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-item current">Reports</span>
             </nav>
-            <h2>Reports</h2>
+            <h1 class="page-title">Reports</h1>
         </div>
 
         <!-- Stats Grid -->
@@ -243,7 +243,8 @@
     }
 
     /* Page Header */
-    .page-header {
+    /* Header Section */
+    .header-section {
         background: white;
         padding: 20px 24px;
         border-radius: 12px;
@@ -266,7 +267,7 @@
         margin: 0 8px;
     }
     
-    .page-header h2 {
+    .page-title {
         margin: 0;
         font-size: 28px;
         font-weight: 700;

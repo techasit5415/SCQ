@@ -97,23 +97,75 @@ export const load = async ({ cookies, params }: any) => {
     // ดึงข้อมูล Total Today Sale (รวมทั้ง Completed และ In-progress - เฉพาะร้านนี้)
     try {
       console.log('Fetching today orders for sales calculation for shop:', shopId);
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      // หาเวลาไทยปัจจุบัน (UTC + 7 ชั่วโมง)
+      const now = new Date();
+      const thaiTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      
+      // วันนี้ในเวลาไทย เริ่มที่ 00:00:00 ไทย = 17:00:00 UTC เมื่อวาน
+      const todayStartUTC = new Date(Date.UTC(
+        thaiTime.getUTCFullYear(),
+        thaiTime.getUTCMonth(),
+        thaiTime.getUTCDate(),
+        0, 0, 0, 0
+      ) - (7 * 60 * 60 * 1000));
+      
+      const todayEndUTC = new Date(Date.UTC(
+        thaiTime.getUTCFullYear(),
+        thaiTime.getUTCMonth(),
+        thaiTime.getUTCDate(),
+        23, 59, 59, 999
+      ) - (7 * 60 * 60 * 1000));
+      
+      console.log('Current server time (UTC):', now.toISOString());
+      console.log('Current Thai time:', thaiTime.toISOString());
+      console.log('Today range (UTC for query):', todayStartUTC.toISOString(), 'to', todayEndUTC.toISOString());
+      
+      // Debug: ดึง orders ทั้งหมดของร้านนี้ล่าสุด 5 รายการ
+      const recentOrders = await pb.collection('Order').getFullList({
+        filter: `Shop_ID = "${shopId}"`,
+        sort: '-created',
+        limit: 5
+      });
+      console.log('Recent 5 orders (any status):', recentOrders.map(o => ({
+        id: o.id,
+        status: o.Status,
+        amount: o.Total_Amount,
+        created: o.created,
+        createdThai: new Date(new Date(o.created).getTime() + 7*60*60*1000).toISOString()
+      })));
       
       // ดึง orders ทั้ง Completed และ In-progress ของวันนี้ (เฉพาะร้านนี้)
+      // ลองใช้ format แบบ PocketBase: "YYYY-MM-DD HH:MM:SS.sssZ"
+      const startStr = todayStartUTC.toISOString().replace('T', ' ').replace('Z', '.000Z');
+      const endStr = todayEndUTC.toISOString().replace('T', ' ').replace('Z', '.999Z');
+      
+      console.log('Query with format:', startStr, 'to', endStr);
+      
       const todayOrders = await pb.collection('Order').getFullList({
-        filter: `(Status = "Completed" || Status = "In-progress") && Shop_ID = "${shopId}" && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
+        filter: `Shop_ID="${shopId}" && Status="Completed" && created>="${startStr}" && created<"${endStr}"`
       });
       
-      console.log('Today orders for sales:', todayOrders.map(o => ({ 
+      console.log('Completed orders for today:', todayOrders.length, 'found');
+      
+      // ดึง In-progress orders ด้วย
+      const inProgressOrders = await pb.collection('Order').getFullList({
+        filter: `Shop_ID="${shopId}" && Status="In-progress" && created>="${startStr}" && created<"${endStr}"`
+      });
+      
+      console.log('In-progress orders for today:', inProgressOrders.length, 'found');
+      
+      const allTodayOrders = [...todayOrders, ...inProgressOrders];
+      
+      console.log('Total today orders for sales:', allTodayOrders.length, 'orders found');
+      console.log('Sample orders:', allTodayOrders.slice(0, 3).map(o => ({ 
         id: o.id, 
         status: o.Status, 
         amount: o.Total_Amount, 
         created: o.created 
       })));
       
-      restaurant.todaySale = todayOrders.reduce((sum, order) => {
+      restaurant.todaySale = allTodayOrders.reduce((sum, order) => {
         return sum + (order.Total_Amount || 0)
       }, 0);
       console.log('Total today sale (Completed + In-progress):', restaurant.todaySale);
@@ -126,17 +178,27 @@ export const load = async ({ cookies, params }: any) => {
       console.log('Fetching daily orders data for shop:', shopId);
       const last7Days = [];
       for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+        // ใช้เวลาไทยในการคำนวณวันที่
+        const now = new Date();
+        const thaiTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+        thaiTime.setDate(thaiTime.getDate() - i);
+        
+        // สร้างช่วงวันที่ในเวลาไทย แล้วแปลงเป็น UTC
+        const dayStartThai = new Date(thaiTime.getUTCFullYear(), thaiTime.getUTCMonth(), thaiTime.getUTCDate(), 0, 0, 0, 0);
+        const dayEndThai = new Date(thaiTime.getUTCFullYear(), thaiTime.getUTCMonth(), thaiTime.getUTCDate(), 23, 59, 59, 999);
+        
+        const dayStartUTC = new Date(dayStartThai.getTime() - (7 * 60 * 60 * 1000));
+        const dayEndUTC = new Date(dayEndThai.getTime() - (7 * 60 * 60 * 1000));
+        
+        const startStr = dayStartUTC.toISOString().replace('T', ' ').replace('Z', '.000Z');
+        const endStr = dayEndUTC.toISOString().replace('T', ' ').replace('Z', '.999Z');
         
         const dayOrders = await pb.collection('Order').getFullList({
-          filter: `Shop_ID = "${shopId}" && created >= "${dayStart.toISOString()}" && created < "${dayEnd.toISOString()}"`
+          filter: `Shop_ID="${shopId}" && created>="${startStr}" && created<"${endStr}"`
         });
         
         last7Days.push({
-          date: dayStart.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
+          date: dayStartThai.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
           orders: dayOrders.length,
           revenue: dayOrders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0)
         });
@@ -157,10 +219,13 @@ export const load = async ({ cookies, params }: any) => {
       
       const menuCount: any = {};
       allOrders.forEach(order => {
-        if (order.expand?.Menu_ID) {
+        if (order.expand?.Menu_ID && Array.isArray(order.expand.Menu_ID)) {
           order.expand.Menu_ID.forEach((menu: any) => {
-            const menuName = menu.name || 'Unknown';
-            menuCount[menuName] = (menuCount[menuName] || 0) + 1;
+            // ตรวจสอบว่าเมนูเป็นของร้านนี้จริงๆ
+            if (menu.field === shopId) {
+              const menuName = menu.name || 'Unknown';
+              menuCount[menuName] = (menuCount[menuName] || 0) + 1;
+            }
           });
         }
       });
@@ -169,6 +234,8 @@ export const load = async ({ cookies, params }: any) => {
         .map(([name, count]) => ({ name, count }))
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
+      
+      console.log('Popular menus for shop:', analytics.popularMenus);
     } catch (error) {
       console.log('Error fetching popular menus:', error);
     }
@@ -206,18 +273,34 @@ export const load = async ({ cookies, params }: any) => {
     // ดึงข้อมูลคำสั่งซื้อตามชั่วโมง (วันนี้ - เฉพาะร้านนี้)
     try {
       console.log('Fetching hourly orders data for shop:', shopId);
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      // หาเวลาไทยปัจจุบัน (UTC + 7 ชั่วโมง)
+      const now = new Date();
+      const thaiTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      
+      // วันนี้ในเวลาไทย
+      const todayStartThai = new Date(thaiTime.getUTCFullYear(), thaiTime.getUTCMonth(), thaiTime.getUTCDate(), 0, 0, 0, 0);
+      const todayEndThai = new Date(thaiTime.getUTCFullYear(), thaiTime.getUTCMonth(), thaiTime.getUTCDate(), 23, 59, 59, 999);
+      
+      // แปลงเป็น UTC
+      const todayStartUTC = new Date(todayStartThai.getTime() - (7 * 60 * 60 * 1000));
+      const todayEndUTC = new Date(todayEndThai.getTime() - (7 * 60 * 60 * 1000));
+      
+      const startStr = todayStartUTC.toISOString().replace('T', ' ').replace('Z', '.000Z');
+      const endStr = todayEndUTC.toISOString().replace('T', ' ').replace('Z', '.999Z');
       
       const todayOrders = await pb.collection('Order').getFullList({
-        filter: `Shop_ID = "${shopId}" && created >= "${todayStart.toISOString()}" && created < "${todayEnd.toISOString()}"`
+        filter: `Shop_ID="${shopId}" && created>="${startStr}" && created<"${endStr}"`
       });
+      
+      console.log('Hourly orders found:', todayOrders.length);
       
       const hourlyCount = Array(24).fill(0);
       todayOrders.forEach(order => {
-        const hour = new Date(order.created).getHours();
-        hourlyCount[hour]++;
+        // แปลง UTC time กลับเป็น local time (เวลาไทย) เพื่อนับชั่วโมงที่ถูกต้อง
+        const orderTime = new Date(order.created);
+        const localHour = (orderTime.getUTCHours() + 7) % 24; // บวก 7 ชั่วโมงสำหรับเวลาไทย
+        hourlyCount[localHour]++;
       });
       
       analytics.hourlyOrders = hourlyCount.map((count, hour) => ({

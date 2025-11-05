@@ -55,14 +55,14 @@
 />
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Dashboard -->
-        <div class="page-header">
+        <!-- Header Section -->
+        <div class="header-section">
             <nav class="breadcrumb">
                 <span class="breadcrumb-item">Home</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-item current">Settings</span>
             </nav>
-            <h2>Settings</h2>
+            <h1 class="page-title">Settings</h1>
         </div>
         <div class="dash1">
             <div class="dash1-com1">
@@ -109,41 +109,39 @@
     .main-content {
         margin-left: 250px;
         margin-top: 60px;
-        padding-left: 30px;
-        padding-top: 30px;
-        padding-right: 22px;
-        /* min-height: calc(100vh - 60px); */
+        padding: 24px;
+        min-height: calc(100vh - 60px);
     }
 
-    /* Page Header */
-    .page-header {
-        margin: -30px;
-        margin-left: -40px;
-        padding: 30px 40px;
-        background-color: white;
-        margin-bottom: 30px;
-        border-bottom: 1px solid #e0e0e0;
+    /* Header Section */
+    .header-section {
+        background: white;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .breadcrumb {
         font-size: 13px;
-        color: #888;
+        color: #6b7280;
         margin-bottom: 8px;
     }
 
     .breadcrumb-item.current {
-        color: #333;
+        color: #111827;
+        font-weight: 500;
     }
 
     .breadcrumb-separator {
         margin: 0 8px;
     }
     
-    .page-header h2 {
+    .page-title {
         margin: 0;
-        font-size: 24px;
-        font-weight: 500;
-        color: #333;
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
     }
 
     .dash1 {

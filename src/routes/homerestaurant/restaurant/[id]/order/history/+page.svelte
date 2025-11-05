@@ -84,17 +84,18 @@
 </script>
 
 <div class="restaurant-layout">
-    <TopBar title="SCQ" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
 
     <main class="main-content">
-        <div class="page-header">
+        <!-- Header Section -->
+        <div class="header-section">
             <nav class="breadcrumb">
                 <span class="breadcrumb-item">Home</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-item current">Orders</span>
             </nav>
-            <h1>Orders</h1>
+            <h1 class="page-title">Orders</h1>
         </div>
 
         <div class="order-tabs">
@@ -164,7 +165,7 @@
                             {#each Object.values(menuCount) as { item, count }}
                                 <div class="menu-item">
                                     <div class="menu-info">
-                                        <div class="menu-name">{item.Menu_Name} x{count}</div>
+                                        <div class="menu-name">{item.name} x{count}</div>
                                         {#if item.Options && Array.isArray(item.Options) && item.Options.length > 0}
                                             <ul class="menu-options">
                                                 {#each item.Options as option}
@@ -215,33 +216,35 @@
         min-height: calc(100vh - 60px);
     }
 
-    .page-header {
-        margin-bottom: 20px;
+    /* Header Section */
+    .header-section {
+        background: white;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: #666;
+        font-size: 13px;
+        color: #6b7280;
         margin-bottom: 8px;
     }
 
-    .breadcrumb-separator {
-        color: #999;
-    }
-
     .breadcrumb-item.current {
-        color: #333;
+        color: #111827;
         font-weight: 500;
     }
 
-    .page-header h1 {
+    .breadcrumb-separator {
+        margin: 0 8px;
+    }
+    
+    .page-title {
+        margin: 0;
         font-size: 28px;
         font-weight: 700;
-        color: #1a1a1a;
-        margin: 0;
+        color: #111827;
     }
 
     .order-tabs {

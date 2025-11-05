@@ -26,6 +26,7 @@
     let editingCategory = null;
     let deletingCategory = null;
     let searchItem = "";
+    let selectedCategory = ""; // เพิ่มตัวแปรสำหรับ filter category
     let imagePreview = null;
 
     async function handleLogout() {
@@ -42,7 +43,10 @@
         const matchesSearch =
             searchItem === "" ||
             menu.name?.toLowerCase().includes(searchItem.toLowerCase());
-        return matchesSearch;
+        const matchesCategory =
+            selectedCategory === "" ||
+            menu.category === selectedCategory;
+        return matchesSearch && matchesCategory;
     });
 
     async function handleSwitchAvailable(index, newStatus) {
@@ -204,14 +208,14 @@
     <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Menu -->
-        <div class="page-header">
+        <!-- Header Section -->
+        <div class="header-section">
             <nav class="breadcrumb">
                 <span class="breadcrumb-item">Home</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-item current">Menu</span>
             </nav>
-            <h2>Menu</h2>
+            <h1 class="page-title">Menu</h1>
         </div>
         <div class="menu-content">
             <!-- ส่วนของ Item -->
@@ -221,12 +225,25 @@
                         <span class="material-symbols-outlined" style="color: white;">add</span>
                         <span class="btn-text" style="color: white; font-size: 16px;">Add Item</span>
                     </button>
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        class="search-item-btn"
-                        bind:value={searchItem}
-                    />
+                    <div class="filter-search-group">
+                        <select
+                            class="category-filter"
+                            bind:value={selectedCategory}
+                        >
+                            <option value="">ทุกหมวดหมู่</option>
+                            {#if Array.isArray(data.cate) && data.cate.length > 0}
+                                {#each data.cate as cat}
+                                    <option value={cat.category}>{cat.category}</option>
+                                {/each}
+                            {/if}
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            class="search-item-btn"
+                            bind:value={searchItem}
+                        />
+                    </div>
                 </div>
                 <table class="item-table">
                     <thead>
@@ -825,39 +842,39 @@
     .main-content {
         margin-left: 250px;
         margin-top: 60px;
-        padding-left: 30px;
-        padding-top: 30px;
-        padding-right: 22px;
+        padding: 24px;
+        min-height: calc(100vh - 60px);
     }
 
-    .page-header {
-        margin: -30px;
-        margin-left: -40px;
-        padding: 30px 40px;
-        background-color: white;
-        margin-bottom: 30px;
-        border-bottom: 1px solid #e0e0e0;
+    /* Header Section */
+    .header-section {
+        background: white;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .breadcrumb {
         font-size: 13px;
-        color: #888;
+        color: #6b7280;
         margin-bottom: 8px;
     }
 
     .breadcrumb-item.current {
-        color: #333;
+        color: #111827;
+        font-weight: 500;
     }
 
     .breadcrumb-separator {
         margin: 0 8px;
     }
-
-    .page-header h2 {
+    
+    .page-title {
         margin: 0;
-        font-size: 24px;
-        font-weight: 500;
-        color: #333;
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
     }
 
     .menu-content {
@@ -885,6 +902,12 @@
         gap: 16px;
     }
 
+    .filter-search-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
     .add-item-btn {
         display: flex;
         align-items: center;
@@ -906,8 +929,29 @@
         box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
     }
 
+    .category-filter {
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+        background-color: white;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        min-width: 150px;
+    }
+
+    .category-filter:focus {
+        outline: none;
+        border-color: #FF8C00;
+    }
+
+    .category-filter:hover {
+        border-color: #FF8C00;
+    }
+
     .search-item-btn {
-        flex: 1;
         max-width: 300px;
         height: 44px;
         padding: 0 16px;

@@ -88,12 +88,12 @@
     function handlePrintReceipt() {
         if (!selectedOrder) return;
         
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
         if (!printWindow) return;
 
         const currentDateTime = new Date().toLocaleString('th-TH');
-        const shopName = data.shop ? data.shop.Shop_Name : 'N/A';
-        const shopPhone = data.shop ? data.shop.Phone : 'N/A';
+        const shopName = (data.shop && data.shop.name) ? data.shop.name : 'ร้านอาหาร';
+        const shopPhone = (data.shop && data.shop.Phone) ? data.shop.Phone : '';
 
         let menuDetailsHtml = '';
         Object.values(menuCount).forEach(function(item) {
@@ -103,87 +103,102 @@
             let optionsHtml = '';
             if (menuItem.option && Array.isArray(menuItem.option) && menuItem.option.length > 0) {
                 menuItem.option.forEach(function(opt) {
-                    optionsHtml += '<li>' + opt + '</li>';
+                    optionsHtml += '<div style="font-size: 11px; color: #666; margin-left: 15px;">- ' + opt + '</div>';
                 });
-                optionsHtml = '<ul style="margin: 5px 0 0 20px; padding: 0; list-style: disc;">' + optionsHtml + '</ul>';
             }
             
-            menuDetailsHtml += '<div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e0e0;">';
-            menuDetailsHtml += '<div>';
-            menuDetailsHtml += '<div style="font-weight: 500; margin-bottom: 4px;">' + menuItem.name + ' x' + count + '</div>';
-            menuDetailsHtml += optionsHtml;
+            menuDetailsHtml += '<div style="padding: 8px 0; border-bottom: 1px dashed #ddd;">';
+            menuDetailsHtml += '<div style="display: flex; justify-content: space-between; margin-bottom: 2px;">';
+            menuDetailsHtml += '<div style="font-weight: 500; font-size: 13px;">' + menuItem.name + '</div>';
+            menuDetailsHtml += '<div style="font-weight: 600; font-size: 13px;">฿' + (menuItem.Price * count).toFixed(2) + '</div>';
             menuDetailsHtml += '</div>';
-            menuDetailsHtml += '<div style="font-weight: 600;">฿' + (menuItem.Price * count).toFixed(2) + '</div>';
+            menuDetailsHtml += '<div style="font-size: 11px; color: #666;">จำนวน: ' + count + '</div>';
+            menuDetailsHtml += optionsHtml;
             menuDetailsHtml += '</div>';
         });
 
         let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
         html += '<title>ใบเสร็จรับเงิน - Order #' + orderNumber + '</title>';
         html += '<style>';
-        html += 'body { font-family: Arial, "Noto Sans Thai", sans-serif; padding: 40px; background: white; }';
-        html += '.receipt { max-width: 800px; margin: 0 auto; background: white; padding: 40px; }';
-        html += '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; }';
-        html += '.header h1 { font-size: 36px; font-weight: 700; margin-bottom: 10px; color: #333; }';
-        html += '.header p { font-size: 16px; color: #666; margin-top: 5px; }';
-        html += '.order-info { display: flex; justify-content: space-between; margin-bottom: 25px; padding: 20px; background: #f9f9f9; border-radius: 8px; }';
-        html += '.info-section { flex: 1; }';
-        html += '.info-label { font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }';
-        html += '.info-value { font-size: 16px; font-weight: 600; color: #333; }';
-        html += '.items-section { margin-bottom: 30px; }';
-        html += '.section-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; color: #333; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }';
-        html += '.total-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; }';
-        html += '.total-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 16px; }';
-        html += '.total-row.grand-total { font-size: 28px; font-weight: 700; color: #4caf50; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #999; }';
-        html += '.payment-info { margin-top: 30px; padding: 25px; background: #f0f8f0; border-radius: 8px; border-left: 5px solid #4caf50; }';
-        html += '.payment-status { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: #2e7d32; margin-bottom: 10px; }';
-        html += '.payment-details { font-size: 15px; color: #555; line-height: 1.8; }';
-        html += '.footer { margin-top: 50px; padding-top: 20px; border-top: 1px dashed #ccc; text-align: center; color: #666; font-size: 14px; }';
-        html += '.shop-info { margin-top: 10px; font-size: 14px; color: #888; }';
-        html += '@media print { body { padding: 0; } .receipt { padding: 20px; } @page { margin: 15mm; } }';
+        html += '* { margin: 0; padding: 0; box-sizing: border-box; }';
+        html += 'body { font-family: "Courier New", monospace, "Noto Sans Thai", sans-serif; background: white; }';
+        html += '.receipt { width: 80mm; max-width: 100%; margin: 0 auto; padding: 10mm; background: white; }';
+        html += '.logo-container { text-align: center; margin-bottom: 15px; }';
+        html += '.logo { width: 80px; height: 80px; margin: 0 auto; }';
+        html += '.header { text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #333; }';
+        html += '.header h1 { font-size: 18px; font-weight: 700; margin: 8px 0 5px 0; color: #333; }';
+        html += '.header p { font-size: 12px; color: #666; margin: 2px 0; line-height: 1.4; }';
+        html += '.info-row { display: flex; justify-content: space-between; font-size: 11px; margin: 5px 0; }';
+        html += '.info-label { color: #666; }';
+        html += '.info-value { font-weight: 600; color: #333; }';
+        html += '.divider { border-top: 1px dashed #333; margin: 10px 0; }';
+        html += '.section-title { font-size: 12px; font-weight: 700; margin: 10px 0 8px 0; text-align: center; text-transform: uppercase; }';
+        html += '.total-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #333; }';
+        html += '.total-row { display: flex; justify-content: space-between; font-size: 12px; margin: 5px 0; }';
+        html += '.total-row.grand-total { font-size: 16px; font-weight: 700; margin-top: 8px; padding-top: 8px; border-top: 1px solid #333; }';
+        html += '.payment-section { margin-top: 10px; padding: 8px; background: #f5f5f5; text-align: center; font-size: 11px; }';
+        html += '.payment-status { font-weight: 700; color: #2e7d32; margin-bottom: 5px; }';
+        html += '.footer { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #333; text-align: center; }';
+        html += '.footer p { font-size: 10px; color: #666; margin: 3px 0; }';
+        html += '.footer .thank-you { font-size: 12px; font-weight: 600; color: #333; margin-bottom: 5px; }';
+        html += '@media print { ';
+        html += 'body { margin: 0; padding: 0; }';
+        html += '.receipt { width: 80mm; padding: 5mm; }';
+        html += '@page { size: 80mm auto; margin: 0; }';
+        html += '}';
         html += '</style></head><body><div class="receipt">';
+        
+        // Logo
+        html += '<div class="logo-container">';
+        html += '<img src="/SCQ_logo.png" alt="SCQ Logo" class="logo" onerror="this.style.display=\'none\'">';
+        html += '</div>';
+        
+        // Header
         html += '<div class="header">';
         html += '<h1>SCQ</h1>';
-        html += '<p>ใบเสร็จรับเงิน / Receipt</p>';
-        html += '<div class="shop-info">' + shopName;
-        if (shopPhone && shopPhone !== 'N/A') {
-            html += ' | โทร: ' + shopPhone;
+        html += '<p>ใบเสร็จรับเงิน</p>';
+        html += '<p style="font-size: 11px; margin-top: 5px;">' + shopName + '</p>';
+        if (shopPhone && shopPhone !== '') {
+            html += '<p style="font-size: 11px;">โทร: ' + shopPhone + '</p>';
         }
         html += '</div>';
-        html += '</div>';
-        html += '<div class="order-info">';
-        html += '<div class="info-section"><div class="info-label">เลขที่ออเดอร์ / Order ID</div><div class="info-value">#' + selectedOrder.id + '</div></div>';
-        html += '<div class="info-section"><div class="info-label">ชื่อลูกค้า / Customer</div><div class="info-value">' + customerName + '</div></div>';
-        html += '<div class="info-section" style="text-align: right;"><div class="info-label">วันที่ / Date</div><div class="info-value">' + orderDate + '</div></div>';
-        html += '</div>';
+        
+        // Order Info
+        html += '<div class="info-row"><span class="info-label">เลขที่:</span><span class="info-value">' + selectedOrder.id + '</span></div>';
+        html += '<div class="info-row"><span class="info-label">วันที่:</span><span class="info-value">' + orderDate + '</span></div>';
+        html += '<div class="info-row"><span class="info-label">ลูกค้า:</span><span class="info-value">' + customerName + '</span></div>';
         
         if (preparationStart) {
-            html += '<div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ff9800;">';
-            html += '<div style="font-size: 14px; color: #e65100;"><strong>เริ่มเตรียมอาหาร:</strong> ' + preparationStart + '</div>';
-            html += '</div>';
+            html += '<div class="info-row"><span class="info-label">เริ่มเตรียม:</span><span class="info-value">' + preparationStart + '</span></div>';
         }
         
-        html += '<div class="items-section">';
-        html += '<div class="section-title">รายการอาหาร / Menu Items</div>';
+        html += '<div class="divider"></div>';
+        
+        // Menu Items
+        html += '<div class="section-title">รายการอาหาร</div>';
         html += menuDetailsHtml;
-        html += '</div>';
+        
+        // Total
         html += '<div class="total-section">';
-        html += '<div class="total-row"><span>รวมเงิน / Subtotal</span><span>฿' + totalAmount.toFixed(2) + '</span></div>';
-        html += '<div class="total-row"><span>ส่วนลด / Discount</span><span>฿0.00</span></div>';
-        html += '<div class="total-row"><span>ค่าธรรมเนียม / Service Fee</span><span>฿0.00</span></div>';
-        html += '<div class="total-row grand-total"><span>ยอดรวมทั้งสิ้น / Total Amount</span><span>฿' + totalAmount.toFixed(2) + '</span></div>';
+        html += '<div class="total-row"><span>รวมเงิน</span><span>฿' + totalAmount.toFixed(2) + '</span></div>';
+        html += '<div class="total-row"><span>ส่วนลด</span><span>฿0.00</span></div>';
+        html += '<div class="total-row grand-total"><span>ยอดรวมทั้งสิ้น</span><span>฿' + totalAmount.toFixed(2) + '</span></div>';
         html += '</div>';
-        html += '<div class="payment-info">';
-        html += '<div class="payment-status"><span style="font-size: 24px;">✓</span><span>ชำระเงินแล้ว / PAID</span></div>';
-        html += '<div class="payment-details">';
-        html += 'วิธีการชำระเงิน: <strong>QR Code</strong><br>';
-        html += 'สถานะ: <strong style="color: #f57c00;">กำลังเตรียมอาหาร</strong>';
+        
+        // Payment Info
+        html += '<div class="payment-section">';
+        html += '<div class="payment-status">✓ ชำระเงินแล้ว / PAID</div>';
+        html += '<div>วิธีชำระ: QR Code</div>';
+        html += '<div>สถานะ: กำลังเตรียมอาหาร</div>';
         html += '</div>';
-        html += '</div>';
+        
+        // Footer
         html += '<div class="footer">';
-        html += '<p style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">ขอบคุณที่ใช้บริการ / Thank you for your order!</p>';
-        html += '<p>SCQ - Student Canteen Queue System</p>';
-        html += '<p style="margin-top: 15px; font-size: 12px;">พิมพ์เมื่อ: ' + currentDateTime + '</p>';
+        html += '<p class="thank-you">ขอบคุณที่ใช้บริการ</p>';
+        html += '<p>SCQ - Student Canteen Queue</p>';
+        html += '<p style="margin-top: 8px;">พิมพ์: ' + currentDateTime + '</p>';
         html += '</div>';
+        
         html += '</div>';
         html += '<' + 'script>window.onload = function() { setTimeout(function() { window.print(); }, 250); };<' + '/script>';
         html += '</body></html>';
@@ -211,17 +226,18 @@
 </script>
 
 <div class="restaurant-layout">
-    <TopBar title="SCQ" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
 
     <main class="main-content">
-        <div class="page-header">
+        <!-- Header Section -->
+        <div class="header-section">
             <nav class="breadcrumb">
                 <span class="breadcrumb-item">Home</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-item current">Orders</span>
             </nav>
-            <h1>Orders</h1>
+            <h1 class="page-title">Orders</h1>
         </div>
 
         <div class="order-tabs">
@@ -286,7 +302,7 @@
                             {#each Object.values(menuCount) as { item, count }}
                                 <div class="menu-item">
                                     <div class="menu-info">
-                                        <div class="menu-name">{item.Menu_Name} x{count}</div>
+                                        <div class="menu-name">{item.name} x{count}</div>
                                         {#if item.Options && Array.isArray(item.Options) && item.Options.length > 0}
                                             <ul class="menu-options">
                                                 {#each item.Options as option}
@@ -351,33 +367,35 @@
         min-height: calc(100vh - 60px);
     }
 
-    .page-header {
-        margin-bottom: 20px;
+    /* Header Section */
+    .header-section {
+        background: white;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: #666;
+        font-size: 13px;
+        color: #6b7280;
         margin-bottom: 8px;
     }
 
-    .breadcrumb-separator {
-        color: #999;
-    }
-
     .breadcrumb-item.current {
-        color: #333;
+        color: #111827;
         font-weight: 500;
     }
 
-    .page-header h1 {
+    .breadcrumb-separator {
+        margin: 0 8px;
+    }
+    
+    .page-title {
+        margin: 0;
         font-size: 28px;
         font-weight: 700;
-        color: #1a1a1a;
-        margin: 0;
+        color: #111827;
     }
 
     .order-tabs {

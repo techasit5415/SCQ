@@ -383,7 +383,7 @@
         background: white;
         border-radius: 16px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
+        overflow: visible;
     }
 
     .chart-card.full-width {
@@ -415,6 +415,8 @@
 
     .chart-content {
         padding: 24px;
+        position: relative;
+        overflow: visible;
     }
 
     /* Bar Chart */
@@ -990,7 +992,7 @@
         border-radius: 16px;
         height: 240px;
         position: relative;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .modern-line-chart::before {
