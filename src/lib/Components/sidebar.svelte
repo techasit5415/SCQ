@@ -7,12 +7,19 @@
     
     const dispatch = createEventDispatcher();
     
-    let showRestaurantSubmenu = false;
-    
+    let showRestaurantMenu = false;
+    let showAdvertiseSubmenu = false;
+
     // Check if restaurant submenu should be shown
-    $: showRestaurantSubmenu = activeMenu === "manageRestaurant" || 
-                              activeMenu === "addRestaurant" || 
-                              activeMenu.startsWith('restaurant-');
+    $: showRestaurantMenu = activeMenu === "manageRestaurant" || 
+                           activeMenu === "addRestaurant" || 
+                           activeMenu.startsWith('restaurant-');
+
+    // Check if advertise submenu should be shown
+    $: showAdvertiseSubmenu = activeMenu === "advertise" || 
+                             activeMenu === "packages" || 
+                             activeMenu === "applications" || 
+                             activeMenu === "payments";
     
     function handleMenuClick(menu) {
         switch(menu) {
@@ -27,6 +34,27 @@
                 break;
             case "addRestaurant":
                 goto('/admin/restaurant/AddRestaurant');
+                break;
+            case "advertise":
+                goto('/admin/advertise');
+                break;
+            case "packages":
+                goto('/admin/advertise/packages');
+                break;
+            case "applications":
+                goto('/admin/advertise/applications');
+                break;
+            case "payments":
+                goto('/admin/advertise/payments');
+                break;
+            case "reports":
+                goto('/admin/reports');
+                break;
+            case "systemLog":
+                goto('/admin/systemlog');
+                break;
+            case "settings":
+                goto('/admin/settings');
                 break;
             default:
                 // For other menus that need special handling, dispatch event
@@ -69,7 +97,7 @@
         <!-- Manage Restaurant -->
         <button
             class="menu-item"
-            class:active={showRestaurantSubmenu}
+            class:active={showRestaurantMenu}
             on:click={() => handleMenuClick("manageRestaurant")}
         >
             <span class="material-symbols-outlined">storefront</span>
@@ -77,7 +105,7 @@
         </button>
 
         <!-- Restaurant Submenu -->
-        {#if showRestaurantSubmenu}
+        {#if showRestaurantMenu}
             <div class="submenu">
                 <button 
                     class="submenu-item" 
@@ -95,12 +123,55 @@
                             class="submenu-item restaurant-item" 
                             class:active={activeMenu === `restaurant-${shop.id}`}
                             on:click={() => handleViewRestaurant(shop.id)}
+                            title={shop.name}
                         >
                             <span class="material-symbols-outlined">storefront</span>
-                            <span>{shop.name}</span>
+                            <span class="restaurant-name">{shop.name}</span>
                         </button>
                     {/each}
                 {/if}
+            </div>
+        {/if}
+
+        <!-- Advertise Management -->
+        <button 
+            class="menu-item"
+            class:active={showAdvertiseSubmenu}
+            on:click={() => handleMenuClick("advertise")}
+        >
+            <span class="material-symbols-outlined">campaign</span>
+            <span>Advertise Management</span>
+        </button>
+
+        <!-- Advertise Submenu -->
+        {#if showAdvertiseSubmenu}
+            <div class="submenu">
+                <button 
+                    class="submenu-item" 
+                    class:active={activeMenu === "packages"}
+                    on:click={() => handleMenuClick("packages")}
+                >
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span>Package Management</span>
+                </button>
+                
+                <button 
+                    class="submenu-item" 
+                    class:active={activeMenu === "applications"}
+                    on:click={() => handleMenuClick("applications")}
+                >
+                    <span class="material-symbols-outlined">rate_review</span>
+                    <span>Application Review</span>
+                </button>
+                
+                <button 
+                    class="submenu-item" 
+                    class:active={activeMenu === "payments"}
+                    on:click={() => handleMenuClick("payments")}
+                >
+                    <span class="material-symbols-outlined">payment</span>
+                    <span>Payment Management</span>
+                </button>
             </div>
         {/if}
 
@@ -187,6 +258,15 @@
 
     .menu-item.active .material-symbols-outlined {
         color: #ff8c00;
+    }
+
+
+
+    .restaurant-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 150px;
     }
 
     .submenu {

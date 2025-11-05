@@ -41,5 +41,6 @@
         font-size: 18px;
         font-weight: 500;
         color: #333;
+        font-family: 'Noto Sans Thai', sans-serif;
     }
 </style>
