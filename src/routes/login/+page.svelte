@@ -1,69 +1,55 @@
-<script>
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+<script lang="ts">
+  import { enhance } from "$app/forms";
+  import type { PageData } from './$types';
+  
+  export let data: PageData;
+  export let form;
 
-  let username = "";
+  let email = "";
   let password = "";
   let showPassword = false;
-  // let clickCount = 0;
+  let isSubmitting = false;
 
-  onMount(() => {
-    console.log("--- Component Loaded in Browser ---");
-  });
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    console.log("handleSubmit called");
-    try {
-      const formData = new FormData(event.target);
-      console.log("Sending form data:", [...formData.entries()]);
-      
-      // ใช้ window.location.origin เพื่อให้ใช้ได้ทั้ง localhost และ IP
-      const apiUrl = `${window.location.origin}/admin`;
-      const res = await fetch(apiUrl, { method: "POST", body: formData });
-      
-      console.log("Response status:", res.status);
-      const data = await res.json();
-      console.log("Response JSON:", data);
-      const parsedData = JSON.parse(data.data);
-      console.log('Parsed data:', parsedData);
-      if (res.ok && parsedData[0]?.success === 1) {
-        console.log("Login success, redirecting...");
-        
-        // เก็บ login state
-        localStorage.setItem('isLoggedIn', 'true');
-        // หรือ sessionStorage.setItem('isLoggedIn', 'true');
-        
-        const redirectUrl = `${window.location.origin}/homeadmin`;
-        console.log("Redirecting to:", redirectUrl);
-        window.location.href = redirectUrl;
-        console.log("Redirect command executed");
-      } else {
-        alert(data.error || "Login failed");
-      }
-    } catch (error) {
-      console.error("Fetch error:", error);
-      alert("Network error or server not responding.");
-    }
+  $: if (form?.error) {
+    alert(form.error);
+    isSubmitting = false;
   }
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
+<form method="POST" use:enhance={() => {
+  isSubmitting = true;
+  return async ({ result, update }) => {
+    console.log('Form result:', result);
+    
+    // ให้ update handle redirect โดยอัตโนมัติ
+    await update({ reset: false });
+    
+    // ถ้าไม่ redirect (มี error) ให้ reset isSubmitting
+    if (result.type !== 'redirect') {
+      isSubmitting = false;
+    }
+  };
+}}>
   <div class="login-container">
-    <h2>Admin Login</h2>
+    <h2>เข้าสู่ระบบ</h2>
     <div class="photo">
       <img src="/Photo/Icon.png" alt="icon" />
     </div>
 
+    {#if data.redirectTo}
+      <input type="hidden" name="redirectTo" value={data.redirectTo} />
+    {/if}
+
     <div class="form-group">
-      <span class="icon material-symbols-outlined"> account_circle </span>
+      <span class="icon material-symbols-outlined"> email </span>
       <label>
         <input
-          name="username"
-          type="text"
-          placeholder="Username"
-          bind:value={username}
+          name="email"
+          type="email"
+          placeholder="อีเมล"
+          bind:value={email}
           required
+          disabled={isSubmitting}
           class="border rounded px-2 py-1 w-full"
         />
       </label>
@@ -75,9 +61,10 @@
         <input
           name="password"
           type={showPassword ? "text" : "password"}
-          placeholder="Password"
+          placeholder="รหัสผ่าน"
           bind:value={password}
           required
+          disabled={isSubmitting}
           class="border rounded px-2 py-1 w-full"
         />
         <span
@@ -92,11 +79,9 @@
     <button
       type="submit"
       class="px-4 py-2 rounded bg-blue-600 text-white w-full"
-      on:click={() => {
-        console.log(`Login button clicked #`);
-      }}
+      disabled={isSubmitting}
     >
-      Log in 
+      {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
     </button>
   </div>
 </form>

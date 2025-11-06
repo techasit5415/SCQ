@@ -63,7 +63,9 @@
     }
     
     function handleLogout() {
-        dispatch('logout');
+        if (confirm('ต้องการออกจากระบบหรือไม่?')) {
+            goto('/logout');
+        }
     }
     
     function handleViewRestaurant(id) {

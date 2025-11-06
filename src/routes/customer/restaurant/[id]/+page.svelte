@@ -4,10 +4,56 @@
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import MenuCard from '$lib/Components/customer/MenuCard.svelte';
 	import { cart } from '$lib/stores/cart';
+	import { enhance } from '$app/forms';
 	
 	export let data;
+	export let form;
+	
 	const pbUrl = PUBLIC_POCKETBASE_URL;
 	const { restaurant, menuItems, reviews, averageRating, totalReviews } = data;
+	
+	let isFavorite = data.isFavorite || false;
+	let isTogglingFavorite = false;
+	
+	// อัพเดท isFavorite เมื่อได้ response จาก form action
+	$: if (form?.success) {
+		isFavorite = form.isFavorite;
+		if (form.message) {
+			// แสดงข้อความสั้นๆ
+			const msg = form.message;
+			console.log(msg);
+		}
+	}
+	
+	async function toggleFavorite() {
+		if (isTogglingFavorite) return;
+		
+		isTogglingFavorite = true;
+		console.log('Toggling favorite...');
+		
+		try {
+			const formData = new FormData();
+			const response = await fetch('?/toggleFavorite', {
+				method: 'POST',
+				body: formData
+			});
+			
+			const result = await response.json();
+			console.log('Toggle result:', result);
+			
+			if (result.type === 'success' && result.data?.success) {
+				isFavorite = result.data.isFavorite;
+				alert(result.data.message || (isFavorite ? 'เพิ่มเข้ารายการโปรดแล้ว' : 'ลบออกจากรายการโปรดแล้ว'));
+			} else {
+				alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+			}
+		} catch (error) {
+			console.error('Error toggling favorite:', error);
+			alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+		} finally {
+			isTogglingFavorite = false;
+		}
+	}
 	
 	let searchTerm = '';
 	let activeTab = 'เมนูแนะนำ';
@@ -67,8 +113,16 @@
 			<span class="material-icons">arrow_back</span>
 		</button>
 		
-		<button class="control-btn heart" aria-label="เพิ่มในรายการโปรด">
-			<span class="material-icons">favorite_border</span>
+		<button 
+			class="control-btn heart" 
+			class:active={isFavorite}
+			on:click={toggleFavorite}
+			aria-label={isFavorite ? 'ลบออกจากรายการโปรด' : 'เพิ่มในรายการโปรด'}
+			disabled={isTogglingFavorite}
+		>
+			<span class="material-icons">
+				{isFavorite ? 'favorite' : 'favorite_border'}
+			</span>
 		</button>
 	</div>
 </div>
@@ -247,7 +301,7 @@
 		right: 16px;
 		display: flex;
 		justify-content: space-between;
-		z-index: 10;
+		z-index: 100;
 	}
 	
 	.control-btn {
@@ -263,6 +317,7 @@
 		cursor: pointer;
 		transition: all 0.3s ease;
 		color: white;
+		padding: 0;
 	}
 	
 	.control-btn .material-icons {
@@ -273,6 +328,19 @@
 	.control-btn:hover {
 		background: rgba(255, 255, 255, 0.3);
 		transform: scale(1.05);
+	}
+	
+	.control-btn.heart.active {
+		background: rgba(255, 107, 53, 0.9);
+	}
+	
+	.control-btn.heart.active .material-icons {
+		color: white;
+	}
+	
+	.control-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 	
 	.restaurant-info-card {

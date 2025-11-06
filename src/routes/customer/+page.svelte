@@ -43,6 +43,13 @@
         goto('/customer/profile');
     }
     
+    function handleLogout() {
+        console.log('Logout clicked');
+        if (confirm('ต้องการออกจากระบบหรือไม่?')) {
+            goto('/logout');
+        }
+    }
+    
     function handleRestaurantSelect(event) {
         const { restaurant } = event.detail;
         console.log('Selected restaurant:', restaurant);
@@ -65,6 +72,7 @@
         on:notification={handleNotification}
         on:bookmark={handleBookmark}
         on:profile={handleProfile}
+        on:logout={handleLogout}
     />
     
     <!-- Main Content -->
@@ -73,6 +81,7 @@
             <!-- Restaurant List -->
             <RestaurantList 
                 restaurants={data.restaurants || []}
+                promotedShopIds={data.promotedShopIds || []}
                 loading={false}
                 error={data.success === false ? data.error : null}
                 on:restaurantSelect={handleRestaurantSelect}

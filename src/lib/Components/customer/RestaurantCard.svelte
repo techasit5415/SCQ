@@ -1,15 +1,11 @@
 <script>
     import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-    import { goto } from '$app/navigation';
     import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
     export let restaurant;
     export let index = 0;
+    export let isPromoted = false;
     
     const dispatch = createEventDispatcher();
-
-    function handleViewReviews() {
-        goto(`/customer/restaurant/${restaurant.id}/reviews`);
-    }
     
     // State for image loading
     let imageLoaded = false;
@@ -73,15 +69,11 @@
         }, 3000);
     }
     
-    // Calculate rating display - ใช้ข้อมูลจริงจาก server
-    $: rating = restaurant.averageRating || 0;
-    $: reviewCount = restaurant.totalReviews || 0;
+    // Calculate rating display
+    $: rating = restaurant.rating || 3.5; // Default rating
+    $: reviewCount = restaurant.review_count || Math.floor(Math.random() * 200) + 50; // Mock review count
     $: deliveryTime = restaurant.delivery_time || '15-30';
-    $: queueCount = restaurant.queueCount || 0; // จำนวนคิวจริงจาก server
-    
-
-    
-
+    $: QueueM = restaurant.delivery_fee || Math.floor(Math.random() * 20) + 5; // Mock delivery fee
     
     // Get restaurant image with proper URL handling
     $: restaurantImage = getRestaurantImage(restaurant);
@@ -194,7 +186,14 @@
     }
 </script>
 
-<div class="restaurant-card" role="button" tabindex="0" on:click={handleRestaurantClick} on:keypress={handleKeyPress}>
+<div class="restaurant-card" class:promoted={isPromoted} role="button" tabindex="0" on:click={handleRestaurantClick} on:keypress={handleKeyPress}>
+    {#if isPromoted}
+        <div class="promoted-badge">
+            <span class="badge-icon">⭐</span>
+            <span class="badge-text">แนะนำ</span>
+        </div>
+    {/if}
+    
     <div class="restaurant-image">
         <div class="image-container">
             <!-- Always show placeholder first -->
@@ -236,34 +235,13 @@
         
         <div class="restaurant-details">
             <div class="rating">
-                <div class="stars">
-                    {#each [1,2,3,4,5] as starNum}
-                        <span class="star {starNum <= Math.round(rating) ? 'filled' : 'empty'}">★</span>
-                    {/each}
-                </div>
-                <button 
-                    class="rating-text clickable"
-                    on:click|stopPropagation={() => handleViewReviews()}
-                >
-                    {#if reviewCount > 0}
-                        {rating.toFixed(1)} ({reviewCount} รีวิว)
-                    {:else}
-                        ยังไม่มีรีวิว
-                    {/if}
-                </button>
-
-
+                <span class="star">⭐</span>
+                <span class="rating-text">{rating.toFixed(1)} ({reviewCount})</span>
+                <span class="category">{restaurant.Type_Shop || ''}</span>
             </div>
             
-            <div class="queue-info">
-                <span class="queue-icon">🍳</span>
-                <span class="queue-text">
-                    {#if queueCount > 0}
-                        {queueCount} คิว
-                    {:else}
-                        ไม่มีคิว
-                    {/if}
-                </span>
+            <div class="Queue">
+                <span class="Queue">{QueueM} Queue</span>
             </div>
         </div>
         
@@ -279,6 +257,7 @@
 
 <style>
     .restaurant-card {
+        position: relative;
         display: flex;
         background: white;
         border-radius: 12px;
@@ -289,9 +268,53 @@
         margin-bottom: 16px;
     }
     
+    .restaurant-card.promoted {
+        border: 2px solid #fbbf24;
+        background: linear-gradient(to right, #fffbeb 0%, white 100%);
+    }
+    
     .restaurant-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    .promoted-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+        z-index: 100;
+        animation: pulse 2s ease-in-out infinite;
+        white-space: nowrap;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+    }
+    
+    .badge-icon {
+        font-size: 12px;
+    }
+    
+    .badge-text {
+        font-size: 11px;
+        letter-spacing: 0.5px;
     }
     
     .restaurant-image {
@@ -428,72 +451,20 @@
         margin-top: 4px;
     }
     
-    /* Queue Info Styles */
-    .queue-info {
+    .rating {
         display: flex;
         align-items: center;
         gap: 4px;
-        font-size: 12px;
-        color: #666;
-        background: #f8f9fa;
-        padding: 4px 8px;
-        border-radius: 12px;
-        border: 1px solid #e9ecef;
-    }
-    
-    .queue-icon {
-        font-size: 12px;
-    }
-    
-    .queue-text {
-        font-weight: 500;
-    }
-    
-    .rating {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-    
-    .stars {
-        display: flex;
-        gap: 1px;
     }
     
     .star {
-        font-size: 12px;
-        transition: all 0.2s ease;
-    }
-    
-    .star.filled {
-        color: #FFD700 !important;
-        filter: brightness(1.2);
-        text-shadow: 0 0 3px rgba(255, 215, 0, 0.8);
-    }
-    
-    .star.empty {
-        color: #ddd !important;
-        opacity: 0.5;
+        font-size: 14px;
     }
     
     .rating-text {
         font-size: 12px;
         color: #666;
         font-weight: 500;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        text-decoration: underline;
-        transition: color 0.2s ease;
-    }
-
-    .rating-text:hover {
-        color: #ff6b35;
-    }
-
-    .rating-text.clickable {
-        cursor: pointer;
     }
     
     .category {
@@ -585,16 +556,6 @@
         .delivery-fee {
             font-size: 10px;
             padding: 3px 6px;
-        }
-        
-        .queue-info {
-            font-size: 10px;
-            padding: 2px 6px;
-        }
-        
-        .queue-info {
-            font-size: 10px;
-            padding: 2px 6px;
         }
         
         .restaurant-description {

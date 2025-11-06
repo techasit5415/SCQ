@@ -40,6 +40,10 @@
 	function goToOrders() {
 		goto('/customer/orders');
 	}
+	
+	function goToFavorites() {
+		goto('/customer/favorites');
+	}
 
 	function goToCredit() {
 		// TODO: ไปหน้า SCQ Credit (ประวัติการใช้ Point)
@@ -262,7 +266,7 @@
 
 	<!-- Menu List -->
 	<div class="menu-section">
-		<button class="menu-item" on:click={goToOrders}>
+		<button class="menu-item" on:click={goToFavorites}>
 			<div class="menu-icon">
 				<span class="material-icons">favorite_border</span>
 			</div>

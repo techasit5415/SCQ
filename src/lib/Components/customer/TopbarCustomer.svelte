@@ -7,6 +7,7 @@
     export let showNotifications = true;
     export let showBookmarks = true;
     export let showProfile = true;
+    export let showLogout = true;
     
     const dispatch = createEventDispatcher();
     
@@ -20,6 +21,10 @@
     
     function handleProfileClick() {
         dispatch('profile');
+    }
+    
+    function handleLogoutClick() {
+        dispatch('logout');
     }
 </script>
 
@@ -68,6 +73,17 @@
                     title="โปรไฟล์ของฉัน"
                 >
                     <span class="material-symbols-outlined">account_circle</span>
+                </button>
+            {/if}
+            
+            {#if showLogout}
+                <button 
+                    class="nav-icon logout-btn"
+                    on:click={handleLogoutClick}
+                    aria-label="ออกจากระบบ"
+                    title="ออกจากระบบ"
+                >
+                    <span class="material-symbols-outlined">logout</span>
                 </button>
             {/if}
         </nav>
@@ -179,6 +195,14 @@
     
     .profile-btn:hover .material-symbols-outlined {
         color: #4caf50;
+    }
+    
+    .logout-btn:hover {
+        background: #ffebee;
+    }
+    
+    .logout-btn:hover .material-symbols-outlined {
+        color: #f44336;
     }
     
     /* Responsive Design */
