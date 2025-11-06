@@ -1,10 +1,8 @@
-import PocketBase from 'pocketbase';
-import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+import { error, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 
-
-export const load = async ({ params }: { params: { id: string } }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+    const pb = locals.pb;
     try {
         console.log('Loading restaurant and menu for ID:', params.id);
 
@@ -79,17 +77,84 @@ export const load = async ({ params }: { params: { id: string } }) => {
             reviews = [];
         }
 
+        // Check if this restaurant is in user's favorites
+        let isFavorite = false;
+        if (locals.user?.id) {
+            try {
+                const userData = await pb.collection('users').getOne(locals.user.id);
+                isFavorite = userData.shoplove?.includes(params.id) || false;
+                console.log('Is favorite:', isFavorite);
+            } catch (favError) {
+                console.error('Error checking favorite status:', favError);
+            }
+        }
+
         return {
             restaurant,
             menuItems,
             reviews,
             averageRating,
             totalReviews,
+            isFavorite,
             success: true
         };
 
     } catch (err) {
         console.error('Error loading restaurant:', err);
         throw error(404, 'Restaurant not found');
+    }
+};
+
+export const actions: Actions = {
+    toggleFavorite: async ({ params, locals }) => {
+        try {
+            const pb = locals.pb;
+            const user = locals.user;
+            
+            if (!user?.id) {
+                return fail(401, { error: 'กรุณาเข้าสู่ระบบ' });
+            }
+            
+            const userId = user.id;
+            const restaurantId = params.id;
+
+            // ดึงข้อมูลผู้ใช้
+            const userData = await pb.collection('users').getOne(userId);
+            let shoplove = userData.shoplove || [];
+
+            // ตรวจสอบว่ามีร้านนี้ในรายการโปรดหรือไม่
+            const index = shoplove.indexOf(restaurantId);
+            let isFavorite = false;
+            let message = '';
+
+            if (index > -1) {
+                // ลบออกจากรายการโปรด
+                shoplove.splice(index, 1);
+                message = 'ลบออกจากรายการโปรดแล้ว';
+                isFavorite = false;
+            } else {
+                // เพิ่มเข้ารายการโปรด
+                shoplove.push(restaurantId);
+                message = 'เพิ่มเข้ารายการโปรดแล้ว';
+                isFavorite = true;
+            }
+
+            // อัพเดทข้อมูล
+            await pb.collection('users').update(userId, {
+                shoplove: shoplove
+            });
+
+            console.log('Toggle favorite success:', message);
+
+            return {
+                success: true,
+                isFavorite,
+                message
+            };
+
+        } catch (err) {
+            console.error('Error toggling favorite:', err);
+            return fail(500, { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' });
+        }
     }
 };

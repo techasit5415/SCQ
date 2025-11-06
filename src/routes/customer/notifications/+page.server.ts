@@ -20,14 +20,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
 			sort: '-created',
 			limit: 10
 		});
-		
+		//
 		// สร้างการแจ้งเตือนจาก Order records
 		for (const order of orderRecords) {
 			notifications.push({
 				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${order.id.slice(-8)} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
+				message: `คำสั่งซื้อ #${order.id} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
 				status: order.Status === 'Completed' ? 'success' : 'pending',
 				amount: order.Total_Amount || 0,
 				time: order.created,
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				id: `payment_${payment.id}`,
 				type: 'payment',
 				title: 'การชำระเงิน',
-				message: `การชำระเงิน #${payment.id.slice(-8)} ด้วย${payment.Method_Payment} ${payment.status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
+				message: `การชำระเงิน #${payment.id} ด้วย${payment.Method_Payment} ${payment.status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
 				status: payment.status === 'Success' ? 'success' : 'pending',
 				amount: payment.Total_Amount || 0,
 				time: payment.created,

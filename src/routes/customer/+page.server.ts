@@ -10,81 +10,43 @@ export const load: PageServerLoad = async ({ cookies }) => {
         console.log('Loading restaurants from PocketBase...');
         console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
         
-        // ดึงข้อมูลร้านค้าทั้งหมด
-        const restaurants = await pb.collection('Shop').getFullList({
-            sort: '-created',
-            // เพิ่ม filter ถ้าต้องการเฉพาะร้านค้าที่เปิดให้บริการ
-            // filter: 'status = "active"',
-        });
+        // ดึงข้อมูลร้านค้าทั้งหมด (เรียงเองในโค้ด)
+        const restaurants = await pb.collection('Shop').getFullList();
         
         console.log(`Successfully loaded ${restaurants.length} restaurants`);
         
-        // ดึงรีวิวทั้งหมดแค่ครั้งเดียว
-        let allReviews = [];
+        // ดึงข้อมูลโฆษณาที่ active
+        let activeAds: any[] = [];
         try {
-            allReviews = await pb.collection('Review').getFullList();
-            console.log(`📊 Found ${allReviews.length} total reviews`);
-        } catch (reviewError) {
-            console.error('Error loading reviews:', reviewError);
-            allReviews = [];
-        }
-        
-        // จัดกลุ่มรีวิวตาม Shop_ID
-        const reviewsByShop = allReviews.reduce((acc, review) => {
-            if (!acc[review.Shop_ID]) {
-                acc[review.Shop_ID] = [];
-            }
-            acc[review.Shop_ID].push(review);
-            return acc;
-        }, {});
-        
-        // ดึงข้อมูลคิวจริงจากฐานข้อมูล - นับ Order ที่มีสถานะ In-progress
-        let queueByShop: any = {};
-        try {
-            const inProgressOrders = await pb.collection('Order').getFullList({
-                filter: 'Status = "In-progress"',
-                fields: 'Shop_ID'
+            const now = new Date().toISOString();
+            activeAds = await pb.collection('shop_advertisements').getFullList({
+                filter: `status = "Active" && payment_status = "Paid" && end_date > "${now}"`,
+                sort: '-created'
             });
-            
-            console.log('🍳 Found in-progress orders:', inProgressOrders.length);
-            
-            // นับจำนวนคิวต่อร้าน
-            queueByShop = inProgressOrders.reduce((acc: any, order: any) => {
-                acc[order.Shop_ID] = (acc[order.Shop_ID] || 0) + 1;
-                return acc;
-            }, {});
-            
-            console.log('🍳 Queue by shop:', queueByShop);
-        } catch (queueError) {
-            console.error('Error loading queue info:', queueError);
+            console.log(`Found ${activeAds.length} active advertisements`);
+        } catch (adError) {
+            console.log('Could not load advertisements:', adError);
         }
         
-        // คำนวณคะแนนเฉลี่ยและจำนวนคิวสำหรับแต่ละร้าน
-        const restaurantsWithRatings = restaurants.map((restaurant) => {
-            const shopReviews = reviewsByShop[restaurant.id] || [];
-            let averageRating = 0;
-            
-            if (shopReviews.length > 0) {
-                const totalStars = shopReviews.reduce((sum: number, review: any) => sum + (review.Star || 0), 0);
-                averageRating = Math.round((totalStars / shopReviews.length) * 10) / 10;
-                console.log(`⭐ ${restaurant.name}: ${averageRating} ดาว (${shopReviews.length} รีวิว)`);
-            }
-            
-            const queueCount = queueByShop[restaurant.id] || 0;
-            console.log(`🍳 ${restaurant.name}: ${queueCount} คิว`);
-            
-            return {
-                ...restaurant,
-                averageRating,
-                totalReviews: shopReviews.length,
-                queueCount
-            };
-        });
+        // สร้าง Set ของ shop IDs ที่มีโฆษณา active
+        const promotedShopIds = new Set(activeAds.map(ad => ad.shop_id));
         
-        console.log('First restaurant with ratings:', restaurantsWithRatings[0]); // Debug first restaurant
+        // แบ่งร้านออกเป็น 2 กลุ่ม: มีโฆษณา และไม่มีโฆษณา
+        const promotedRestaurants = restaurants.filter(r => promotedShopIds.has(r.id));
+        const normalRestaurants = restaurants.filter(r => !promotedShopIds.has(r.id));
+        
+        // เรียงตามชื่อทั้ง 2 กลุ่ม
+        promotedRestaurants.sort((a, b) => (a.Name || '').localeCompare(b.Name || '', 'th'));
+        normalRestaurants.sort((a, b) => (a.Name || '').localeCompare(b.Name || '', 'th'));
+        
+        // รวมกัน: ร้านที่มีโฆษณาก่อน ตามด้วยร้านปกติ
+        const sortedRestaurants = [...promotedRestaurants, ...normalRestaurants];
+        
+        console.log(`Promoted restaurants: ${promotedRestaurants.length}, Normal: ${normalRestaurants.length}`);
         
         return {
-            restaurants: restaurantsWithRatings || [],
+            restaurants: sortedRestaurants || [],
+            promotedShopIds: Array.from(promotedShopIds),
             success: true
         };
         
@@ -94,6 +56,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
         // Return empty array with error info for graceful handling
         return {
             restaurants: [],
+            promotedShopIds: [],
             success: false,
             error: 'ไม่สามารถโหลดข้อมูลร้านค้าได้ กรุณาลองใหม่อีกครั้ง'
         };

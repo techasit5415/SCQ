@@ -1,17 +1,16 @@
-import PocketBase from "pocketbase";
-import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
-import { POCKETBASE_ADMIN_EMAIL, POCKETBASE_ADMIN_PASSWORD } from "$env/static/private";
+import { error } from '@sveltejs/kit';
 
-export async function load({ params, cookies }) {
-    const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
+export async function load({ params, locals }) {
     const shopId = params.id;
 
+    // Check authentication
+    if (!locals.user || locals.role !== 'restaurant') {
+        throw error(401, 'Authentication required');
+    }
+
+    const pb = locals.pb;
+
     try {
-        // Admin authentication
-        await pb.admins.authWithPassword(
-            POCKETBASE_ADMIN_EMAIL,
-            POCKETBASE_ADMIN_PASSWORD
-        );
 
         console.log(`=== Loading Active Orders for Shop: ${shopId} ===`);
 

@@ -6,6 +6,7 @@
     export let data;
     export let form;
 
+    $: shopId = data.shopId || '';
     let activeMenu = "settings";
 
     function listOrder() {
@@ -48,6 +49,7 @@
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Settings" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar 
+    {shopId}
     {activeMenu} 
     on:menuChange={handleMenuChange}
     on:viewRestaurant={handleViewRestaurant}

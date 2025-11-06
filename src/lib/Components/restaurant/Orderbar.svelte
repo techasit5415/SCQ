@@ -12,13 +12,13 @@
             dispatch("menuChange", { menu });
             switch (menu) {
                 case "pending":
-                    goto(`/homerestaurant/restaurant/${rest}/order/pending`);
+                    goto(`/restaurant/${rest}/order/pending`);
                     break;
                 case "active":
-                    goto(`/homerestaurant/restaurant/${rest}/order/active`);
+                    goto(`/restaurant/${rest}/order/active`);
                     break;
                 case "history":
-                    goto(`/homerestaurant/restaurant/${rest}/order/history`);
+                    goto(`/restaurant/${rest}/order/history`);
                     break;
             }
         }

@@ -1,61 +1,151 @@
-// src/routes/admin/+page.server.ts
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
-import bcrypt from 'bcrypt';
-import { query } from '$lib/server/db';
-import { serialize } from 'cookie';
-import type { PageServerLoad } from './$types';
-export const load: PageServerLoad = async ({ cookies }) => {
-  const session = cookies.get('session');
+import PocketBase from 'pocketbase';
+import { env } from '$env/dynamic/public';
 
-  if (session) {
-    throw redirect(303, '/homeadmin'); // หรือหน้า login
-  }
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
 
-  // ถ้าต้องการ ตรวจสอบ session กับฐานข้อมูลก็ทำตรงนี้
+export const load: PageServerLoad = async ({ cookies, url }) => {
+    // ตรวจสอบว่ามี session อยู่แล้วหรือไม่
+    const customerAuth = cookies.get('pb_auth_customer');
+    const adminAuth = cookies.get('pb_auth_admin');
+    const restaurantAuth = cookies.get('pb_auth_restaurant');
+    
+    // เก็บ redirectTo parameter
+    const redirectTo = url.searchParams.get('redirectTo') || null;
 
- return {};
+    if (customerAuth) {
+        throw redirect(303, redirectTo || '/customer');
+    } else if (adminAuth) {
+        // ถ้า redirectTo เป็นหน้า admin ให้ไปตาม ไม่งั้นไป dashboard
+        throw redirect(303, (redirectTo && redirectTo.startsWith('/admin')) ? redirectTo : '/admin/dashboard');
+    } else if (restaurantAuth) {
+        // ถ้า redirectTo เป็นหน้า restaurant ให้ไปตาม ไม่งั้นไป restaurant list
+        throw redirect(303, (redirectTo && redirectTo.startsWith('/restaurant')) ? redirectTo : '/restaurant');
+    }
+
+    return {
+        redirectTo
+    };
 };
+
 export const actions: Actions = {
-  default: async ({ request , cookies}) => {
-    console.log('Action /admin called');
-    const form = await request.formData();
-    const username = String(form.get('username') ?? '').trim();
-    const password = String(form.get('password') ?? '');
+    default: async ({ request, cookies, url }) => {
+        console.log('Login action called');
+        const form = await request.formData();
+        const email = String(form.get('email') ?? '').trim();
+        const password = String(form.get('password') ?? '');
+        const redirectTo = String(form.get('redirectTo') ?? '');
 
-    if (!username || !password) {
-      return fail(400, { error: 'กรุณากรอก username และ password' });
+        if (!email || !password) {
+            return fail(400, { error: 'กรุณากรอกอีเมลและรหัสผ่าน' });
+        }
+
+        try {
+            // Login ผ่าน PocketBase
+            const authData = await pb.collection('users').authWithPassword(email, password);
+            
+            console.log('Auth data:', authData);
+            console.log('User role:', authData.record.Role);
+
+            // ดึง Role ID เพื่อตรวจสอบ role
+            const roleId = authData.record.Role;
+            let role = null;
+            let redirectPath = '/';
+
+            // ดึงข้อมูล role จาก collection Role
+            const roleData = await pb.collection('Role').getOne(roleId);
+            console.log('Role data:', roleData);
+            
+            // ใช้ field name (lowercase) และแปลงเป็นตัวเล็กเพื่อเปรียบเทียบ
+            role = roleData.name || roleData.Name;
+            const roleLower = role?.toLowerCase();
+            
+            console.log('Role name:', role);
+
+            // กำหนด redirect path และ cookie name ตาม role
+            if (roleLower === 'customer') {
+                // ใช้ redirectTo ถ้ามี ไม่งั้นไป /customer
+                redirectPath = redirectTo || '/customer';
+                cookies.set('pb_auth_customer', JSON.stringify({
+                    token: authData.token,
+                    model: authData.record
+                }), {
+                    path: '/',
+                    httpOnly: false,
+                    sameSite: 'lax',
+                    secure: false,
+                    maxAge: 60 * 60 * 24 * 7 // 7 วัน
+                });
+            } else if (roleLower === 'admin') {
+                // ใช้ redirectTo ถ้ามีและเป็นหน้า admin ไม่งั้นไป /admin/dashboard
+                redirectPath = (redirectTo && redirectTo.startsWith('/admin')) ? redirectTo : '/admin/dashboard';
+                cookies.set('pb_auth_admin', JSON.stringify({
+                    token: authData.token,
+                    model: authData.record
+                }), {
+                    path: '/',
+                    httpOnly: false,
+                    sameSite: 'lax',
+                    secure: false,
+                    maxAge: 60 * 60 * 24 * 7
+                });
+            } else if (roleLower === 'restaurant') {
+                // หา Shop ที่ user เป็นเจ้าของ
+                try {
+                    const shops = await pb.collection('Shop').getFullList({
+                        filter: `User_Owner_ID = "${authData.record.id}"`
+                    });
+                    
+                    console.log('Found shops for user:', shops.length);
+                    
+                    // ถ้ามีร้านให้ redirect ไปหน้าร้านแรก
+                    if (shops.length > 0) {
+                        const shopId = shops[0].id;
+                        redirectPath = (redirectTo && redirectTo.startsWith('/restaurant/')) 
+                            ? redirectTo 
+                            : `/restaurant/${shopId}/dashboard`;
+                        console.log('Redirecting to shop:', shopId);
+                    } else {
+                        // ถ้าไม่มีร้านให้ไปหน้า restaurant list
+                        redirectPath = '/restaurant';
+                        console.log('No shop found, redirecting to restaurant list');
+                    }
+                } catch (shopError) {
+                    console.error('Error fetching shop:', shopError);
+                    redirectPath = '/restaurant';
+                }
+                
+                cookies.set('pb_auth_restaurant', JSON.stringify({
+                    token: authData.token,
+                    model: authData.record
+                }), {
+                    path: '/',
+                    httpOnly: false,
+                    sameSite: 'lax',
+                    secure: false,
+                    maxAge: 60 * 60 * 24 * 7
+                });
+            } else {
+                return fail(403, { error: `Role ไม่ถูกต้อง: ${role}` });
+            }
+
+            console.log('Login successful, redirecting to:', redirectPath);
+            throw redirect(303, redirectPath);
+
+        } catch (error: any) {
+            console.error('Login error:', error);
+            
+            // ถ้า error เป็น redirect ให้ throw ต่อไป
+            if (error?.status === 303 || error?.location) {
+                throw error;
+            }
+            
+            if (error.status === 400) {
+                return fail(401, { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+            }
+            
+            return fail(500, { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' });
+        }
     }
-
-    // ดึงข้อมูล admin จาก DB
-    const rows = await query<{ id: number; username: string; password: string }>(
-      'SELECT id, username, password FROM admin WHERE username = ?',
-      [username]
-    );
-
-    // console.log('DB rows:', rows); // ดูผล query ใน console
-
-    if (rows.length === 0) {
-      return fail(401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
-    }
-
-    const user = rows[0];
-    // console.log('Password input:', password);
-    const match = await bcrypt.compare(password, user.password);
-    // console.log('Password match result:', match);
-    if (!match) {
-      return fail(401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
-    }
-
-      cookies.set('session', String(user.id), {
-      path: '/',
-      httpOnly: false,     // เปลี่ยนเป็น false เพื่อให้ client-side เข้าถึงได้
-      sameSite: 'lax',     // เปลี่ยนเป็น lax เพื่อความยืดหยุ่น
-      secure: false,       // สำหรับ development (http)
-      maxAge: 60 * 60 * 24 // 1 วัน
-    });
-    return { success: true };
-
-  }
-
 };

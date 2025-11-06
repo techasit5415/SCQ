@@ -3,10 +3,14 @@
     import RestaurantCard from "./RestaurantCard.svelte";
 
     export let restaurants = [];
+    export let promotedShopIds = [];
     export let loading = false;
     export let error = null;
 
     const dispatch = createEventDispatcher();
+    
+    // สร้าง Set สำหรับเช็คอย่างรวดเร็ว
+    $: promotedSet = new Set(promotedShopIds);
 
     function handleRestaurantSelect(event) {
         dispatch("restaurantSelect", event.detail);
@@ -51,6 +55,7 @@
                 <RestaurantCard
                     {restaurant}
                     {index}
+                    isPromoted={promotedSet.has(restaurant.id)}
                     on:select={handleRestaurantSelect}
                 />
             {/each}

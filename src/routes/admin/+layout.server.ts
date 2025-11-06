@@ -1,15 +1,24 @@
+import { redirect } from '@sveltejs/kit';
 import { logActivity } from '$lib/server/logging';
+import type { LayoutServerLoad } from './$types';
 
-export async function load({ cookies, url, getClientAddress }) {
+export const load: LayoutServerLoad = async ({ locals, cookies, url, getClientAddress }) => {
+    // ตรวจสอบว่ามี user และเป็น admin หรือไม่
+    if (!locals.user || locals.role !== 'admin') {
+        // บันทึก URL ปัจจุบันเพื่อ redirect กลับหลัง login
+        const redirectTo = url.pathname + url.search;
+        throw redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    }
+    
     const session = cookies.get('session');
     
     // Log admin page access
-    if (session && url.pathname.startsWith('/admin/')) {
+    if (locals.user && url.pathname.startsWith('/admin/')) {
         try {
             const pageName = url.pathname.split('/admin/')[1] || 'dashboard';
             await logActivity({
                 action: `Admin Page Access`,
-                user_email: 'admin@scq.com',
+                user_email: locals.user.email || 'admin@scq.com',
                 details: `เข้าสู่หน้า ${pageName} ในระบบจัดการ`,
                 type: 'AUTH',
                 severity: 'INFO',
@@ -23,6 +32,8 @@ export async function load({ cookies, url, getClientAddress }) {
     }
     
     return {
-        session
+        session,
+        user: locals.user,
+        role: locals.role
     };
-}
+};

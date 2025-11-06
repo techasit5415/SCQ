@@ -6,6 +6,7 @@
     export let data;
     export let form;
 
+    $: shopId = data.shopId;
     let activeMenu = "reports";
 
     // Chart colors
@@ -42,6 +43,7 @@
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Reports" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar 
+    {shopId}
     {activeMenu} 
     
     on:viewRestaurant={handleViewRestaurant}

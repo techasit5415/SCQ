@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
 
   if (session) {
-    throw redirect(303, '/homerestaurant/login'); // หรือหน้า login
+    throw redirect(303, '/restaurant'); // Redirect to restaurant list
   }
 
   // ถ้าต้องการ ตรวจสอบ session กับฐานข้อมูลก็ทำตรงนี้

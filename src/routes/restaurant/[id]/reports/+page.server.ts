@@ -1,15 +1,18 @@
-import PocketBase from 'pocketbase';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-import { POCKETBASE_ADMIN_EMAIL, POCKETBASE_ADMIN_PASSWORD } from '$env/static/private';
-
-const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
 export const load: PageServerLoad = async ({ locals, cookies, params }) => {
   console.log('=== Loading Reports Page ===');
   const shopId = params.id; // ดึง shop ID จาก URL
   console.log('Shop ID:', shopId);
+
+  // Check authentication
+  if (!locals.user || locals.role !== 'restaurant') {
+    throw error(401, 'Authentication required');
+  }
+
+  // Use authenticated PocketBase instance from locals
+  const pb = locals.pb;
 
   // Initialize data structures
   let reports: any = {
@@ -21,18 +24,6 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
     paymentMethods: [],
     topCustomers: []
   };
-
-  // Authenticate as admin
-  try {
-    await pb.admins.authWithPassword(
-      POCKETBASE_ADMIN_EMAIL,
-      POCKETBASE_ADMIN_PASSWORD
-    );
-    console.log('Admin authenticated successfully');
-  } catch (authError) {
-    console.error('Authentication error:', authError);
-    throw error(401, 'Authentication failed');
-  }
 
   try {
     // 1. ดึงข้อมูล Total Sales (ยอดขายรวมทั้งหมด - เฉพาะร้านนี้)
@@ -164,12 +155,14 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
     console.log('Final reports data:', reports);
 
     return {
+      shopId,
       reports
     };
 
   } catch (err) {
     console.error('Error fetching reports data:', err);
     return {
+      shopId,
       reports: {
         totalSales: 0,
         totalOrders: 0,

@@ -1,23 +1,21 @@
-import { fail } from '@sveltejs/kit';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/public';
-import { env as privateEnv } from '$env/dynamic/private';
+import { fail, error } from '@sveltejs/kit';
 
-const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
-
-export const load = async ({ cookies, params }: any) => {
-  const session = cookies.get('session');
+export const load = async ({ locals, params }: any) => {
   const shopId = params.id; // ดึง shop ID จาก URL
-  console.log('Session cookie in dashboard:', session);
   console.log('Shop ID:', shopId);
-
-  // ตรวจสอบว่ามี session และเป็นตัวเลข (user id)
-  if (!session || !session.match(/^\d+$/)) {
-      console.log('No valid session, redirecting to /admin');
-      // throw redirect(302, '/admin');
+  
+  // Check authentication
+  if (!locals.user || locals.role !== 'restaurant') {
+    throw error(401, 'Authentication required');
   }
 
-  console.log('Session valid, loading dashboard page for shop:', shopId);
+  // Use authenticated PocketBase instance from locals
+  const pb = locals.pb;
+  
+  // Return shopId in data
+  const baseData = { shopId };
+
+  console.log('Loading dashboard page for shop:', shopId);
 
   try {
     console.log('Attempting to connect to PocketBase...');
@@ -47,16 +45,7 @@ export const load = async ({ cookies, params }: any) => {
       hourlyOrders: []
     };
 
-    // Authenticate as admin first
-    try {
-      await pb.admins.authWithPassword(
-        privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com', 
-        privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123'
-      );
-      console.log('Admin authenticated successfully');
-    } catch (authError) {
-      console.log('Admin auth failed, trying without auth...');
-    }
+    // PocketBase instance is already authenticated from locals
     
     // ดึงข้อมูล New Orders (เฉพาะร้านนี้)
     try {
@@ -312,6 +301,7 @@ export const load = async ({ cookies, params }: any) => {
     }
 
     const result = {
+      ...baseData,
       restaurant,
       analytics
     };
@@ -323,6 +313,7 @@ export const load = async ({ cookies, params }: any) => {
     
     // Return fallback data if database connection fails
     return {
+      ...baseData,
       restaurant: {
         newOrder: 0,
         inProgressOrder: 0,
@@ -341,8 +332,15 @@ export const load = async ({ cookies, params }: any) => {
 };
 
 export const actions = {
-  addRestaurant: async ({ request }: any) => {
+  addRestaurant: async ({ request, locals }: any) => {
     const formData = await request.formData();
+    
+    // Check authentication
+    if (!locals.user || locals.role !== 'restaurant') {
+      return fail(401, { error: 'Authentication required' });
+    }
+
+    const pb = locals.pb;
     
     const restaurantData = {
       name: formData.get('name') as string,
@@ -357,14 +355,6 @@ export const actions = {
     console.log('Attempting to create restaurant with data:', restaurantData);
 
     try {
-      // Admin authentication
-      if (privateEnv.POCKETBASE_ADMIN_EMAIL && privateEnv.POCKETBASE_ADMIN_PASSWORD) {
-        await pb.admins.authWithPassword(
-          privateEnv.POCKETBASE_ADMIN_EMAIL,
-          privateEnv.POCKETBASE_ADMIN_PASSWORD
-        );
-        console.log('Admin authenticated successfully');
-      }
 
       // Validate required fields
       if (!restaurantData.name || !restaurantData.Type_Shop || !restaurantData.Phone || !restaurantData.Addr) {
