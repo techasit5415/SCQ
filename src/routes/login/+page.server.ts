@@ -20,8 +20,8 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
         // ถ้า redirectTo เป็นหน้า admin ให้ไปตาม ไม่งั้นไป dashboard
         throw redirect(303, (redirectTo && redirectTo.startsWith('/admin')) ? redirectTo : '/admin/dashboard');
     } else if (restaurantAuth) {
-        // ถ้า redirectTo เป็นหน้า restaurant ให้ไปตาม ไม่งั้นไป homerestaurant
-        throw redirect(303, (redirectTo && redirectTo.startsWith('/homerestaurant')) ? redirectTo : '/homerestaurant');
+        // ถ้า redirectTo เป็นหน้า restaurant ให้ไปตาม ไม่งั้นไป restaurant list
+        throw redirect(303, (redirectTo && redirectTo.startsWith('/restaurant')) ? redirectTo : '/restaurant');
     }
 
     return {
@@ -91,8 +91,31 @@ export const actions: Actions = {
                     maxAge: 60 * 60 * 24 * 7
                 });
             } else if (roleLower === 'restaurant') {
-                // ใช้ redirectTo ถ้ามีและเป็นหน้า restaurant ไม่งั้นไป /homerestaurant
-                redirectPath = (redirectTo && redirectTo.startsWith('/homerestaurant')) ? redirectTo : '/homerestaurant';
+                // หา Shop ที่ user เป็นเจ้าของ
+                try {
+                    const shops = await pb.collection('Shop').getFullList({
+                        filter: `User_Owner_ID = "${authData.record.id}"`
+                    });
+                    
+                    console.log('Found shops for user:', shops.length);
+                    
+                    // ถ้ามีร้านให้ redirect ไปหน้าร้านแรก
+                    if (shops.length > 0) {
+                        const shopId = shops[0].id;
+                        redirectPath = (redirectTo && redirectTo.startsWith('/restaurant/')) 
+                            ? redirectTo 
+                            : `/restaurant/${shopId}/dashboard`;
+                        console.log('Redirecting to shop:', shopId);
+                    } else {
+                        // ถ้าไม่มีร้านให้ไปหน้า restaurant list
+                        redirectPath = '/restaurant';
+                        console.log('No shop found, redirecting to restaurant list');
+                    }
+                } catch (shopError) {
+                    console.error('Error fetching shop:', shopError);
+                    redirectPath = '/restaurant';
+                }
+                
                 cookies.set('pb_auth_restaurant', JSON.stringify({
                     token: authData.token,
                     model: authData.record

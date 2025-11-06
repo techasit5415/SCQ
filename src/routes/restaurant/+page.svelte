@@ -6,7 +6,7 @@
     export let activeOrderIdx = 0;
 
     function handleRestaurantClick(rest) {
-        goto(`/homerestaurant/restaurant/${rest}/dashboard`);
+        goto(`/restaurant/${rest}/dashboard`);
     }
 </script>
 

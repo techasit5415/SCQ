@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
 
     export let activeMenu = "dashboard";
+    export let shopId = "";
     // export let shops = [];
 
     const dispatch = createEventDispatcher();
@@ -16,30 +17,35 @@
         activeMenu.startsWith("restaurant-");
 
     function handleMenuClick(menu) {
+        if (!shopId) {
+            console.error("Shop ID is required");
+            return;
+        }
+        
         switch (menu) {
             case "dashboard":
-                goto("/homerestaurant/dashboard");
+                goto(`/restaurant/${shopId}/dashboard`);
                 break;
             case "pending":
-                goto("/homerestaurant/order/pending");
+                goto(`/restaurant/${shopId}/order/pending`);
                 break;
             case "active":
-                goto("/homerestaurant/order/active");
+                goto(`/restaurant/${shopId}/order/active`);
                 break;
             case "history":
-                goto("/homerestaurant/order/history");
+                goto(`/restaurant/${shopId}/order/history`);
                 break;
             case "menu":
-                goto("/homerestaurant/menu");
+                goto(`/restaurant/${shopId}/menu`);
                 break;
             case "reports":
-                goto("/homerestaurant/reports");
+                goto(`/restaurant/${shopId}/reports`);
                 break;
             case "advertise":
-                goto("/homerestaurant/advertise");
+                goto(`/restaurant/${shopId}/advertise`);
                 break;
             case "settings":
-                goto("/homerestaurant/settings");
+                goto(`/restaurant/${shopId}/settings`);
                 break;
             default:
                 // For other menus that need special handling, dispatch event
@@ -48,7 +54,7 @@
     }
 
     function handleLogout() {
-        dispatch("logout");
+        goto('/logout');
     }
 </script>
 

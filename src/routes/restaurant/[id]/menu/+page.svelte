@@ -12,6 +12,7 @@
 
     export let data;
 
+    $: shopId = $page.params.id;
     let activeMenu = "menu";
     let showAddItem = false;
     let showEditItem = false;
@@ -205,7 +206,7 @@
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
-    <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
+    <RestaurantSidebar {shopId} {activeMenu} on:logout={handleLogout} />
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header Section -->
