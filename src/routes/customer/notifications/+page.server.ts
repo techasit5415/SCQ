@@ -20,7 +20,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 			sort: '-created',
 			limit: 10
 		});
-		
+		//
 		// สร้างการแจ้งเตือนจาก Order records
 		for (const order of orderRecords) {
 			notifications.push({
