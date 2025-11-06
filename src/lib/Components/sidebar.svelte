@@ -30,10 +30,10 @@
                 goto('/admin/manageUser');
                 break;
             case "manageRestaurant":
-                goto('/admin/restaurant');
+                goto('/admin/Restaurant');
                 break;
             case "addRestaurant":
-                goto('/admin/restaurant/AddRestaurant');
+                goto('/admin/Restaurant/AddRestaurant');
                 break;
             case "advertise":
                 goto('/admin/advertise');
@@ -50,12 +50,6 @@
             case "reports":
                 goto('/admin/reports');
                 break;
-            case "systemLog":
-                goto('/admin/systemlog');
-                break;
-            case "settings":
-                goto('/admin/settings');
-                break;
             default:
                 // For other menus that need special handling, dispatch event
                 dispatch('menuChange', menu);
@@ -70,7 +64,7 @@
     
     function handleViewRestaurant(id) {
         // Navigate to specific restaurant page
-        goto(`/admin/restaurant/${id}`);
+        goto(`/admin/Restaurant/${id}`);
     }
 </script>
 
@@ -185,26 +179,6 @@
         >
             <span class="material-symbols-outlined">assignment</span>
             <span>Reports</span>
-        </button>
-
-        <!-- System Log -->
-        <button 
-            class="menu-item"
-            class:active={activeMenu === "systemLog"}
-            on:click={() => handleMenuClick("systemLog")}
-        >
-            <span class="material-symbols-outlined">history</span>
-            <span>System Log</span>
-        </button>
-
-        <!-- Settings -->
-        <button 
-            class="menu-item"
-            class:active={activeMenu === "settings"}
-            on:click={() => handleMenuClick("settings")}
-        >
-            <span class="material-symbols-outlined">settings</span>
-            <span>Settings</span>
         </button>
 
         <!-- Logout -->

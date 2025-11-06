@@ -99,7 +99,7 @@
 </svelte:head>
 
 <!-- Top Navigation -->
-<TopBar />
+<TopBar title="Admin Panel - Settings" logoSrc="/SCQ_logo.png" />
 
 <!-- Side Navigation -->
 <AdminSidebar activeMenu="settings" />

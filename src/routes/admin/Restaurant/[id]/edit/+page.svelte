@@ -39,7 +39,7 @@
 </svelte:head>
 
 <!-- Top Navigation -->
-<TopBar />
+<TopBar title="Admin Panel - Edit Restaurant" logoSrc="/SCQ_logo.png" />
 
 <!-- Side Navigation -->
 <AdminSidebar activeMenu="manageRestaurant" />
