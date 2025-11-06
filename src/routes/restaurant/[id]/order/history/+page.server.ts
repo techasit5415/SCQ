@@ -1,6 +1,9 @@
 import { error } from '@sveltejs/kit';
 
-export async function load({ params, locals }) {
+export async function load({ params, locals, depends }) {
+    // บอก SvelteKit ว่า load function นี้ depend on 'orders:history'
+    depends('orders:history');
+    
     const shopId = params.id;
 
     // Check authentication
@@ -21,7 +24,8 @@ export async function load({ params, locals }) {
         const orders = await pb.collection("Order").getFullList({
             filter: `Shop_ID = "${shopId}" && (Status = "Completed" || Status = "Canceled")`,
             expand: "User_ID,Menu_ID",
-            sort: "-created"
+            sort: "-created",
+            $autoCancel: false
         });
 
         console.log(`Order History: ${orders.length}`);

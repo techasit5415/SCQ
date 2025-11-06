@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import { unreadCount } from '$lib/stores/notifications';
     
     export let logoSrc = '/SCQ_logo.png';
     export let title = 'SCQ';
@@ -51,6 +52,9 @@
                     title="การแจ้งเตือน"
                 >
                     <span class="material-symbols-outlined">notifications</span>
+                    {#if $unreadCount > 0}
+                        <span class="badge">{$unreadCount > 99 ? '99+' : $unreadCount}</span>
+                    {/if}
                 </button>
             {/if}
             
@@ -173,6 +177,35 @@
         border-radius: 50%;
         cursor: pointer;
         transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: #ff3b30;
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        padding: 0 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
     }
     
     .nav-icon:hover {

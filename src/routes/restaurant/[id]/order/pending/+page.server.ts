@@ -1,7 +1,10 @@
 import type { PageServerLoad } from './$types.js';
 import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, depends }) => {
+  // บอก SvelteKit ว่า load function นี้ depend on 'orders:pending'
+  depends('orders:pending');
+  
   const shopId = params.id;
   console.log('=== Loading Pending Orders for Shop:', shopId, '===');
 
@@ -15,10 +18,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   try {
 
     // ดึงข้อมูล Orders ที่มี Status = "Pending" และเป็นของร้านนี้เท่านั้น
+    // เพิ่ม $autoCancel: false เพื่อป้องกัน auto-cancel
     const pendingOrders = await pb.collection('Order').getFullList({
       filter: `Shop_ID = "${shopId}" && Status = "Pending"`,
       expand: 'User_ID,Menu_ID',
-      sort: '-created'
+      sort: '-created',
+      $autoCancel: false
     });
 
     console.log('Pending Orders:', pendingOrders.length);

@@ -20,13 +20,16 @@
     $: selectedPackage = data.packages?.find(p => p.id === selectedPackageId);
     $: totalPrice = selectedPackage?.price || 0;
     
-    // หา active advertisements - ใช้ status text และ end_date
+    // หา active advertisements - ใช้ status text และ end_date และดึง priority_level
     $: activeAdvertisements = data.advertisements?.filter(ad => {
         const now = new Date();
         const endDate = new Date(ad.end_date);
         // Check if status is "Active" AND payment is "Paid" AND not expired
         return ad.status === 'Active' && ad.payment_status === 'Paid' && endDate > now;
-    }) || [];
+    }).map(ad => ({
+        ...ad,
+        priority_level: ad.priority_level || 1
+    })) || [];
     
     $: hasActiveAd = activeAdvertisements.length > 0;
     
@@ -86,11 +89,9 @@
     <!-- Sidebar -->
     <TopBar title="Restaurant Panel - Advertise" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar 
-    {activeMenu} 
-    
-    on:viewRestaurant={handleViewRestaurant}
-    on:logout={handleLogout}
-/>
+        {activeMenu}
+        shopId={data.restaurant?.id || ''}
+    />
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header Section -->
@@ -126,6 +127,7 @@
                                 {#if activeAdvertisements[0]}
                                     {@const endDate = new Date(activeAdvertisements[0].end_date)}
                                     <p class="expire-date">
+                                        Priority: {activeAdvertisements[0].priority_level} | 
                                         หมดอายุ: {endDate.toLocaleDateString('th-TH', { 
                                             year: 'numeric', 
                                             month: 'long', 

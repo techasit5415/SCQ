@@ -156,5 +156,50 @@ export const actions: Actions = {
             console.error('Error toggling favorite:', err);
             return fail(500, { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' });
         }
+    },
+    
+    submitReview: async ({ request, params, locals }) => {
+        try {
+            const pb = locals.pb;
+            const user = locals.user;
+            
+            if (!user?.id) {
+                return fail(401, { error: 'กรุณาเข้าสู่ระบบเพื่อรีวิว' });
+            }
+            
+            const formData = await request.formData();
+            const star = parseInt(formData.get('star') as string);
+            const description = formData.get('description') as string;
+            
+            console.log('📝 Submitting review:', { star, description, userId: user.id, shopId: params.id });
+            
+            // ตรวจสอบค่า
+            if (!star || star < 1 || star > 5) {
+                return fail(400, { error: 'กรุณาเลือกคะแนน 1-5 ดาว' });
+            }
+            
+            // บันทึก Review ลง PocketBase
+            const reviewData = {
+                Shop_ID: params.id,
+                User_ID: user.id,
+                Star: star,
+                Description: description || ''
+            };
+            
+            const review = await pb.collection('Review').create(reviewData);
+            
+            console.log('✅ Review created:', review.id);
+            
+            return {
+                success: true,
+                message: 'บันทึกรีวิวเรียบร้อยแล้ว ขอบคุณค่ะ!'
+            };
+            
+        } catch (err: any) {
+            console.error('❌ Error submitting review:', err);
+            return fail(500, { 
+                error: err?.message || 'เกิดข้อผิดพลาดในการบันทึกรีวิว กรุณาลองใหม่อีกครั้ง' 
+            });
+        }
     }
 };

@@ -133,6 +133,37 @@ export const actions = {
 			const endDate = new Date();
 			endDate.setDate(endDate.getDate() + duration);
 
+			// คำนวณ priority level ตามราคา (ราคาแพงกว่า = priority สูงกว่า)
+			// 1 Week (7 days) = Priority 1
+			// Priority เพิ่มขึ้นตามราคา
+			let priorityLevel = 1;
+			
+			if (duration <= 7) {
+				// 1 Week = Priority 1
+				priorityLevel = 1;
+			} else if (duration <= 14) {
+				// 2 Weeks = Priority 2
+				priorityLevel = 2;
+			} else if (duration <= 30) {
+				// 1 Month = Priority 3
+				priorityLevel = 3;
+			} else if (duration <= 90) {
+				// 3 Months = Priority 4
+				priorityLevel = 4;
+			} else {
+				// มากกว่า 3 เดือน = Priority 5+
+				priorityLevel = 5;
+			}
+			
+			// ปรับเพิ่ม priority ตามราคา (ทุก 100 บาท เพิ่ม 1 level)
+			const priceBonus = Math.floor(price / 100);
+			priorityLevel += priceBonus;
+			
+			// จำกัดไม่เกิน 10
+			priorityLevel = Math.min(priorityLevel, 10);
+			
+			console.log(`📊 Calculated priority: ${priorityLevel} (duration: ${duration} days, price: ${price} ฿)`);
+
 			// ตรงตาม schema ของ database
 			const advertisementData = {
 				shop_id: restaurantId,
@@ -141,7 +172,7 @@ export const actions = {
 				end_date: endDate.toISOString(),
 				status: 'Active',
 				payment_status: 'Paid',
-				priority_level: 1,
+				priority_level: priorityLevel,
 				total_amount: price
 			};
 

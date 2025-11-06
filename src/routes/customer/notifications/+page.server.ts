@@ -4,11 +4,22 @@ import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 
 const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+	// ทำให้ load function นี้ถูกเรียกใหม่เมื่อมีการ invalidate('app:notifications')
+	depends('app:notifications');
 	try {
-		// ใช้ User ID เดียวกับที่ใช้ในการสร้าง Order
-		const userId = "5v70v6p91pfakvb";
+		// ดึง User ID จาก session ของผู้ใช้ที่ล็อกอินอยู่
+		const user = locals.user;
 		
+		if (!user?.id) {
+			console.log('⚠️ No user logged in');
+			return {
+				notifications: [],
+				totalCount: 0
+			};
+		}
+		
+		const userId = user.id;
 		console.log('🔔 Loading notifications for User ID:', userId);
 		
 		// ดึงการแจ้งเตือนจาก Order และ Payment ที่เกี่ยวข้องกับ user
@@ -23,16 +34,19 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		//
 		// สร้างการแจ้งเตือนจาก Order records
 		for (const order of orderRecords) {
+			// ใช้ Order_ID ถ้ามี ไม่งั้นใช้ record id
+			const displayOrderId = order.Order_ID || order.id;
 			notifications.push({
 				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${order.id} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
+				message: `คำสั่งซื้อ #${displayOrderId} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
 				status: order.Status === 'Completed' ? 'success' : 'pending',
 				amount: order.Total_Amount || 0,
 				time: order.created,
 				icon: order.Status === 'Completed' ? '✅' : order.Status === 'In-progress' ? '🍳' : '⏳',
-				read: false
+				read: false,
+				orderId: displayOrderId // เพิ่ม field สำหรับแสดง Order ID ที่ถูกต้อง
 			});
 		}
 		
