@@ -1,169 +1,534 @@
-<script>
-    import { goto } from "$app/navigation";
-    import TopBar from '$lib/Components/restaurant/Topbar.svelte';
+<script lang="ts">
+    import type { PageData, ActionData } from './$types';
     import RestaurantSidebar from '$lib/Components/restaurant/RestaurantSidebar.svelte';
+    import Topbar from '$lib/Components/restaurant/Topbar.svelte';
+    import { page } from '$app/stores';
+    import { enhance } from '$app/forms';
+    import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 
-    export let data;
-    export let form;
+    export let data: PageData;
+    export let form: ActionData;
 
-    $: shopId = data.shopId || '';
-    let activeMenu = "settings";
+    $: shopId = $page.params.id;
+    $: isOpen = data.shop?.is_open ?? true;
 
-    function listOrder() {
-        var x = document.getElementById("hiddenbar-container");
-        if (x) {
-            if (x.style.display === "none" || x.style.display === "") {
-                x.style.display = "block";
-            } else {
-                x.style.display = "none";
-            }
+    let isEditing = false;
+    let isSaving = false;
+    let statusToggling = false;
+
+    // Form data
+    let formData = {
+        name: data.shop?.name || '',
+        description: data.shop?.Details || '', // ใช้ Details
+        address: data.shop?.Addr || '', // ใช้ Addr
+        phone: data.shop?.Phone || '', // ใช้ Phone
+    };
+
+    let photoPreview = data.shop?.Pic_Shop 
+        ? `${PUBLIC_POCKETBASE_URL}/api/files/Shop/${data.shop.id}/${data.shop.Pic_Shop}`
+        : '';
+    let selectedPhoto: File | null = null;
+
+    function handlePhotoChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        
+        if (file) {
+            selectedPhoto = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                photoPreview = e.target?.result as string;
+            };
+            reader.readAsDataURL(file);
         }
     }
-    
-    function handleViewRestaurant(event) {
-        // Navigate to restaurant page
-        goto('/homeadmin/rester');
-    }
-    
-    async function handleLogout() {
-        try {
-            await fetch('/logout');
-            window.location.href = '/admin';
-        } catch (error) {
-            console.error('Logout error:', error);
-            window.location.href = '/admin';
+
+    function toggleEdit() {
+        if (isEditing) {
+            // ยกเลิก - reset form
+            formData = {
+                name: data.shop?.name || '',
+                description: data.shop?.Details || '', // ใช้ Details
+                address: data.shop?.Addr || '', // ใช้ Addr
+                phone: data.shop?.Phone || '', // ใช้ Phone
+            };
+            photoPreview = data.shop?.Pic_Shop 
+                ? `${PUBLIC_POCKETBASE_URL}/api/files/Shop/${data.shop.id}/${data.shop.Pic_Shop}`
+                : '';
+            selectedPhoto = null;
         }
+        isEditing = !isEditing;
     }
 </script>
 
-<!-- หน้า Dashboard ร้านอาหาร -->
-<div id="restaurant-layout" class="restaurant-layout">
-    <!-- Top Header -->
-    <!-- <header class="top-header">
-        <div class="header-content">
-            <img src="/SCQ_logo.png" alt="SCQ Logo" class="logo" />
-            <h1>Admin Panel</h1>
-        </div>
-    </header> -->
+<svelte:head>
+    <title>Settings - {data.shop?.name}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</svelte:head>
 
-    <!-- Sidebar -->
-    <TopBar title="Restaurant Panel - Settings" logoSrc="/SCQ_logo.png" />
-    <RestaurantSidebar 
-    {shopId}
-    {activeMenu} 
-    on:menuChange={handleMenuChange}
-    on:viewRestaurant={handleViewRestaurant}
-    on:logout={handleLogout}
-/>
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Header Section -->
-        <div class="header-section">
-            <nav class="breadcrumb">
-                <span class="breadcrumb-item">Home</span>
-                <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-item current">Settings</span>
-            </nav>
-            <h1 class="page-title">Settings</h1>
+<div class="layout">
+    <RestaurantSidebar activeMenu="settings" shopId={shopId} />
+    
+    <div class="main-content">
+        <Topbar title="Settings - {data.shop?.name}" />
+        
+        <div class="content">
+            <!-- แสดงข้อความสถานะ -->
+            {#if form?.message}
+                <div class="alert" class:success={form?.success} class:error={!form?.success}>
+                    <span class="material-symbols-outlined">
+                        {form?.success ? 'check_circle' : 'error'}
+                    </span>
+                    <span>{form.message}</span>
+                </div>
+            {/if}
+
+            <!-- สถานะร้าน -->
+            <div class="header-section">
+                <div class="section-header">
+                    <h2>สถานะร้าน</h2>
+                    <div class="status-badge" class:open={isOpen} class:closed={!isOpen}>
+                        <span class="material-symbols-outlined">
+                            {isOpen ? 'store' : 'store_mall_directory'}
+                        </span>
+                        <span>{isOpen ? 'เปิดรับออเดอร์' : 'ปิดรับออเดอร์'}</span>
+                    </div>
+                </div>
+
+                <p class="status-description">
+                    {isOpen 
+                        ? 'ร้านของคุณกำลังเปิดรับออเดอร์ ลูกค้าสามารถสั่งอาหารได้ตามปกติ' 
+                        : 'ร้านของคุณปิดรับออเดอร์ชั่วคราว ลูกค้าจะไม่สามารถสั่งอาหารได้'}
+                </p>
+
+                <form 
+                    method="POST" 
+                    action="?/toggleStatus"
+                    use:enhance={() => {
+                        statusToggling = true;
+                        return async ({ update }) => {
+                            await update();
+                            statusToggling = false;
+                            // Reload page to get updated status
+                            window.location.reload();
+                        };
+                    }}
+                >
+                    <input type="hidden" name="is_open" value={(!isOpen).toString()} />
+                    <button 
+                        type="submit" 
+                        class="toggle-btn"
+                        class:open={!isOpen}
+                        class:close={isOpen}
+                        disabled={statusToggling}
+                    >
+                        <span class="material-symbols-outlined">
+                            {isOpen ? 'pause_circle' : 'play_circle'}
+                        </span>
+                        <span>{isOpen ? 'ปิดรับออเดอร์' : 'เปิดรับออเดอร์'}</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ข้อมูลร้าน -->
+            <div class="header-section">
+                <div class="section-header">
+                    <h2>ข้อมูลร้าน</h2>
+                    <button class="edit-btn" on:click={toggleEdit}>
+                        <span class="material-symbols-outlined">
+                            {isEditing ? 'close' : 'edit'}
+                        </span>
+                        <span>{isEditing ? 'ยกเลิก' : 'แก้ไข'}</span>
+                    </button>
+                </div>
+
+                <form 
+                    method="POST" 
+                    action="?/updateShop"
+                    enctype="multipart/form-data"
+                    use:enhance={() => {
+                        isSaving = true;
+                        console.log('=== Submitting Shop Update ===');
+                        console.log('Form Data:', formData);
+                        console.log('Selected Photo:', selectedPhoto);
+                        return async ({ update }) => {
+                            await update();
+                            isSaving = false;
+                            isEditing = false;
+                            window.location.reload();
+                        };
+                    }}
+                >
+                    <div class="shop-form">
+                        <!-- รูปภาพร้าน -->
+                        <div class="photo-section">
+                            <label>รูปภาพร้าน</label>
+                            <div class="photo-preview">
+                                {#if photoPreview}
+                                    <img src={photoPreview} alt="Shop preview" />
+                                {:else}
+                                    <div class="no-photo">
+                                        <span class="material-symbols-outlined">image</span>
+                                        <span>ไม่มีรูปภาพ</span>
+                                    </div>
+                                {/if}
+                            </div>
+                            {#if isEditing}
+                                <input 
+                                    type="file" 
+                                    name="photo"
+                                    accept="image/*"
+                                    on:change={handlePhotoChange}
+                                    class="file-input"
+                                />
+                            {/if}
+                        </div>
+
+                        <!-- ชื่อร้าน -->
+                        <div class="form-group">
+                            <label for="name">ชื่อร้าน</label>
+                            {#if isEditing}
+                                <input 
+                                    type="text" 
+                                    id="name"
+                                    name="name"
+                                    bind:value={formData.name}
+                                    required
+                                />
+                            {:else}
+                                <div class="readonly-value">{formData.name}</div>
+                            {/if}
+                        </div>
+
+                        <!-- คำอธิบาย -->
+                        <div class="form-group">
+                            <label for="description">คำอธิบาย</label>
+                            {#if isEditing}
+                                <textarea 
+                                    id="description"
+                                    name="description"
+                                    bind:value={formData.description}
+                                    rows="4"
+                                ></textarea>
+                            {:else}
+                                <div class="readonly-value">{formData.description || '-'}</div>
+                            {/if}
+                        </div>
+
+                        <!-- ที่อยู่ -->
+                        <div class="form-group">
+                            <label for="address">ที่อยู่</label>
+                            {#if isEditing}
+                                <textarea 
+                                    id="address"
+                                    name="address"
+                                    bind:value={formData.address}
+                                    rows="3"
+                                ></textarea>
+                            {:else}
+                                <div class="readonly-value">{formData.address || '-'}</div>
+                            {/if}
+                        </div>
+
+                        <!-- เบอร์โทรศัพท์ -->
+                        <div class="form-group">
+                            <label for="phone">เบอร์โทรศัพท์</label>
+                            {#if isEditing}
+                                <input 
+                                    type="tel" 
+                                    id="phone"
+                                    name="phone"
+                                    bind:value={formData.phone}
+                                />
+                            {:else}
+                                <div class="readonly-value">{formData.phone || '-'}</div>
+                            {/if}
+                        </div>
+
+                        {#if isEditing}
+                            <div class="form-actions">
+                                <button type="submit" class="save-btn" disabled={isSaving}>
+                                    <span class="material-symbols-outlined">save</span>
+                                    <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}</span>
+                                </button>
+                            </div>
+                        {/if}
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="dash1">
-            <div class="dash1-com1">
-                <p style="margin-left: 5px;">New Order</p>
-            </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">In Progess Order</p>
-            </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">Completed Order</p>
-            </div>
-            <div class="dash1-com1" style="margin-left: 5%;">
-                <p style="margin-left: 5px;">Today's Sales</p>
-            </div>
-        </div>
-        <div class="dash2">
-            <p style="padding-top: 10px; margin-left: 5px;">Order Status</p>
-        </div>
-    </main>
+    </div>
 </div>
 
-<body></body>
-
 <style>
-    /* Reset and Base */
-    * {
-        box-sizing: border-box;
+    .layout {
+        display: flex;
+        min-height: 100vh;
+        background: #f5f5f5;
     }
 
-    body {
-        background-color: #f5f5f5;
-    }
-    .restaurant-layout {
-        /* min-height: 100vh; */
-        background: #f5f5f5;
-        font-family: 'Noto Sans Thai', sans-serif;
-    }
-    
-    .logout {
-        margin-top: auto;
-        color: #d32f2f !important;
-    }
-    /* Main Content */
     .main-content {
+        flex: 1;
         margin-left: 250px;
         margin-top: 60px;
-        padding: 24px;
-        min-height: calc(100vh - 60px);
     }
 
-    /* Header Section */
-    .header-section {
-        background: white;
-        padding: 20px 24px;
-        border-radius: 12px;
+    .content {
+        padding: 30px;
+    }
+
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-radius: 8px;
         margin-bottom: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .breadcrumb {
-        font-size: 13px;
-        color: #6b7280;
-        margin-bottom: 8px;
-    }
-
-    .breadcrumb-item.current {
-        color: #111827;
+        font-size: 14px;
         font-weight: 500;
     }
 
-    .breadcrumb-separator {
-        margin: 0 8px;
-    }
-    
-    .page-title {
-        margin: 0;
-        font-size: 28px;
-        font-weight: 700;
-        color: #111827;
+    .alert.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #4caf50;
     }
 
-    .dash1 {
-        margin-top: 10px;
+    .alert.error {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #f44336;
+    }
+
+    .header-section {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+    }
+
+    .section-header {
         display: flex;
-        height: 100%;
-        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
     }
-    .dash1-com1 {
-        height: 96px;
-        width: 253px;
-        background: rgb(255, 255, 255);
-        margin-left: 17%;
-        border-radius: 15px;
+
+    h2 {
+        margin: 0;
+        color: #333;
+        font-size: 24px;
+        font-weight: 600;
     }
-    .dash2 {
-        margin-left: 320px;
-        width: 1300px;
+
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .status-badge.open {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .status-badge.closed {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .status-description {
+        margin: 0 0 24px 0;
+        color: #666;
+        line-height: 1.6;
+    }
+
+    .toggle-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .toggle-btn.open {
+        background: #4caf50;
+        color: white;
+    }
+
+    .toggle-btn.open:hover {
+        background: #45a049;
+    }
+
+    .toggle-btn.close {
+        background: #f44336;
+        color: white;
+    }
+
+    .toggle-btn.close:hover {
+        background: #da190b;
+    }
+
+    .toggle-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .edit-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border: 2px solid #ff8c00;
+        background: white;
+        color: #ff8c00;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .edit-btn:hover {
+        background: #ff8c00;
+        color: white;
+    }
+
+    .shop-form {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .photo-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .photo-section label {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .photo-preview {
+        width: 200px;
         height: 200px;
-        border-radius: 15px;
-        background-color: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f5;
+    }
+
+    .photo-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .no-photo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: #999;
+    }
+
+    .no-photo .material-symbols-outlined {
+        font-size: 48px;
+    }
+
+    .file-input {
+        max-width: 300px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #ff8c00;
+    }
+
+    .readonly-value {
+        padding: 12px 16px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        color: #333;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .save-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        background: #ff8c00;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        background: #e67e00;
+    }
+
+    .save-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .material-symbols-outlined {
+        font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24;
     }
 </style>

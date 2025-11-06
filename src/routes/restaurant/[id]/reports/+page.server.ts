@@ -14,6 +14,9 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
   // Use authenticated PocketBase instance from locals
   const pb = locals.pb;
 
+  // ดึงข้อมูลร้าน
+  const shop = await pb.collection('Shop').getOne(shopId);
+
   // Initialize data structures
   let reports: any = {
     totalSales: 0,
@@ -156,6 +159,7 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
 
     return {
       shopId,
+      shop,
       reports
     };
 

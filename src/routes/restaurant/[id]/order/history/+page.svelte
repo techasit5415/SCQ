@@ -84,7 +84,7 @@
 </script>
 
 <div class="restaurant-layout">
-    <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Order History - {data.shop?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar {shopId} {activeMenu} on:logout={handleLogout} />
 
     <main class="main-content">
