@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				id: `payment_${payment.id}`,
 				type: 'payment',
 				title: 'การชำระเงิน',
-				message: `การชำระเงิน #${payment.id.slice(-8)} ด้วย${payment.Method_Payment} ${payment.status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
+				message: `การชำระเงิน #${payment.id} ด้วย${payment.Method_Payment} ${payment.status === 'Success' ? 'สำเร็จแล้ว' : 'กำลังดำเนินการ'}`,
 				status: payment.status === 'Success' ? 'success' : 'pending',
 				amount: payment.Total_Amount || 0,
 				time: payment.created,
