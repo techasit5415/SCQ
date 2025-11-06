@@ -33,13 +33,22 @@
       const authData = await pbOAuth.collection('users').authWithOAuth2({ 
         provider,
         urlCallback: (url) => {
-          // Force account selection by adding prompt parameter
+          // Force account selection by modifying the OAuth URL
           const urlObj = new URL(url);
           if (provider === 'google') {
             urlObj.searchParams.set('prompt', 'select_account');
           }
-          // Redirect to the OAuth URL
-          window.location.href = urlObj.toString();
+          // Open the modified URL
+          const popup = window.open(urlObj.toString(), '_blank', 'width=500,height=600');
+          // Return a promise that resolves when the popup closes
+          return new Promise((resolve) => {
+            const checkPopup = setInterval(() => {
+              if (popup?.closed) {
+                clearInterval(checkPopup);
+                resolve(window.location.href);
+              }
+            }, 500);
+          });
         }
       });
       
