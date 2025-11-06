@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${order.id.slice(-8)} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
+				message: `คำสั่งซื้อ #${order.id} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
 				status: order.Status === 'Completed' ? 'success' : 'pending',
 				amount: order.Total_Amount || 0,
 				time: order.created,
