@@ -155,13 +155,13 @@
 
 		<!-- Order Summary -->
 		<div class="section">
-			<div class="summary-row">
+			<!-- <div class="summary-row">
 				<span>ค่าบริการ</span>
 				<span>฿5.00</span>
-			</div>
+			</div> -->
 			<div class="summary-row total">
 				<span>รวมทั้งหมด</span>
-				<span>฿{total + 5}.00</span>
+				<span>฿{total }.00</span>
 			</div>
 		</div>
 

@@ -1,6 +1,9 @@
 import { error } from '@sveltejs/kit';
 
-export async function load({ params, locals }) {
+export async function load({ params, locals, depends }) {
+    // บอก SvelteKit ว่า load function นี้ depend on 'orders:history'
+    depends('orders:history');
+    
     const shopId = params.id;
 
     // Check authentication

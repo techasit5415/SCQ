@@ -1,12 +1,24 @@
-import type { PageServerLoad } from './$types.js';
+import type { PageServerLoad, Actions } from './$types.js';
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { fail } from '@sveltejs/kit';
 
 const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	try {
-		const userId = "5v70v6p91pfakvb"; // ใช้ User ID เดียวกับที่ใช้ในการสร้าง Order
+		// ดึง User ID จาก session
+		const user = locals.user;
+		
+		if (!user?.id) {
+			return {
+				success: false,
+				error: 'กรุณาเข้าสู่ระบบ',
+				orders: []
+			};
+		}
+		
+		const userId = user.id;
 		
 		// ดึงข้อมูล orders ของผู้ใช้คนนี้เท่านั้น
 		const orders = await pb.collection('Order').getFullList({
@@ -56,10 +68,26 @@ export const load: PageServerLoad = async () => {
 			});
 		}
 
-		// จับคู่ payment กับ order และเพิ่มข้อมูลคิว
+		// ดึง Reviews ของ user คนนี้
+		let reviews: any[] = [];
+		try {
+			reviews = await pb.collection('Review').getFullList({
+				filter: `User_ID = "${userId}"`,
+				fields: 'Order'
+			});
+			console.log('📝 Found reviews:', reviews.length);
+		} catch (reviewError) {
+			console.error('Error loading reviews:', reviewError);
+		}
+		
+		// สร้าง Set ของ Order ID ที่เคยรีวิวแล้ว
+		const reviewedOrders = new Set(reviews.map(r => r.Order));
+
+		// จับคู่ payment กับ order และเพิ่มข้อมูลคิว + เช็คว่ารีวิวแล้วหรือยัง
 		const ordersWithPayment = ordersWithQueuePosition.map((order: any) => ({
 			...order,
-			payment: payments.find(p => p.Order_ID === order.id)
+			payment: payments.find(p => p.Order_ID === order.id),
+			hasReviewed: reviewedOrders.has(order.id) // เช็คว่าเคยรีวิว order นี้แล้วหรือยัง
 		}));
 
 		console.log('📋 Found orders:', ordersWithPayment.length);
@@ -78,5 +106,83 @@ export const load: PageServerLoad = async () => {
 			error: 'ไม่สามารถโหลดประวัติการสั่งอาหารได้',
 			orders: []
 		};
+	}
+};
+
+export const actions: Actions = {
+	submitReview: async ({ request, locals }) => {
+		try {
+			// ดึง User ID จาก session
+			const user = locals.user;
+			
+			if (!user?.id) {
+				return fail(401, { error: 'กรุณาเข้าสู่ระบบเพื่อรีวิว' });
+			}
+			
+			const userId = user.id;
+			
+			const formData = await request.formData();
+			const shopId = formData.get('shopId') as string;
+			const orderId = formData.get('orderId') as string;
+			const star = parseInt(formData.get('star') as string);
+			const description = formData.get('description') as string;
+			
+			console.log('📝 Submitting review:', { shopId, orderId, star, description, userId });
+			
+			// Validate
+			if (!shopId) {
+				return fail(400, { error: 'ไม่พบข้อมูลร้าน' });
+			}
+			
+			if (!orderId) {
+				return fail(400, { error: 'ไม่พบข้อมูล Order' });
+			}
+			
+			if (!star || star < 1 || star > 5) {
+				return fail(400, { error: 'กรุณาเลือกคะแนน 1-5 ดาว' });
+			}
+			
+			try {
+				// เช็คว่ารีวิว order นี้ไปแล้วหรือยัง
+				const existingReview = await pb.collection('Review').getFirstListItem(
+					`User_ID = "${userId}" && Order = "${orderId}"`,
+					{ requestKey: null }
+				).catch(() => null);
+				
+				if (existingReview) {
+					return fail(400, { error: 'คุณได้รีวิว Order นี้ไปแล้ว' });
+				}
+				
+				// บันทึกตาม Schema ของ PocketBase Review collection
+				const reviewData = {
+					User_ID: userId,
+					Shop_ID: shopId,
+					Order: orderId,  // เพิ่ม Order field
+					Star: star,  // ใช้ Star ไม่ใช่ Rating
+					Description: description || ''  // ใช้ Description ไม่ใช่ Comment
+				};
+				
+				const review = await pb.collection('Review').create(reviewData);
+				console.log('✅ Review created successfully:', review.id);
+				
+				return {
+					success: true,
+					message: 'ขอบคุณสำหรับรีวิวค่ะ!'
+				};
+			} catch (createError: any) {
+				console.error('❌ Error creating review:', createError);
+				console.error('Error details:', createError?.response?.data);
+				
+				return fail(500, {
+					error: 'ไม่สามารถบันทึกรีวิวได้: ' + (createError?.message || 'Unknown error')
+				});
+			}
+			
+		} catch (error: any) {
+			console.error('❌ Error in submitReview:', error);
+			return fail(500, {
+				error: 'เกิดข้อผิดพลาด: ' + (error?.message || 'Unknown error')
+			});
+		}
 	}
 };

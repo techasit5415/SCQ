@@ -15,6 +15,43 @@ export const load: PageServerLoad = async ({ cookies }) => {
         
         console.log(`Successfully loaded ${restaurants.length} restaurants`);
         
+        // นับจำนวนคิวสำหรับแต่ละร้าน (Order ที่ Pending หรือ In-progress)
+        // ใช้ for loop แทน Promise.all เพื่อหลีกเลี่ยง auto-cancellation
+        const restaurantsWithQueue: any[] = [];
+        
+        for (const restaurant of restaurants) {
+            try {
+                console.log(`🔍 Counting queue for: ${restaurant.Name} (ID: ${restaurant.id})`);
+                
+                // สร้าง PocketBase instance ใหม่สำหรับแต่ละ request
+                const pbQueue = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+                
+                const queueOrders = await pbQueue.collection('Order').getFullList({
+                    filter: `Shop_ID = "${restaurant.id}" && (Status = "Pending" || Status = "In-progress")`,
+                    sort: 'created'
+                });
+                
+                console.log(`  ✅ ${restaurant.Name}: ${queueOrders.length} orders in queue`);
+                
+                restaurantsWithQueue.push({
+                    ...restaurant,
+                    queueCount: queueOrders.length
+                });
+            } catch (queueError: any) {
+                console.error(`  ❌ Error counting queue for ${restaurant.Name}:`, queueError?.message);
+                restaurantsWithQueue.push({
+                    ...restaurant,
+                    queueCount: 0
+                });
+            }
+        }
+        
+        console.log(`✅ Queue counts added for all restaurants`);
+        
+        // แสดงสรุป
+        const totalQueue = restaurantsWithQueue.reduce((sum, r) => sum + (r.queueCount || 0), 0);
+        console.log(`📊 Total queue count across all restaurants: ${totalQueue}`);
+        
         // ดึงข้อมูลโฆษณาที่ active
         let activeAds: any[] = [];
         try {
@@ -28,25 +65,48 @@ export const load: PageServerLoad = async ({ cookies }) => {
             console.log('Could not load advertisements:', adError);
         }
         
-        // สร้าง Set ของ shop IDs ที่มีโฆษณา active
-        const promotedShopIds = new Set(activeAds.map(ad => ad.shop_id));
+        // สร้าง Map ของ shop ID -> priority level
+        const shopPriorityMap = new Map<string, number>();
+        activeAds.forEach(ad => {
+            const currentPriority = shopPriorityMap.get(ad.shop_id) || 0;
+            const newPriority = ad.priority_level || 1;
+            // เก็บ priority สูงสุดถ้ามีหลาย ads
+            if (newPriority > currentPriority) {
+                shopPriorityMap.set(ad.shop_id, newPriority);
+            }
+        });
         
-        // แบ่งร้านออกเป็น 2 กลุ่ม: มีโฆษณา และไม่มีโฆษณา
-        const promotedRestaurants = restaurants.filter(r => promotedShopIds.has(r.id));
-        const normalRestaurants = restaurants.filter(r => !promotedShopIds.has(r.id));
+        // เพิ่ม priority level ให้กับร้านทั้งหมด
+        const restaurantsWithPriority = restaurantsWithQueue.map(r => ({
+            ...r,
+            priorityLevel: shopPriorityMap.get(r.id) || 0
+        }));
         
-        // เรียงตามชื่อทั้ง 2 กลุ่ม
-        promotedRestaurants.sort((a, b) => (a.Name || '').localeCompare(b.Name || '', 'th'));
-        normalRestaurants.sort((a, b) => (a.Name || '').localeCompare(b.Name || '', 'th'));
+        // เรียงตาม priority จากมากไปน้อย แล้วตามด้วยชื่อ
+        restaurantsWithPriority.sort((a, b) => {
+            // Priority สูงก่อน (มากไปน้อย)
+            if (b.priorityLevel !== a.priorityLevel) {
+                return b.priorityLevel - a.priorityLevel;
+            }
+            // ถ้า priority เท่ากัน เรียงตามชื่อ
+            return (a.Name || '').localeCompare(b.Name || '', 'th');
+        });
         
-        // รวมกัน: ร้านที่มีโฆษณาก่อน ตามด้วยร้านปกติ
-        const sortedRestaurants = [...promotedRestaurants, ...normalRestaurants];
+        const sortedRestaurants = restaurantsWithPriority;
         
-        console.log(`Promoted restaurants: ${promotedRestaurants.length}, Normal: ${normalRestaurants.length}`);
+        console.log(`Sorting by priority:`);
+        const promotedCount = sortedRestaurants.filter(r => r.priorityLevel > 0).length;
+        sortedRestaurants.forEach(r => {
+            if (r.priorityLevel > 0) {
+                console.log(`  📍 Priority ${r.priorityLevel}: ${r.Name}`);
+            }
+        });
+        
+        console.log(`Promoted restaurants: ${promotedCount}, Normal: ${sortedRestaurants.length - promotedCount}`);
         
         return {
             restaurants: sortedRestaurants || [],
-            promotedShopIds: Array.from(promotedShopIds),
+            promotedShopIds: Array.from(shopPriorityMap.keys()),
             success: true
         };
         

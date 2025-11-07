@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+	import { toastStore } from '$lib/stores/toast';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -16,19 +17,19 @@
 	};
 	$: points = data?.points || 0;
 	$: orderCount = data?.orderCount || 0;
+	$: favoriteCount = data?.favoriteCount || 0;
 	
 	// Debug logs
 	$: console.log('🎨 Profile data:', data);
 	$: console.log('👤 User:', user);
 	$: console.log('💎 Points:', points);
 	$: console.log('📦 Order count:', orderCount);
+	$: console.log('❤️ Favorite count:', favoriteCount);
 
 	function getAvatarUrl(): string {
 		if (user.avatar && user.id) {
 			// PocketBase avatar URL format: /api/files/COLLECTION_ID_OR_NAME/RECORD_ID/FILENAME
-			// เพิ่ม timestamp เพื่อบังคับให้โหลดรูปใหม่
-			const timestamp = new Date().getTime();
-			return `${PUBLIC_POCKETBASE_URL}/api/files/_pb_users_auth_/${user.id}/${user.avatar}?t=${timestamp}`;
+			return `${PUBLIC_POCKETBASE_URL}/api/files/_pb_users_auth_/${user.id}/${user.avatar}`;
 		}
 		return '/Photo/Icon.png';
 	}
@@ -47,7 +48,7 @@
 
 	function goToCredit() {
 		// TODO: ไปหน้า SCQ Credit (ประวัติการใช้ Point)
-		alert('ฟีเจอร์กำลังพัฒนา');
+		toastStore.info('ฟีเจอร์กำลังพัฒนา 🚧');
 	}
 
 	let isEditMode = false;
@@ -66,7 +67,7 @@
 	// แสดงข้อความเมื่อบันทึกสำเร็จ
 	$: if (form?.success) {
 		const message = form.message || 'บันทึกสำเร็จ';
-		alert(message);
+		toastStore.success(message);
 		isEditMode = false;
 		isSaving = false;
 		isUploading = false;
@@ -78,7 +79,7 @@
 	
 	// แสดงข้อความ error
 	$: if (form?.error) {
-		alert('เกิดข้อผิดพลาด: ' + form.error);
+		toastStore.error('เกิดข้อผิดพลาด: ' + form.error);
 		isSaving = false;
 		isUploading = false;
 	}
@@ -94,18 +95,13 @@
 		if (file) {
 			// ตรวจสอบขนาดไฟล์ (จำกัดไม่เกิน 5MB)
 			if (file.size > 5 * 1024 * 1024) {
-				alert('ไฟล์ใหญ่เกินไป! กรุณาเลือกไฟล์ที่เล็กกว่า 5MB');
+				toastStore.error('ไฟล์ใหญ่เกินไป! กรุณาเลือกไฟล์ที่เล็กกว่า 5MB');
 				return;
 			}
 			
 			// ตรวจสอบชนิดไฟล์
 			if (!file.type.startsWith('image/')) {
-				alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-				return;
-			}
-			
-			if (!confirm(`ต้องการอัพโหลดรูป: ${file.name} หรือไม่?`)) {
-				target.value = ''; // Clear input
+				toastStore.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
 				return;
 			}
 			
@@ -128,7 +124,7 @@
 				if (!response.ok) {
 					const errorText = await response.text();
 					console.error('❌ Upload failed:', errorText);
-					alert('เกิดข้อผิดพลาด: ไม่สามารถอัพโหลดได้');
+					toastStore.error('เกิดข้อผิดพลาด: ไม่สามารถอัพโหลดได้');
 					isUploading = false;
 					target.value = '';
 					return;
@@ -138,18 +134,18 @@
 				console.log('📦 Result:', result);
 				
 				if (result.type === 'success' || result.success) {
-					alert('อัพโหลดรูปสำเร็จ! กำลังรีเฟรชหน้า...');
+					toastStore.success('อัพโหลดรูปสำเร็จ! กำลังรีเฟรชหน้า...');
 					setTimeout(() => {
 						window.location.reload();
 					}, 500);
 				} else {
 					const errorMsg = result.error || result.data?.error || 'ไม่สามารถอัพโหลดได้';
-					alert('เกิดข้อผิดพลาด: ' + errorMsg);
+					toastStore.error('เกิดข้อผิดพลาด: ' + errorMsg);
 					isUploading = false;
 				}
 			} catch (error) {
 				console.error('❌ Upload error:', error);
-				alert('เกิดข้อผิดพลาดในการอัพโหลด: ' + (error instanceof Error ? error.message : 'Unknown error'));
+				toastStore.error('เกิดข้อผิดพลาดในการอัพโหลด: ' + (error instanceof Error ? error.message : 'Unknown error'));
 				isUploading = false;
 			} finally {
 				target.value = ''; // Clear input
@@ -173,15 +169,33 @@
 		}
 	}
 
+	let showPasswordModal = false;
+	let oldPassword = '';
+	let newPassword = '';
+	let confirmPassword = '';
+	let isChangingPassword = false;
+	let showOldPassword = false;
+	let showNewPassword = false;
+	let showConfirmPassword = false;
+
 	function handleChangePassword() {
-		// TODO: ไปหน้าเปลี่ยนรหัสผ่าน
-		alert('ฟีเจอร์เปลี่ยนรหัสผ่านกำลังพัฒนา');
+		showPasswordModal = true;
+		// Reset form
+		oldPassword = '';
+		newPassword = '';
+		confirmPassword = '';
+	}
+
+	function closePasswordModal() {
+		showPasswordModal = false;
+		oldPassword = '';
+		newPassword = '';
+		confirmPassword = '';
 	}
 
 	async function handleLogout() {
-		if (confirm('ต้องการออกจากระบบหรือไม่?')) {
-			goto('/logout');
-		}
+		// ไปหน้า logout โดยตรง
+		goto('/logout');
 	}
 </script>
 
@@ -271,7 +285,7 @@
 				<span class="material-icons">favorite_border</span>
 			</div>
 			<span class="menu-text">ร้านโปรด</span>
-			<div class="menu-badge">{orderCount}</div>
+			<div class="menu-badge">{favoriteCount}</div>
 			<span class="material-icons arrow">chevron_right</span>
 		</button>
 
@@ -300,21 +314,154 @@
 			<span class="material-icons arrow">chevron_right</span>
 		</button>
 
-		<button class="menu-item logout" on:click={handleChangePassword}>
+		<button class="menu-item" on:click={handleChangePassword}>
 			<div class="menu-icon">
 				<span class="material-icons">lock_outline</span>
 			</div>
 			<span class="menu-text">เปลี่ยนรหัสผ่าน</span>
 			<span class="material-icons arrow">chevron_right</span>
 		</button>
+
+		<button class="menu-item logout" on:click={handleLogout}>
+			<div class="menu-icon">
+				<span class="material-icons">logout</span>
+			</div>
+			<span class="menu-text">ออกจากระบบ</span>
+			<span class="material-icons arrow">chevron_right</span>
+		</button>
 	</div>
 </div>
+
+<!-- Password Change Modal -->
+{#if showPasswordModal}
+	<div class="modal-overlay" on:click={closePasswordModal}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h3>เปลี่ยนรหัสผ่าน</h3>
+				<button class="close-btn" on:click={closePasswordModal}>
+					<span class="material-icons">close</span>
+				</button>
+			</div>
+			
+			<form method="POST" action="?/changePassword" use:enhance={() => {
+				isChangingPassword = true;
+				return async ({ result, update }) => {
+					await update();
+					isChangingPassword = false;
+					if (result.type === 'success') {
+						closePasswordModal();
+					}
+				};
+			}}>
+				<div class="modal-body">
+					<div class="form-group">
+						<label for="oldPassword">
+							<span class="material-icons label-icon">lock</span>
+							รหัสผ่านเก่า
+						</label>
+						<div class="password-field">
+							<input 
+								type={showOldPassword ? "text" : "password"}
+								id="oldPassword"
+								name="oldPassword"
+								bind:value={oldPassword}
+								required
+								class="password-input"
+								placeholder="กรอกรหัสผ่านเก่า"
+							/>
+							<button 
+								type="button" 
+								class="password-toggle"
+								on:click={() => showOldPassword = !showOldPassword}
+							>
+								<span class="material-icons">
+									{showOldPassword ? 'visibility_off' : 'visibility'}
+								</span>
+							</button>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label for="newPassword">
+							<span class="material-icons label-icon">vpn_key</span>
+							รหัสผ่านใหม่
+						</label>
+						<div class="password-field">
+							<input 
+								type={showNewPassword ? "text" : "password"}
+								id="newPassword"
+								name="newPassword"
+								bind:value={newPassword}
+								required
+								minlength="8"
+								class="password-input"
+								placeholder="อย่างน้อย 8 ตัวอักษร"
+							/>
+							<button 
+								type="button" 
+								class="password-toggle"
+								on:click={() => showNewPassword = !showNewPassword}
+							>
+								<span class="material-icons">
+									{showNewPassword ? 'visibility_off' : 'visibility'}
+								</span>
+							</button>
+						</div>
+						<p class="password-hint">
+							<span class="material-icons hint-icon">info</span>
+							รหัสผ่านควรมีความยาวอย่างน้อย 8 ตัวอักษร
+						</p>
+					</div>
+					
+					<div class="form-group">
+						<label for="confirmPassword">
+							<span class="material-icons label-icon">check_circle</span>
+							ยืนยันรหัสผ่านใหม่
+						</label>
+						<div class="password-field">
+							<input 
+								type={showConfirmPassword ? "text" : "password"}
+								id="confirmPassword"
+								name="confirmPassword"
+								bind:value={confirmPassword}
+								required
+								minlength="8"
+								class="password-input"
+								placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+							/>
+							<button 
+								type="button" 
+								class="password-toggle"
+								on:click={() => showConfirmPassword = !showConfirmPassword}
+							>
+								<span class="material-icons">
+									{showConfirmPassword ? 'visibility_off' : 'visibility'}
+								</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<button type="button" class="btn-cancel-modal" on:click={closePasswordModal} disabled={isChangingPassword}>
+						ยกเลิก
+					</button>
+					<button type="submit" class="btn-submit-modal" disabled={isChangingPassword}>
+						{isChangingPassword ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.profile-page {
 		min-height: 100vh;
 		background: #f8f9fa;
 		padding-bottom: 80px;
+		overflow-x: hidden;
+		max-width: 100vw;
 	}
 
 	.header {
@@ -582,6 +729,246 @@
 
 	.btn-save:disabled {
 		transform: none;
+	}
+
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 20px;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.modal-content {
+		background: white;
+		border-radius: 16px;
+		width: calc(100% - 40px);
+		max-width: 420px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.3s ease-out;
+		margin: 0 auto;
+		position: relative;
+		box-sizing: border-box;
+	}
+	
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 24px;
+		border-bottom: 1px solid #f0f0f0;
+		background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+		border-radius: 16px 16px 0 0;
+	}
+
+	.modal-header h3 {
+		margin: 0;
+		font-size: 1.3rem;
+		font-weight: 600;
+		color: #333;
+		font-family: 'Noto Sans Thai', sans-serif;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	
+	.modal-header h3::before {
+		content: '🔐';
+		font-size: 1.5rem;
+	}
+
+	.close-btn {
+		background: none;
+		border: none;
+		padding: 8px;
+		cursor: pointer;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999;
+		transition: all 0.2s ease;
+	}
+
+	.close-btn:hover {
+		background: #f5f5f5;
+		color: #333;
+		transform: rotate(90deg);
+	}
+
+	.modal-body {
+		padding: 24px;
+		max-height: 500px;
+		overflow-y: auto;
+	}
+
+	.form-group {
+		margin-bottom: 20px;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.form-group label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 8px;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #333;
+		font-family: 'Noto Sans Thai', sans-serif;
+	}
+
+	.label-icon {
+		font-size: 18px;
+		color: #ff6b35;
+	}
+
+	.password-field {
+		position: relative;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.password-input {
+		width: 100%;
+		padding: 12px 48px 12px 16px;
+		border: 1px solid #e5e5e5;
+		border-radius: 12px;
+		font-size: 1rem;
+		font-family: 'Noto Sans Thai', sans-serif;
+		transition: all 0.2s ease;
+		background: #fafafa;
+		box-sizing: border-box;
+	}
+
+	.password-input:focus {
+		outline: none;
+		border-color: #ff6b35;
+		background: white;
+		box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.08);
+	}
+	
+	.password-input:hover {
+		border-color: #ccc;
+		background: white;
+	}
+
+	.password-toggle {
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 4px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999;
+		transition: all 0.2s ease;
+	}
+
+	.password-toggle:hover {
+		background: #f5f5f5;
+		color: #666;
+	}
+
+	.password-toggle .material-icons {
+		font-size: 20px;
+	}
+
+	.password-hint {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 8px;
+		font-size: 0.8rem;
+		color: #666;
+		font-family: 'Noto Sans Thai', sans-serif;
+	}
+
+	.hint-icon {
+		font-size: 16px;
+		color: #ff6b35;
+	}
+
+	.modal-footer {
+		display: flex;
+		gap: 12px;
+		padding: 20px 24px 24px;
+		border-top: 1px solid #f0f0f0;
+		background: #fafafa;
+		border-radius: 0 0 16px 16px;
+	}
+
+	.btn-cancel-modal,
+	.btn-submit-modal {
+		flex: 1;
+		padding: 14px 20px;
+		border: none;
+		border-radius: 12px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: 'Noto Sans Thai', sans-serif;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	.btn-cancel-modal {
+		background: white;
+		color: #666;
+		border: 1px solid #e5e5e5;
+	}
+
+	.btn-cancel-modal:hover:not(:disabled) {
+		background: #f5f5f5;
+		border-color: #ccc;
+		transform: translateY(-1px);
+	}
+
+	.btn-submit-modal {
+		background: linear-gradient(135deg, #ff6b35 0%, #ff8559 100%);
+		color: white;
+		box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+	}
+
+	.btn-submit-modal:hover:not(:disabled) {
+		background: linear-gradient(135deg, #e55a2b 0%, #ff6b35 100%);
+		box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+		transform: translateY(-2px);
+	}
+
+	.btn-cancel-modal:disabled,
+	.btn-submit-modal:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	/* Material Icons Support */

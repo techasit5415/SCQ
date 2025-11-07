@@ -73,7 +73,14 @@
     $: rating = restaurant.rating || 3.5; // Default rating
     $: reviewCount = restaurant.review_count || Math.floor(Math.random() * 200) + 50; // Mock review count
     $: deliveryTime = restaurant.delivery_time || '15-30';
-    $: QueueM = restaurant.delivery_fee || Math.floor(Math.random() * 20) + 5; // Mock delivery fee
+    // ใช้จำนวนคิวจริงจาก restaurant.queueCount (ถ้ามี) หรือ 0
+    $: QueueM = restaurant.queueCount ?? 0;
+    
+    // Debug queue count
+    $: if (restaurant.Name || restaurant.name) {
+        const shopName = restaurant.Name || restaurant.name;
+        console.log(`🏪 ${shopName}: queueCount = ${restaurant.queueCount}, QueueM = ${QueueM}`);
+    }
     
     // Get restaurant image with proper URL handling
     $: restaurantImage = getRestaurantImage(restaurant);
@@ -212,7 +219,7 @@
             <!-- Image element - with better error handling -->
             <img 
                 src={restaurantImage} 
-                alt={restaurant.name || 'ร้านอาหาร'} 
+                alt={restaurant.Name || restaurant.name || 'ร้านอาหาร'} 
                 on:load={handleImageLoad}
                 on:error={handleImageError}
                 class:loaded={imageLoaded}
@@ -229,7 +236,7 @@
     
     <div class="restaurant-info">
         <div class="restaurant-header">
-            <h3 class="restaurant-name">{restaurant.name || 'ไม่ระบุชื่อ'}</h3>
+            <h3 class="restaurant-name">{restaurant.Name || restaurant.name || 'ไม่ระบุชื่อ'}</h3>
             <div class="restaurant-type">{restaurant.Type_Shop || 'อาหารทั่วไป'}</div>
         </div>
         

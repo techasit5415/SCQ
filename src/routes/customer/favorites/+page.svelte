@@ -13,9 +13,15 @@
 	}
 
 	function handleRestaurantSelect(event: CustomEvent) {
-		const restaurant = event.detail;
+		const restaurant = event.detail.restaurant || event.detail;
+		console.log('🎯 Restaurant selected:', restaurant);
+		console.log('🆔 Restaurant ID:', restaurant?.id);
+		
 		if (restaurant?.id) {
+			console.log('✅ Navigating to:', `/customer/restaurant/${restaurant.id}`);
 			goto(`/customer/restaurant/${restaurant.id}`);
+		} else {
+			console.error('❌ No restaurant ID found:', restaurant);
 		}
 	}
 </script>

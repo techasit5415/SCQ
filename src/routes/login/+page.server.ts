@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 };
 
 export const actions: Actions = {
-    default: async ({ request, cookies, url }) => {
+    login: async ({ request, cookies, url }) => {
         console.log('Login action called');
         const form = await request.formData();
         const email = String(form.get('email') ?? '').trim();
@@ -146,6 +146,97 @@ export const actions: Actions = {
             }
             
             return fail(500, { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' });
+        }
+    },
+    
+    // OAuth callback handler
+    oauthCallback: async ({ request, cookies }: { request: Request; cookies: any }) => {
+        try {
+            console.log('🔐 OAuth callback handler called');
+            console.log('Request method:', request.method);
+            
+            const formData = await request.formData();
+            console.log('FormData entries:');
+            for (const [key, value] of formData.entries()) {
+                console.log(`  ${key}:`, typeof value === 'string' ? value.substring(0, 100) : value);
+            }
+            
+            const token = formData.get('token') as string;
+            const recordStr = formData.get('record') as string;
+            const role = formData.get('role') as string || 'customer';
+            
+            console.log('Token exists:', !!token);
+            console.log('Record exists:', !!recordStr);
+            console.log('Role:', role);
+            
+            if (!token || !recordStr) {
+                console.error('❌ Missing token or record');
+                return fail(400, { error: 'Invalid OAuth data: missing token or record' });
+            }
+            
+            let record;
+            try {
+                record = JSON.parse(recordStr);
+                console.log('📝 OAuth user:', record.email, 'ID:', record.id);
+            } catch (parseError) {
+                console.error('❌ JSON parse error:', parseError);
+                return fail(400, { error: 'Invalid OAuth data: cannot parse record' });
+            }
+            
+            // Set appropriate cookie based on role
+            const cookieName = `pb_auth_${role}`;
+            const cookieValue = JSON.stringify({
+                token: token,
+                model: record
+            });
+            
+            const cookieOptions = {
+                path: '/',
+                httpOnly: false,
+                sameSite: 'lax' as const,
+                secure: false,
+                maxAge: 60 * 60 * 24 * 7 // 7 days
+            };
+            
+            cookies.set(cookieName, cookieValue, cookieOptions);
+            console.log('✅ Cookie set:', cookieName);
+            
+            // Determine redirect path
+            let redirectTo = '/customer';
+            
+            if (role === 'admin') {
+                redirectTo = '/admin/dashboard';
+            } else if (role === 'restaurant') {
+                try {
+                    const shops = await pb.collection('Shop').getFullList({
+                        filter: `User_Owner_ID = "${record.id}"`
+                    });
+                    if (shops.length > 0) {
+                        redirectTo = `/restaurant/${shops[0].id}/dashboard`;
+                    } else {
+                        redirectTo = '/restaurant';
+                    }
+                } catch (e) {
+                    console.error('❌ Error fetching shop:', e);
+                    redirectTo = '/restaurant';
+                }
+            }
+            
+            console.log('🚀 Redirecting to:', redirectTo);
+            throw redirect(303, redirectTo);
+            
+        } catch (error: any) {
+            // ถ้าเป็น redirect error ให้ throw ต่อไป
+            if (error?.status === 303) {
+                throw error;
+            }
+            
+            console.error('❌ OAuth callback error:', error);
+            console.error('Error stack:', error?.stack);
+            return fail(500, { 
+                error: 'Failed to process OAuth callback',
+                details: error?.message || 'Unknown error'
+            });
         }
     }
 };

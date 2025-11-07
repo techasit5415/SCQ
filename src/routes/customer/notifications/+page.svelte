@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
+	import { invalidate } from '$app/navigation';
+	import { markAllAsRead } from '$lib/stores/notifications';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -10,6 +13,48 @@
 	// Debug logs
 	$: console.log('🔔 Notifications data:', data);
 	$: console.log('📋 Notifications:', notifications);
+
+	// Auto-refresh ทุก 30 วินาที
+	let refreshInterval: any;
+	let isRefreshing = false;
+	let lastRefreshTime = new Date();
+
+	onMount(() => {
+		// Mark all as read เมื่อเข้าหน้าการแจ้งเตือน
+		markAllAsRead();
+		
+		// Auto-refresh ทุก 30 วินาที
+		refreshInterval = setInterval(async () => {
+			await refreshNotifications();
+		}, 30000); // 30 วินาที
+
+		console.log('✅ Auto-refresh started (every 30 seconds)');
+	});
+
+	onDestroy(() => {
+		if (refreshInterval) {
+			clearInterval(refreshInterval);
+			console.log('🛑 Auto-refresh stopped');
+		}
+	});
+
+	async function refreshNotifications() {
+		if (isRefreshing) return;
+		
+		isRefreshing = true;
+		console.log('🔄 Refreshing notifications...');
+		
+		try {
+			// ใช้ invalidate เพื่อรีโหลดข้อมูลจาก server
+			await invalidate('app:notifications');
+			lastRefreshTime = new Date();
+			console.log('✅ Notifications refreshed');
+		} catch (error) {
+			console.error('❌ Error refreshing notifications:', error);
+		} finally {
+			isRefreshing = false;
+		}
+	}
 
 	function goBack() {
 		goto('/customer');
@@ -54,9 +99,9 @@
 		}
 	}
 
-	function markAllAsRead() {
-		// TODO: Implement mark all as read
-		console.log('Mark all as read');
+	function handleMarkAllAsRead() {
+		markAllAsRead();
+		console.log('✅ All notifications marked as read');
 	}
 </script>
 
@@ -71,14 +116,29 @@
 			<span class="material-icons">arrow_back</span>
 		</button>
 		<h1 class="title">การแจ้งเตือน</h1>
-		<button class="action-btn" on:click={markAllAsRead} aria-label="อ่านทั้งหมด">
+		<button class="action-btn" on:click={handleMarkAllAsRead} aria-label="อ่านทั้งหมด">
 			<span class="material-icons">done_all</span>
 		</button>
 	</div>
 
 	<!-- Notifications Count -->
 	<div class="count-section">
-		<p class="count-text">การแจ้งเตือนทั้งหมด {totalCount} รายการ</p>
+		<div class="count-header">
+			<p class="count-text">การแจ้งเตือนทั้งหมด {totalCount} รายการ</p>
+			<button 
+				class="refresh-btn" 
+				on:click={refreshNotifications}
+				disabled={isRefreshing}
+				aria-label="รีเฟรช"
+			>
+				<span class="material-icons" class:spinning={isRefreshing}>refresh</span>
+			</button>
+		</div>
+		{#if isRefreshing}
+			<p class="refresh-status">กำลังรีเฟรช...</p>
+		{:else}
+			<p class="refresh-status">อัพเดทล่าสุด: {formatTime(lastRefreshTime.toISOString())}</p>
+		{/if}
 	</div>
 
 	<!-- Notifications List -->
@@ -203,9 +263,62 @@
 		border-bottom: 8px solid #f8f9fa;
 	}
 
+	.count-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+
 	.count-text {
 		font-size: 0.9rem;
 		color: #666;
+		margin: 0;
+	}
+
+	.refresh-btn {
+		background: none;
+		border: none;
+		padding: 8px;
+		cursor: pointer;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s ease;
+	}
+
+	.refresh-btn:hover:not(:disabled) {
+		background: #f5f5f5;
+	}
+
+	.refresh-btn:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	.refresh-btn .material-icons {
+		font-size: 20px;
+		color: #666;
+		transition: transform 0.3s ease;
+	}
+
+	.refresh-btn .material-icons.spinning {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.refresh-status {
+		font-size: 0.75rem;
+		color: #999;
 		margin: 0;
 	}
 

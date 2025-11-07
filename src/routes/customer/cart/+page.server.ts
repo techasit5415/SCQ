@@ -19,11 +19,17 @@ function getPaymentMethodName(method: string): string {
 	}
 }
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	try {
-		// ดึง User ID จาก session
-		const userId = "5v70v6p91pfakvb"; // fallback สำหรับ debug
+		// ดึง User ID จาก session ของผู้ใช้ที่ล็อกอินอยู่
+		const user = locals.user;
 		
+		if (!user?.id) {
+			console.log('⚠️ No user logged in');
+			return { userPoints: 0 };
+		}
+		
+		const userId = user.id;
 		console.log('🔍 Loading points for User ID:', userId);
 		
 		// ดึงข้อมูล Point คงเหลือของผู้ใช้
@@ -54,18 +60,18 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	createOrder: async ({ request, cookies }) => {
+	createOrder: async ({ request, locals }) => {
 		try {
 			const formData = await request.formData();
 			const orderData = JSON.parse(formData.get('orderData') as string);
 			
-			// ดึง User ID จาก session cookie
-			// const userId = cookies.get('session');
-			const userId = "5v70v6p91pfakvb"; // ใช้ User ID เดียวกับที่ใช้ในที่อื่น
-			if (!userId) {
-				throw new Error('User not authenticated - No session found');
+			// ดึง User ID จาก session ของผู้ใช้ที่ล็อกอินอยู่
+			const user = locals.user;
+			if (!user?.id) {
+				throw new Error('User not authenticated - Please login first');
 			}
 			
+			const userId = user.id;
 			console.log('👤 User ID from session:', userId);
 			// Log orderData as pretty JSON
 			console.log('📦 Raw orderData:', JSON.stringify(orderData, null, 2));
@@ -92,7 +98,7 @@ export const actions: Actions = {
 				User_ID: userId,
 				Shop_ID: shopId,
 				Menu_ID: menuIds,
-				Total_Amount: orderData.total + 5,
+				Total_Amount: orderData.total ,
 				Status: "Pending"
 			};
 			
@@ -132,7 +138,7 @@ export const actions: Actions = {
 			Shop_ID: shopId,
 			Order_ID: orderRecord.id,
 			Method_Payment: getPaymentMethodName(orderData.paymentMethod),
-			Total_Amount: orderData.total + 5,
+			Total_Amount: orderData.total ,
 			status: "Success"
 		};			console.log('💳 Creating payment:', JSON.stringify(paymentData, null, 2));
 			
@@ -149,7 +155,7 @@ export const actions: Actions = {
 		// 💎 บันทึก Point transaction ถ้าชำระเงินด้วย Point
 		if (orderData.paymentMethod === 'credit') {
 			try {
-				const pointAmount = orderData.total + 5; // จำนวน Point ที่ใช้
+				const pointAmount = orderData.total ; // จำนวน Point ที่ใช้
 				
 				// ดึงข้อมูล Point ปัจจุบันของผู้ใช้
 				const userPointRecords = await pb.collection('Point').getFullList({

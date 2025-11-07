@@ -5,11 +5,21 @@ import { redirect, fail } from '@sveltejs/kit';
 
 const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, locals }) => {
 	try {
-		// ตอนนี้ยังไม่มี session management ใช้ hardcode ก่อน
-		const userId = "5v70v6p91pfakvb"; // hardcode user ID ที่มีอยู่จริง (TheBug)
+		// ตรวจสอบ authentication
+		if (!locals.user || !locals.user.id) {
+			console.error('❌ No authenticated user found');
+			throw redirect(303, '/login');
+		}
 		
+		// ตรวจสอบว่าเป็น customer role
+		if (locals.role !== 'customer') {
+			console.error('❌ User is not a customer. Role:', locals.role);
+			throw redirect(303, '/login');
+		}
+		
+		const userId = locals.user.id;
 		console.log('👤 Loading profile for User ID:', userId);
 		
 		// ดึงข้อมูลผู้ใช้จาก PocketBase users collection
@@ -71,6 +81,25 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		const orderCount = paymentRecords.length;
 		console.log('📦 Orders found:', orderCount);
 		
+		// นับจำนวนร้านโปรด (จาก field shoplove ใน users collection)
+		let favoriteCount = 0;
+		try {
+			console.log('🔍 Checking favorite shops from shoplove field');
+			
+			// shoplove เป็น array ของ relation records (Shop IDs)
+			if (userRecord && userRecord.shoplove && Array.isArray(userRecord.shoplove)) {
+				favoriteCount = userRecord.shoplove.length;
+				console.log('❤️ Favorite shops found:', favoriteCount);
+				console.log('� Shop IDs:', userRecord.shoplove);
+			} else {
+				console.log('⚠️ No shoplove field or empty array');
+				favoriteCount = 0;
+			}
+		} catch (favError: any) {
+			console.error('⚠️ Error checking favorites:', favError?.message);
+			favoriteCount = 0;
+		}
+		
 		return {
 			user: {
 				id: userId,
@@ -80,7 +109,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				name: userName
 			},
 			points: userPoints,
-			orderCount: orderCount
+			orderCount: orderCount,
+			favoriteCount: favoriteCount
 		};
 		
 	} catch (error: any) {
@@ -100,14 +130,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
 export const actions: Actions = {
 	// บันทึกข้อมูลโปรไฟล์
-	updateProfile: async ({ cookies, request }) => {
+	updateProfile: async ({ cookies, request, locals }) => {
 		try {
-			// ใช้ hardcode user ID เหมือนใน load function
-			const userId = "5v70v6p91pfakvb";
-			
-			if (!userId) {
+			// ตรวจสอบ authentication
+			if (!locals.user || !locals.user.id) {
 				return fail(401, { error: 'กรุณาเข้าสู่ระบบ' });
 			}
+			
+			const userId = locals.user.id;
 
 			const formData = await request.formData();
 			const name = formData.get('name') as string;
@@ -144,15 +174,15 @@ export const actions: Actions = {
 	},
 
 	// อัพโหลดรูปโปรไฟล์
-	uploadAvatar: async ({ cookies, request }) => {
+	uploadAvatar: async ({ cookies, request, locals }) => {
 		try {
-			// ใช้ hardcode user ID เหมือนใน load function
-			const userId = "5v70v6p91pfakvb";
-			
-			if (!userId) {
-				console.error('❌ No session cookie found');
+			// ตรวจสอบ authentication
+			if (!locals.user || !locals.user.id) {
+				console.error('❌ No authenticated user');
 				return fail(401, { error: 'กรุณาเข้าสู่ระบบ' });
 			}
+			
+			const userId = locals.user.id;
 
 			const formData = await request.formData();
 			const avatar = formData.get('avatar');
@@ -216,6 +246,87 @@ export const actions: Actions = {
 			});
 			return fail(500, { 
 				error: 'เกิดข้อผิดพลาดในการอัพโหลดรูป: ' + (error.message || 'Unknown error')
+			});
+		}
+	},
+
+	// เปลี่ยนรหัสผ่าน
+	changePassword: async ({ cookies, request, locals }) => {
+		try {
+			// ตรวจสอบ authentication
+			if (!locals.user || !locals.user.id) {
+				return fail(401, { error: 'กรุณาเข้าสู่ระบบ' });
+			}
+			
+			const userId = locals.user.id;
+			const formData = await request.formData();
+			const oldPassword = formData.get('oldPassword') as string;
+			const newPassword = formData.get('newPassword') as string;
+			const confirmPassword = formData.get('confirmPassword') as string;
+
+			console.log('🔒 Changing password for user:', userId);
+
+			// ตรวจสอบข้อมูล
+			if (!oldPassword || !newPassword || !confirmPassword) {
+				return fail(400, { error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+			}
+
+			// ตรวจสอบว่ารหัสผ่านใหม่ตรงกันหรือไม่
+			if (newPassword !== confirmPassword) {
+				return fail(400, { error: 'รหัสผ่านใหม่ไม่ตรงกัน' });
+			}
+
+			// ตรวจสอบความยาวรหัสผ่าน
+			if (newPassword.length < 8) {
+				return fail(400, { error: 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร' });
+			}
+
+			// ยืนยันตัวตนด้วยรหัสผ่านเก่า
+			let userEmail = '';
+			try {
+				const user = await pb.collection('_pb_users_auth_').getOne(userId);
+				userEmail = user.email;
+				console.log('🔍 Verifying old password for:', userEmail);
+				
+				// สร้าง PocketBase instance ใหม่เพื่อ auth
+				const pbAuth = new PocketBase(PUBLIC_POCKETBASE_URL);
+				await pbAuth.collection('_pb_users_auth_').authWithPassword(userEmail, oldPassword);
+				console.log('✅ Old password verified');
+			} catch (authError: any) {
+				console.error('❌ Authentication failed:', authError?.message);
+				return fail(401, { error: 'รหัสผ่านเก่าไม่ถูกต้อง' });
+			}
+
+			// เปลี่ยนรหัสผ่าน - ใช้ oldPassword เพื่อยืนยัน
+			try {
+				const pbUpdate = new PocketBase(PUBLIC_POCKETBASE_URL);
+				// ต้อง auth ก่อนแล้วค่อย update
+				await pbUpdate.collection('_pb_users_auth_').authWithPassword(userEmail, oldPassword);
+				
+				await pbUpdate.collection('_pb_users_auth_').update(userId, {
+					password: newPassword,
+					passwordConfirm: newPassword,
+					oldPassword: oldPassword // PocketBase ต้องการ oldPassword เพื่อยืนยัน
+				});
+
+				console.log('✅ Password changed successfully');
+
+				return {
+					success: true,
+					message: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว'
+				};
+			} catch (updateError: any) {
+				console.error('❌ Password update failed:', updateError);
+				console.error('❌ Error details:', updateError?.response);
+				return fail(500, { 
+					error: 'ไม่สามารถเปลี่ยนรหัสผ่านได้: ' + (updateError?.message || 'Unknown error')
+				});
+			}
+
+		} catch (error: any) {
+			console.error('❌ Error changing password:', error);
+			return fail(500, { 
+				error: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน: ' + (error.message || 'Unknown error')
 			});
 		}
 	}

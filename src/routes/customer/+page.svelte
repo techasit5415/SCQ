@@ -1,6 +1,6 @@
 <script>
-    import CustomerHeader from '$lib/components/customer/TopbarCustomer.svelte';
-    import RestaurantList from '$lib/components/customer/RestaurantList.svelte';
+    import CustomerHeader from '$lib/Components/customer/TopbarCustomer.svelte';
+    import RestaurantList from '$lib/Components/customer/RestaurantList.svelte';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     
@@ -45,9 +45,8 @@
     
     function handleLogout() {
         console.log('Logout clicked');
-        if (confirm('ต้องการออกจากระบบหรือไม่?')) {
-            goto('/logout');
-        }
+        // ไปหน้า logout โดยตรง ไม่ต้อง confirm
+        goto('/logout');
     }
     
     function handleRestaurantSelect(event) {

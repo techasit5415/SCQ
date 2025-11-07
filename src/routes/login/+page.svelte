@@ -25,34 +25,38 @@
   async function handleOAuthLogin(provider: 'google' | 'facebook' | 'github') {
     isOAuthLoading = true;
     try {
+      console.log('🔐 Starting OAuth login with:', provider);
+      
       // Clear any existing auth before starting OAuth
       pb.authStore.clear();
       pbOAuth.authStore.clear();
       
-      // Start OAuth2 authentication flow using public domain
+      // Clear cookies client-side
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      // Clear localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      console.log('🧹 Cleared all auth data');
+      
+      // Start OAuth2 authentication flow - บังคับให้เลือก account ใหม่
       const authData = await pbOAuth.collection('users').authWithOAuth2({ 
         provider,
+        // บังคับให้แสดงหน้าเลือก account
         urlCallback: (url) => {
-          // Force account selection by modifying the OAuth URL
-          const urlObj = new URL(url);
-          if (provider === 'google') {
-            urlObj.searchParams.set('prompt', 'select_account');
-          }
-          // Open the modified URL
-          const popup = window.open(urlObj.toString(), '_blank', 'width=500,height=600');
-          // Return a promise that resolves when the popup closes
-          return new Promise((resolve) => {
-            const checkPopup = setInterval(() => {
-              if (popup?.closed) {
-                clearInterval(checkPopup);
-                resolve(window.location.href);
-              }
-            }, 500);
-          });
+          // เพิ่ม prompt=select_account เข้าไปใน URL
+          const authUrl = new URL(url);
+          authUrl.searchParams.set('prompt', 'select_account');
+          // เปิด OAuth ใน popup window
+          window.open(authUrl.toString(), 'oauth-window', 'width=600,height=700');
         }
       });
       
-      console.log('OAuth login successful:', authData);
+      console.log('✅ OAuth authentication successful');
+      console.log('User:', authData.record.email);
       
       // Sync token to main PocketBase instance
       pb.authStore.save(authData.token, authData.record);
@@ -65,47 +69,47 @@
         try {
           const roleRecord = await pbOAuth.collection('Role').getOne(user.Role);
           role = roleRecord.name?.toLowerCase() || 'customer';
+          console.log('👤 User role:', role);
         } catch (e) {
           console.error('Error fetching role:', e);
         }
       }
       
-      // Set appropriate cookie based on role
-      const cookieName = `pb_auth_${role}`;
-      document.cookie = `${cookieName}=${JSON.stringify({
-        token: authData.token,
-        model: authData.record
-      })}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      // ส่งข้อมูลไปให้ server ตั้ง cookie ผ่าน form action
+      const formElement = document.createElement('form');
+      formElement.method = 'POST';
+      formElement.action = '/login?/oauthCallback'; // ต้องระบุ full path
       
-      // Redirect based on role
-      if (role === 'admin') {
-        goto('/admin/dashboard');
-      } else if (role === 'restaurant') {
-        // Check if user owns a shop
-        try {
-          const shops = await pbOAuth.collection('Shop').getFullList({
-            filter: `User_Owner_ID = "${user.id}"`
-          });
-          if (shops.length > 0) {
-            goto(`/restaurant/${shops[0].id}/dashboard`);
-          } else {
-            goto('/restaurant');
-          }
-        } catch (e) {
-          goto('/restaurant');
-        }
-      } else {
-        goto('/customer');
-      }
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'token';
+      tokenInput.value = authData.token;
+      formElement.appendChild(tokenInput);
+      
+      const recordInput = document.createElement('input');
+      recordInput.type = 'hidden';
+      recordInput.name = 'record';
+      recordInput.value = JSON.stringify(authData.record);
+      formElement.appendChild(recordInput);
+      
+      const roleInput = document.createElement('input');
+      roleInput.type = 'hidden';
+      roleInput.name = 'role';
+      roleInput.value = role;
+      formElement.appendChild(roleInput);
+      
+      document.body.appendChild(formElement);
+      formElement.submit();
+      
     } catch (error) {
-      console.error('OAuth login failed:', error);
+      console.error('❌ OAuth login failed:', error);
       alert('เข้าสู่ระบบด้วย OAuth ไม่สำเร็จ');
       isOAuthLoading = false;
     }
   }
 </script>
 
-<form method="POST" use:enhance={() => {
+<form method="POST" action="?/login" use:enhance={() => {
   isSubmitting = true;
   return async ({ result, update }) => {
     console.log('Form result:', result);
