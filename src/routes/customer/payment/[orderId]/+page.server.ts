@@ -2,54 +2,73 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL, PUBLIC_ADMIN_PROMPTPAY_PHONE } from '$env/static/public';
-import { OKSLIP_API_KEY } from '$env/static/private';
+import { OKSLIP_API_KEY, OKSLIP_BRANCH_ID, OKSLIP_API_URL } from '$env/static/private';
 
 // ฟังก์ชันตรวจสอบสลิปด้วย OK Slip API
 async function verifySlipWithOKSlip(slipImage: File, expectedAmount: number, recipientPhone: string) {
 	try {
-		// แปลงไฟล์เป็น base64
-		const buffer = await slipImage.arrayBuffer();
-		const uint8Array = new Uint8Array(buffer);
-		const base64 = btoa(String.fromCharCode(...uint8Array));
+		const fullUrl = `${OKSLIP_API_URL}/${OKSLIP_BRANCH_ID}`;
+		console.log('🔍 Calling SlipOK API:', fullUrl);
 		
-		// เรียก OK Slip API
-		const response = await fetch('https://api.okslip.com/api/v1/verify', {
+		// สร้าง FormData สำหรับส่งไฟล์ (ตาม SlipOK documentation)
+		const formData = new FormData();
+		formData.append('files', slipImage);
+		formData.append('log', 'true');
+		formData.append('amount', expectedAmount.toString());
+		
+		console.log('📤 Sending data:', {
+			fileName: slipImage.name,
+			fileSize: slipImage.size,
+			fileType: slipImage.type,
+			amount: expectedAmount
+		});
+		
+		// เรียก SlipOK API
+		const response = await fetch(fullUrl, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
-				'x-api-key': OKSLIP_API_KEY || ''
+				'x-authorization': OKSLIP_API_KEY || ''
+				// ไม่ต้องระบุ Content-Type เพราะ FormData จะจัดการให้
 			},
-			body: JSON.stringify({
-				image: base64
-			})
+			body: formData
 		});
 
+		const responseText = await response.text();
+		console.log('API Response Status:', response.status);
+		console.log('API Response Text:', responseText);
+		console.log('--- End OK Slip Verification Debug ---');
+
 		if (!response.ok) {
-			console.error('❌ OK Slip API error:', response.status);
+			console.error('❌ SlipOK API error:', response.status);
+			console.error('❌ Error response:', responseText);
 			return { success: false, error: 'ไม่สามารถตรวจสอบสลิปได้' };
 		}
 
-		const data = await response.json();
-		console.log('📋 OK Slip response:', data);
+		const data = JSON.parse(responseText);
+		console.log('📋 SlipOK response:', data);
 
 		// ตรวจสอบผลลัพธ์
 		if (!data.success) {
-			return { success: false, error: 'ไม่สามารถอ่านข้อมูลสลิปได้' };
+			// แสดง error message จาก API
+			const errorMsg = data.message || 'ไม่สามารถอ่านข้อมูลสลิปได้';
+			console.error('❌ SlipOK error:', data.code, errorMsg);
+			
+			// Error codes ที่พบบ่อย:
+			// 1003: Package หมดอายุ
+			// 1010: สลิปล่าช้า (delay slip)
+			// 1012: สลิปซ้ำ (repeated slip)
+			// 1013: จำนวนเงินไม่ตรง
+			// 1014: เบอร์ผู้รับไม่ตรง
+			
+			return { success: false, error: errorMsg };
 		}
 
 		const slip = data.data;
 		
-		// ตรวจสอบจำนวนเงิน
-		if (slip.amount !== expectedAmount) {
-			return { 
-				success: false, 
-				error: `จำนวนเงินไม่ตรงกัน (คาดหวัง ${expectedAmount} บาท แต่สลิปแสดง ${slip.amount} บาท)` 
-			};
-		}
-
+		// API จะเช็คจำนวนเงินให้อัตโนมัติ (ถ้าส่ง amount parameter ไป)
 		// ตรวจสอบเบอร์ผู้รับ (ถ้ามี)
 		const normalizedRecipient = recipientPhone.replace(/^0/, '66').replace(/\D/g, '');
-		const normalizedSlipRecipient = slip.receiver?.account?.value?.replace(/\D/g, '');
+		const normalizedSlipRecipient = slip.receiver?.proxy?.value?.replace(/\D/g, '');
 		
 		if (normalizedSlipRecipient && normalizedSlipRecipient !== normalizedRecipient) {
 			console.warn('⚠️ Recipient phone mismatch:', normalizedSlipRecipient, 'vs', normalizedRecipient);
@@ -59,8 +78,8 @@ async function verifySlipWithOKSlip(slipImage: File, expectedAmount: number, rec
 			success: true, 
 			slip: {
 				amount: slip.amount,
-				date: slip.date,
-				time: slip.time,
+				date: slip.transDate,
+				time: slip.transTime,
 				sender: slip.sender?.displayName || 'Unknown',
 				ref: slip.ref1 || slip.transRef
 			}
@@ -103,7 +122,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const payment = payments[0];
 		
-		console.log('� Order loaded:', {
+		console.log('🛒 Order loaded:', {
 			id: order.id,
 			status: order.Status,
 			hasPayment: !!payment
@@ -225,27 +244,31 @@ export const actions = {
 				? (PUBLIC_ADMIN_PROMPTPAY_PHONE || '')
 				: (order.expand?.Shop_ID?.Phone || '');
 
-			// ตรวจสอบสลิปด้วย OK Slip API (ถ้ามี API key)
-			if (OKSLIP_API_KEY) {
-				console.log('🔍 Verifying slip with OK Slip API...');
-				const verifyResult = await verifySlipWithOKSlip(
-					slip, 
-					order.Total_Amount,
-					recipientPhone
-				);
-
-				if (!verifyResult.success) {
-					console.error('❌ Slip verification failed:', verifyResult.error);
-					return { 
-						success: false, 
-						error: verifyResult.error || 'สลิปไม่ถูกต้อง' 
-					};
-				}
-
-				console.log('✅ Slip verified:', verifyResult.slip);
-			} else {
-				console.log('⚠️ OK Slip API key not configured, skipping verification');
+			// ตรวจสอบสลิปด้วย OK Slip API (บังคับต้องมี API key)
+			if (!OKSLIP_API_KEY) {
+				console.error('❌ OK Slip API key not configured');
+				return { 
+					success: false, 
+					error: 'ระบบตรวจสอบสลิปไม่พร้อมใช้งาน กรุณาติดต่อ Admin' 
+				};
 			}
+
+			console.log('🔍 Verifying slip with OK Slip API...');
+			const verifyResult = await verifySlipWithOKSlip(
+				slip, 
+				order.Total_Amount,
+				recipientPhone
+			);
+
+			if (!verifyResult.success) {
+				console.error('❌ Slip verification failed:', verifyResult.error);
+				return { 
+					success: false, 
+					error: verifyResult.error || 'สลิปไม่ถูกต้อง' 
+				};
+			}
+
+			console.log('✅ Slip verified:', verifyResult.slip);
 
 			// อัพเดท Payment status เป็น Success
 			await pb.collection('Payment').update(payment.id, {

@@ -232,6 +232,7 @@
 				<form 
 					method="POST" 
 					action="?/uploadSlip"
+					enctype="multipart/form-data"
 					use:enhance={() => {
 						if (!slipFile) {
 							toast.error('กรุณาเลือกไฟล์หลักฐานการโอนเงิน');

@@ -482,6 +482,8 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		cursor: pointer;
 		transition: all 0.2s ease;
+		overflow: hidden; /* ป้องกัน badge ล้นออกจาก card */
+		box-sizing: border-box;
 	}
 
 	.order-card:hover {
@@ -731,18 +733,22 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		width: 100%;
-		padding: 10px;
+		max-width: 100%;
+		padding: 8px 12px;
 		background: linear-gradient(135deg, #3b82f6, #1e40af);
 		color: white;
 		border: none;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 600;
 		cursor: pointer;
 		font-family: 'Noto Sans Thai', sans-serif;
 		transition: all 0.2s ease;
 		margin-top: 8px;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	
 	.payment-btn:hover {
@@ -759,16 +765,20 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		width: 100%;
-		padding: 10px;
+		max-width: 100%;
+		padding: 8px 12px;
 		background: #fef3c7;
 		color: #92400e;
 		border: 2px solid #fbbf24;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 600;
 		font-family: 'Noto Sans Thai', sans-serif;
 		margin-top: 8px;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.pending-badge .material-icons {
@@ -781,16 +791,20 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		width: 100%;
-		padding: 10px;
+		max-width: 100%;
+		padding: 8px 12px;
 		background: #e8f5e9;
 		color: #2e7d32;
 		border: 2px solid #4caf50;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 600;
 		font-family: 'Noto Sans Thai', sans-serif;
 		margin-top: 8px;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.reviewed-badge .material-icons {
@@ -803,16 +817,20 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		width: 100%;
-		padding: 10px;
+		max-width: 100%;
+		padding: 8px 12px;
 		background: linear-gradient(135deg, #fee2e2, #fecaca);
 		color: #991b1b;
 		border: 2px solid #f87171;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 600;
 		font-family: 'Noto Sans Thai', sans-serif;
 		margin-top: 8px;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.expired-badge .material-icons {

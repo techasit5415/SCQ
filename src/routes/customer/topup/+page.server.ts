@@ -3,6 +3,10 @@ import type { PageServerLoad, Actions } from './$types';
 import PocketBase from 'pocketbase';
 import { PUBLIC_POCKETBASE_URL, PUBLIC_ADMIN_PROMPTPAY_PHONE } from '$env/static/public';
 
+// Placeholder IDs สำหรับระบบ Top-up (จะย้ายไป ENV หลัง restart server)
+const TOPUP_SHOP_ID = '000000000000001';
+const TOPUP_MENU_ID = '000000000000001';
+
 export const load: PageServerLoad = async ({ locals }) => {
 	// ต้อง login ถึงจะเข้าหน้านี้ได้
 	if (!locals.user) {
@@ -66,9 +70,6 @@ export const actions = {
 
 		try {
 			// ใช้ Shop และ Menu ID พิเศษสำหรับระบบ Top-up
-			const TOPUP_SHOP_ID = '000000000000001';
-			const TOPUP_MENU_ID = '000000000000001';
-
 			// สร้าง Order สำหรับการเติมเงิน
 			const order = await pb.collection('Order').create({
 				User_ID: userId,

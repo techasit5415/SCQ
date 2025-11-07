@@ -18,7 +18,7 @@
 		refreshInterval = setInterval(() => {
 			invalidateAll();
 			console.log('🔄 Auto-refresh: Page data reloaded');
-		}, 50000); // 5 วินาที
+		}, 500000); // 5 วินาที
 		
 		console.log('🔄 Auto-refresh started (every 5 seconds)');
 	});
