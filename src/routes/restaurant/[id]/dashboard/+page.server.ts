@@ -20,6 +20,10 @@ export const load = async ({ locals, params }: any) => {
   try {
     console.log('Attempting to connect to PocketBase...');
     
+    // ดึงข้อมูลร้าน
+    const shop = await pb.collection('Shop').getOne(shopId);
+    console.log('Shop data:', shop);
+    
     // Initialize stats object
     // let stats = {
     //   users: 0,
@@ -302,6 +306,7 @@ export const load = async ({ locals, params }: any) => {
 
     const result = {
       ...baseData,
+      shop, // เพิ่มข้อมูลร้าน
       restaurant,
       analytics
     };

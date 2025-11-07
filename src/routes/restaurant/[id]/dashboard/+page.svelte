@@ -34,7 +34,7 @@
 
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
-    <TopBar title="Restaurant Panel - Dashboard" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Dashboard - {data.shop?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar shopId={data.shopId} {activeMenu} on:logout={handleLogout} />
     
     <!-- Main Content -->

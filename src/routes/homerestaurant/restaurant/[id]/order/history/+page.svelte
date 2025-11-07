@@ -42,7 +42,7 @@
     }
 
     function handleOrderTab(tab) {
-        goto(`/restaurant/${shopId}/order/${tab}`);
+        goto(`/homerestaurant/restaurant/${shopId}/order/${tab}`);
     }
 
     async function handleLogout() {
@@ -84,8 +84,8 @@
 </script>
 
 <div class="restaurant-layout">
-    <TopBar title="Order History - {data.shop?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
-    <RestaurantSidebar {shopId} {activeMenu} on:logout={handleLogout} />
+    <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
+    <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
 
     <main class="main-content">
         <!-- Header Section -->
@@ -118,32 +118,28 @@
                     <span class="header-price">ราคา</span>
                 </div>
                 
-                <div class="order-list-scroll">
-                    {#if orders.length === 0}
-                        <div class="empty-state">
-                            <p>ไม่มีประวัติออเดอร์</p>
-                        </div>
-                    {:else}
-                        {#each orders as order, index}
-                            <button
-                                class="order-item {order.Status === 'Canceled' ? 'canceled' : ''}"
-                                class:active={selectedOrderIndex === index}
-                                on:click={() => selectedOrderIndex = index}
-                            >
-                                <div class="order-info">
-                                    <div class="order-id">#{order.id}</div>
-                                    <div class="customer-name">{order.expand?.User_ID?.name || "ไม่ระบุ"}</div>
-                                    <div class="order-items-count">{order.expand?.Menu_ID?.length || 0} รายการ</div>
-                                    <div class="order-date">{formatTime(order.created)}</div>
-                                </div>
-                                <span class="status-badge {getStatusBadge(order.Status).class}">
-                                    {getStatusBadge(order.Status).text}
-                                </span>
-                                <div class="order-price">฿{order.Total_Amount?.toFixed(2) || '0.00'}</div>
-                            </button>
-                        {/each}
-                    {/if}
-                </div>
+                {#if orders.length === 0}
+                    <div class="empty-state">
+                        <p>ไม่มีประวัติออเดอร์</p>
+                    </div>
+                {:else}
+                    {#each orders as order, index}
+                        <button
+                            class="order-item {order.Status === 'Canceled' ? 'canceled' : ''}"
+                            class:active={selectedOrderIndex === index}
+                            on:click={() => selectedOrderIndex = index}
+                        >
+                            <div class="order-info">
+                                <div class="order-id">#{order.id}</div>
+                                <div class="order-time">{formatTime(order.created)} {order.expand?.Menu_ID?.length || 0} รายการ</div>
+                            </div>
+                            <span class="status-badge {getStatusBadge(order.Status).class}">
+                                {getStatusBadge(order.Status).text}
+                            </span>
+                            <div class="order-price">฿{order.Total_Amount?.toFixed(2) || '0.00'}</div>
+                        </button>
+                    {/each}
+                {/if}
             </div>
 
             {#if selectedOrder}
@@ -184,14 +180,6 @@
                         </div>
 
                         <div class="order-summary">
-                            {#if selectedOrder?.notes && selectedOrder.notes.length > 0}
-                                <div class="summary-row notes-section">
-                                    <span class="notes-label">หมายเหตุจากลูกค้า:</span>
-                                    {#each selectedOrder.notes as note}
-                                        <div class="note-item">{note.Details}</div>
-                                    {/each}
-                                </div>
-                            {/if}
                             <div class="summary-row">
                                 <span>วิธีการชำระเงิน: QR Code</span>
                             </div>
@@ -316,13 +304,7 @@
         color: #666;
     }
 
-    .order-list-scroll {
-        flex: 1;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    .header-id {
+    .header-status {
         text-align: center;
     }
 
@@ -360,31 +342,18 @@
 
     .order-info {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
     }
 
     .order-id {
         font-weight: 600;
-        font-size: 14px;
-        color: #1976d2;
-    }
-
-    .customer-name {
-        font-size: 14px;
+        font-size: 15px;
         color: #333;
-        font-weight: 500;
+        margin-bottom: 4px;
     }
 
-    .order-items-count {
+    .order-time {
         font-size: 13px;
         color: #666;
-    }
-
-    .order-date {
-        font-size: 12px;
-        color: #999;
     }
 
     .order-price {
@@ -520,30 +489,6 @@
         padding: 20px;
         border-radius: 8px;
         margin-top: 24px;
-    }
-
-    .notes-section {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 12px 0;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .notes-label {
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 8px;
-        display: block;
-        font-size: 14px;
-    }
-
-    .note-item {
-        padding: 6px 0;
-        color: #555;
-        font-size: 14px;
-        line-height: 1.6;
-        font-weight: 500;
     }
 
     .summary-row {

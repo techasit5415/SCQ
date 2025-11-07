@@ -120,7 +120,7 @@
 
 <div class="system-log">
     <!-- Top Navigation -->
-    <TopBar />
+    <TopBar title="Admin Panel - System Log" logoSrc="/SCQ_logo.png" />
     
     <!-- Side Navigation -->
     <AdminSidebar activeMenu="systemLog" />

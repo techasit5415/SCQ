@@ -205,7 +205,7 @@
 <!-- หน้า Menu ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
-    <TopBar title="Restaurant Panel - Menu" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Menu - {data.shopData?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar {shopId} {activeMenu} on:logout={handleLogout} />
     <!-- Main Content -->
     <main class="main-content">

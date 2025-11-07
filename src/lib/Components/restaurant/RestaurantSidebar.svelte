@@ -44,6 +44,9 @@
             case "advertise":
                 goto(`/restaurant/${shopId}/advertise`);
                 break;
+            case "reviews":
+                goto(`/restaurant/${shopId}/reviews`);
+                break;
             case "settings":
                 goto(`/restaurant/${shopId}/settings`);
                 break;
@@ -108,6 +111,16 @@
         >
             <span class="material-symbols-outlined">Campaign</span>
             <span>Advertise</span>
+        </button>
+
+        <!-- Reviews -->
+        <button
+            class="menu-item"
+            class:active={activeMenu === "reviews"}
+            on:click={() => handleMenuClick("reviews")}
+        >
+            <span class="material-symbols-outlined">star</span>
+            <span>Reviews</span>
         </button>
 
         <!-- Settings -->

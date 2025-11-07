@@ -42,7 +42,7 @@
     
     function handleViewRestaurant(event) {
         const restaurantId = event.detail;
-        goto(`/admin/restaurant/${restaurantId}`);
+        goto(`/admin/Restaurant/${restaurantId}`);
     }
     
     async function handleLogout() {
@@ -99,7 +99,7 @@
 </svelte:head>
 
 <!-- Top Navigation -->
-<TopBar title="SCQ Admin Panel" logoSrc="/SCQ_logo.png" />
+<TopBar title="Admin Panel - Advertise Management" logoSrc="/SCQ_logo.png" />
 
 <!-- Sidebar -->
 <AdminSidebar 

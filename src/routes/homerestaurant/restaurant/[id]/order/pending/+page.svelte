@@ -20,9 +20,7 @@
     $: customerName = selectedOrder?.expand?.User_ID?.name || "ไม่ระบุ";
     $: menuItems = selectedOrder?.expand?.Menu_ID || [];
     $: totalAmount = selectedOrder?.Total_Amount || 0;
-    $: orderStatus = selectedOrder?.Status || "Unknown";
     $: orderDate = selectedOrder?.created ? formatDateTime(selectedOrder.created) : "";
-    $: completionTime = selectedOrder?.completion_time ? formatDateTime(selectedOrder.completion_time) : "";
 
     function formatDateTime(dateString) {
         const date = new Date(dateString);
@@ -42,7 +40,40 @@
     }
 
     function handleOrderTab(tab) {
-        goto(`/restaurant/${shopId}/order/${tab}`);
+        goto(`/homerestaurant/restaurant/${shopId}/order/${tab}`);
+    }
+
+    async function handleAcceptOrder() {
+        if (!selectedOrder) return;
+        
+        try {
+            await pb.collection("Order").update(selectedOrder.id, {
+                Status: "In-progress",
+                preparation_start_time: new Date().toISOString()
+            });
+            
+            window.location.reload();
+        } catch (error) {
+            console.error("Error accepting order:", error);
+            alert("เกิดข้อผิดพลาดในการรับออร์เดอร์");
+        }
+    }
+
+    async function handleCancelOrder() {
+        if (!selectedOrder) return;
+        
+        if (!confirm("ต้องการยกเลิกออร์เดอร์นี้ใช่หรือไม่?")) return;
+        
+        try {
+            await pb.collection("Order").update(selectedOrder.id, {
+                Status: "Canceled"
+            });
+            
+            window.location.reload();
+        } catch (error) {
+            console.error("Error canceling order:", error);
+            alert("เกิดข้อผิดพลาดในการยกเลิกออร์เดอร์");
+        }
     }
 
     async function handleLogout() {
@@ -70,22 +101,12 @@
         return count;
     }
 
-    function getStatusBadge(status) {
-        if (status === "Completed") {
-            return { class: "status-completed", text: "เสร็จสิ้น" };
-        } else if (status === "Canceled") {
-            return { class: "status-canceled", text: "ยกเลิก" };
-        }
-        return { class: "", text: status };
-    }
-
     $: menuCount = getMenuCount(menuItems);
-    $: statusBadge = getStatusBadge(orderStatus);
 </script>
 
 <div class="restaurant-layout">
-    <TopBar title="Order History - {data.shop?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
-    <RestaurantSidebar {shopId} {activeMenu} on:logout={handleLogout} />
+    <TopBar title="Restaurant Panel - Order" logoSrc="/SCQ_logo.png" />
+    <RestaurantSidebar {activeMenu} on:logout={handleLogout} />
 
     <main class="main-content">
         <!-- Header Section -->
@@ -99,14 +120,14 @@
         </div>
 
         <div class="order-tabs">
-            <button class="tab" on:click={() => handleOrderTab('pending')}>
-                Pending Orders
+            <button class="tab active" on:click={() => handleOrderTab('pending')}>
+                Pending Orders ({orders.length})
             </button>
             <button class="tab" on:click={() => handleOrderTab('active')}>
                 Active Orders
             </button>
-            <button class="tab active" on:click={() => handleOrderTab('history')}>
-                Order History ({orders.length})
+            <button class="tab" on:click={() => handleOrderTab('history')}>
+                Order History
             </button>
         </div>
 
@@ -114,36 +135,28 @@
             <div class="order-list">
                 <div class="list-header">
                     <span class="header-id">Order ID</span>
-                    <span class="header-status">สถานะ</span>
                     <span class="header-price">ราคา</span>
                 </div>
                 
-                <div class="order-list-scroll">
-                    {#if orders.length === 0}
-                        <div class="empty-state">
-                            <p>ไม่มีประวัติออเดอร์</p>
-                        </div>
-                    {:else}
-                        {#each orders as order, index}
-                            <button
-                                class="order-item {order.Status === 'Canceled' ? 'canceled' : ''}"
-                                class:active={selectedOrderIndex === index}
-                                on:click={() => selectedOrderIndex = index}
-                            >
-                                <div class="order-info">
-                                    <div class="order-id">#{order.id}</div>
-                                    <div class="customer-name">{order.expand?.User_ID?.name || "ไม่ระบุ"}</div>
-                                    <div class="order-items-count">{order.expand?.Menu_ID?.length || 0} รายการ</div>
-                                    <div class="order-date">{formatTime(order.created)}</div>
-                                </div>
-                                <span class="status-badge {getStatusBadge(order.Status).class}">
-                                    {getStatusBadge(order.Status).text}
-                                </span>
-                                <div class="order-price">฿{order.Total_Amount?.toFixed(2) || '0.00'}</div>
-                            </button>
-                        {/each}
-                    {/if}
-                </div>
+                {#if orders.length === 0}
+                    <div class="empty-state">
+                        <p>ไม่มีออร์เดอร์ที่รอดำเนินการ</p>
+                    </div>
+                {:else}
+                    {#each orders as order, index}
+                        <button
+                            class="order-item"
+                            class:active={selectedOrderIndex === index}
+                            on:click={() => selectedOrderIndex = index}
+                        >
+                            <div class="order-info">
+                                <div class="order-id">#{order.id}</div>
+                                <div class="order-time">{formatTime(order.created)} {order.expand?.Menu_ID?.length || 0} รายการ</div>
+                            </div>
+                            <div class="order-price">฿{order.Total_Amount?.toFixed(2) || '0.00'}</div>
+                        </button>
+                    {/each}
+                {/if}
             </div>
 
             {#if selectedOrder}
@@ -152,13 +165,7 @@
                         <h2>ORDER: {orderNumber}</h2>
                         <div class="order-meta">
                             <span>ชื่อลูกค้า {customerName}</span>
-                            <span class="status-badge {statusBadge.class}">{statusBadge.text}</span>
-                        </div>
-                        <div class="order-meta">
                             <span>{orderDate}</span>
-                            {#if completionTime}
-                                <span>เสร็จสิ้น: {completionTime}</span>
-                            {/if}
                         </div>
                     </div>
 
@@ -170,13 +177,13 @@
                                 <div class="menu-item">
                                     <div class="menu-info">
                                         <div class="menu-name">{item.name} x{count}</div>
-                                        {#if item.Options && Array.isArray(item.Options) && item.Options.length > 0}
-                                            <ul class="menu-options">
-                                                {#each item.Options as option}
-                                                    <li>{option}</li>
+                                        <ul class="menu-options">
+                                            {#if item.option}
+                                                {#each (Array.isArray(item.option) ? item.option : [item.option]) as opt}
+                                                    <li>{opt}</li>
                                                 {/each}
-                                            </ul>
-                                        {/if}
+                                            {/if}
+                                        </ul>
                                     </div>
                                     <div class="menu-price">฿{(item.Price * count).toFixed(2)}</div>
                                 </div>
@@ -184,14 +191,6 @@
                         </div>
 
                         <div class="order-summary">
-                            {#if selectedOrder?.notes && selectedOrder.notes.length > 0}
-                                <div class="summary-row notes-section">
-                                    <span class="notes-label">หมายเหตุจากลูกค้า:</span>
-                                    {#each selectedOrder.notes as note}
-                                        <div class="note-item">{note.Details}</div>
-                                    {/each}
-                                </div>
-                            {/if}
                             <div class="summary-row">
                                 <span>วิธีการชำระเงิน: QR Code</span>
                             </div>
@@ -202,6 +201,15 @@
                                 <span>ราคารวม</span>
                                 <span class="total-price">฿{totalAmount.toFixed(2)}</span>
                             </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn-cancel" on:click={handleCancelOrder}>
+                                ยกเลิกออเดอร์
+                            </button>
+                            <button class="btn-accept" on:click={handleAcceptOrder}>
+                                รับออเดอร์
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -305,9 +313,8 @@
     }
 
     .list-header {
-        display: grid;
-        grid-template-columns: 1fr 80px 100px;
-        gap: 8px;
+        display: flex;
+        justify-content: space-between;
         padding: 16px 20px;
         background: #f5f5f5;
         border-bottom: 1px solid #e0e0e0;
@@ -316,24 +323,9 @@
         color: #666;
     }
 
-    .order-list-scroll {
-        flex: 1;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    .header-id {
-        text-align: center;
-    }
-
-    .header-price {
-        text-align: right;
-    }
-
     .order-item {
-        display: grid;
-        grid-template-columns: 1fr 80px 100px;
-        gap: 8px;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
         padding: 16px 20px;
         border-bottom: 1px solid #f0f0f0;
@@ -354,69 +346,32 @@
         border-left: 4px solid #1976d2;
     }
 
-    .order-item.canceled {
-        opacity: 0.7;
-    }
-
     .order-info {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
     }
 
     .order-id {
         font-weight: 600;
-        font-size: 14px;
-        color: #1976d2;
-    }
-
-    .customer-name {
-        font-size: 14px;
+        font-size: 15px;
         color: #333;
-        font-weight: 500;
+        margin-bottom: 4px;
     }
 
-    .order-items-count {
+    .order-time {
         font-size: 13px;
         color: #666;
-    }
-
-    .order-date {
-        font-size: 12px;
-        color: #999;
     }
 
     .order-price {
         font-weight: 700;
         font-size: 16px;
         color: #1976d2;
-        text-align: right;
     }
 
     .empty-state {
         padding: 60px 20px;
         text-align: center;
         color: #999;
-    }
-
-    .status-badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    .status-completed {
-        background: #e8f5e9;
-        color: #2e7d32;
-    }
-
-    .status-canceled {
-        background: #ffebee;
-        color: #c62828;
     }
 
     .order-detail {
@@ -450,7 +405,6 @@
         justify-content: space-between;
         font-size: 14px;
         color: #666;
-        margin-top: 8px;
     }
 
     .detail-content {
@@ -522,30 +476,6 @@
         margin-top: 24px;
     }
 
-    .notes-section {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 12px 0;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .notes-label {
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 8px;
-        display: block;
-        font-size: 14px;
-    }
-
-    .note-item {
-        padding: 6px 0;
-        color: #555;
-        font-size: 14px;
-        line-height: 1.6;
-        font-weight: 500;
-    }
-
     .summary-row {
         display: flex;
         justify-content: space-between;
@@ -564,7 +494,7 @@
 
     .total-price {
         font-size: 20px;
-        color: #333;
+        color: #FF8C00;
         font-weight: 700;
     }
 
@@ -573,9 +503,50 @@
         font-weight: 600;
     }
 
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn-cancel,
+    .btn-accept {
+        flex: 1;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel {
+        background: white;
+        color: #666;
+        border: 2px solid #e0e0e0;
+    }
+
+    .btn-cancel:hover {
+        background: #f5f5f5;
+        border-color: #999;
+    }
+
+    .btn-accept {
+        background: #FF8C00;
+        color: white;
+    }
+
+    .btn-accept:hover {
+        background: #FF7F00;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+
     /* Responsive */
     @media (max-width: 1400px) {
-        .orders-container {
+        .order-container {
             grid-template-columns: 1fr;
         }
     }

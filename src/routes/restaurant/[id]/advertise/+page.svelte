@@ -87,7 +87,7 @@
 <!-- หน้า Dashboard ร้านอาหาร -->
 <div id="restaurant-layout" class="restaurant-layout">
     <!-- Sidebar -->
-    <TopBar title="Restaurant Panel - Advertise" logoSrc="/SCQ_logo.png" />
+    <TopBar title="Advertise - {data.restaurant?.name || 'Restaurant'}" logoSrc="/SCQ_logo.png" />
     <RestaurantSidebar 
         {activeMenu}
         shopId={data.restaurant?.id || ''}

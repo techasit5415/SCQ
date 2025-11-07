@@ -22,7 +22,7 @@ export async function load({ params, locals, depends }) {
 
         // Fetch completed and canceled orders for this shop
         const orders = await pb.collection("Order").getFullList({
-            filter: `Shop_ID = "${shopId}" && (Status = "Completed" || Status = "Canceled")`,
+            filter: `Shop_ID="${shopId}" && (Status="Completed" || Status="Canceled")`,
             expand: "User_ID,Menu_ID",
             sort: "-created",
             $autoCancel: false
@@ -30,9 +30,29 @@ export async function load({ params, locals, depends }) {
 
         console.log(`Order History: ${orders.length}`);
 
+        // ดึงข้อมูล Notes สำหรับแต่ละ Order
+        const orderIds = orders.map(order => order.id);
+        let notes: any[] = [];
+        if (orderIds.length > 0) {
+            const noteFilter = orderIds.map(id => `Order_ID="${id}"`).join(' || ');
+            notes = await pb.collection('Note').getFullList({
+                filter: noteFilter,
+                $autoCancel: false
+            });
+        }
+
+        // เพิ่ม notes เข้าไปใน orders
+        const ordersWithNotes = orders.map(order => {
+            const orderNotes = notes.filter(note => note.Order_ID === order.id);
+            return {
+                ...order,
+                notes: orderNotes
+            };
+        });
+
         return {
             shop,
-            orders,
+            orders: ordersWithNotes,
             shopId
         };
     } catch (error) {
