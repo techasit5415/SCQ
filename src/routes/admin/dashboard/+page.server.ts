@@ -52,11 +52,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
     let orders: any[] = [];
     try {
       console.log('Fetching orders...');
-      orders = await pb.collection('Order').getFullList({
+      const allOrders = await pb.collection('Order').getFullList({
         expand: 'Shop_ID,Menu_ID',
         sort: '-created'
       });
-      console.log('Orders fetched:', orders.length);
+      
+      // กรองเอาเฉพาะ Orders ของร้านจริง ไม่เอา Orders จากร้าน SCQ (Top-up)
+      orders = allOrders.filter((order: any) => {
+        return order.Shop_ID !== '000000000000001';
+      });
+      
+      console.log('Orders fetched:', orders.length, '(filtered from', allOrders.length, 'total, excluding SCQ Top-up orders)');
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -64,11 +70,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
     // Fetch shops
     try {
       console.log('Fetching shops...');
-      shops = await pb.collection('Shop').getFullList({
+      const allShops = await pb.collection('Shop').getFullList({
         expand: 'User_Owner_ID',
         sort: 'name'
       });
-      console.log('Shops fetched:', shops.length);
+      
+      // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน SCQ (ใช้สำหรับ Top-up เท่านั้น)
+      shops = allShops.filter((shop: any) => {
+        return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]') && !shop.name?.startsWith('[SYSTEM]');
+      });
+      
+      console.log('Shops fetched:', shops.length, '(filtered from', allShops.length, 'total)');
     } catch (error) {
       console.error('Error fetching shops:', error);
     }
@@ -96,18 +108,29 @@ export const load: PageServerLoad = async ({ cookies }) => {
       console.error('Error fetching users:', error);
     }
 
-    // Calculate KPIs
-    kpis = calculateKPIs(orders, todayStartISO, monthStartISO);
+    // Fetch payments
+    let payments: any[] = [];
+    try {
+      console.log('Fetching payments...');
+      payments = await pb.collection('Payment').getFullList({
+        sort: '-created'
+      });
+      console.log('Payments fetched:', payments.length);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    }
+
+    // Calculate KPIs (ส่ง payments ด้วย)
+    kpis = calculateKPIs(orders, payments, todayStartISO, monthStartISO);
     
     // Debug logging
     console.log('KPIs calculated:', {
       activeOrders: kpis.activeOrders,
-      avgPreparationTime: kpis.avgPreparationTime,
-      avgFulfillmentTime: kpis.avgFulfillmentTime
+      avgPreparationTime: kpis.avgPreparationTime
     });
     
     // Calculate charts data
-    charts = calculateCharts(orders, shops, menus);
+    charts = calculateCharts(orders, payments, shops, menus);
 
     const result = {
       kpis,
@@ -135,28 +158,64 @@ export const load: PageServerLoad = async ({ cookies }) => {
   }
 };
 
-function calculateKPIs(orders: any[], todayStartISO: string, monthStartISO: string) {
+function calculateKPIs(orders: any[], payments: any[], todayStartISO: string, monthStartISO: string) {
   const now = new Date();
   
-  // Filter orders by date
-  const todayOrders = orders.filter(order => 
+  // สร้าง Map ของ Order ID -> Payment สำหรับการเช็คเร็วขึ้น
+  const paymentMap = new Map<string, any>();
+  payments.forEach(payment => {
+    if (payment.Order_ID) {
+      paymentMap.set(payment.Order_ID, payment);
+    }
+  });
+  
+  // กรองเอาเฉพาะ Orders ที่:
+  // 1. Status ไม่ใช่ Canceled
+  // 2. มี Payment ที่ status = Success
+  const validOrders = orders.filter(order => {
+    if (order.Status === 'Canceled') {
+      return false; // ไม่นับ Orders ที่ยกเลิก
+    }
+    
+    const payment = paymentMap.get(order.id);
+    // ถ้าไม่มี Payment หรือ Payment status ไม่ใช่ Success ก็ไม่นับ
+    if (!payment || payment.status !== 'Success') {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  console.log('📊 Orders filtered for revenue:', {
+    total: orders.length,
+    validForRevenue: validOrders.length,
+    canceled: orders.filter(o => o.Status === 'Canceled').length,
+    withoutPayment: orders.filter(o => !paymentMap.has(o.id)).length,
+    paymentNotSuccess: orders.filter(o => {
+      const p = paymentMap.get(o.id);
+      return p && p.status !== 'Success';
+    }).length
+  });
+  
+  // Filter orders by date (ใช้ validOrders)
+  const todayOrders = validOrders.filter(order => 
     new Date(order.created) >= new Date(todayStartISO)
   );
   
-  const monthOrders = orders.filter(order => 
+  const monthOrders = validOrders.filter(order => 
     new Date(order.created) >= new Date(monthStartISO)
   );
 
-  // Active Orders (In-progress, Pending)
+  // Active Orders (In-progress, Pending) - ใช้ orders ทั้งหมด ไม่กรอง payment
   const activeOrders = orders.filter(order => 
     ['In-progress', 'Pending'].includes(order.Status)
   ).length;
 
-  // Orders Today/MTD
+  // Orders Today/MTD - ใช้ validOrders
   const ordersToday = todayOrders.length;
   const ordersMTD = monthOrders.length;
 
-  // Revenue Today/MTD
+  // Revenue Today/MTD - ใช้ validOrders เท่านั้น
   const revenueToday = todayOrders.reduce((sum, order) => 
     sum + (parseFloat(order.Total_Amount) || 0), 0
   );
@@ -164,16 +223,16 @@ function calculateKPIs(orders: any[], todayStartISO: string, monthStartISO: stri
     sum + (parseFloat(order.Total_Amount) || 0), 0
   );
 
-  // Cancel Rate
+  // Cancel Rate - ใช้ orders ทั้งหมด
   const totalOrders = orders.length;
   const canceledOrders = orders.filter(order => 
     order.Status === 'Canceled'
   ).length;
   const cancelRate = totalOrders > 0 ? (canceledOrders / totalOrders * 100).toFixed(1) : '0';
 
-  // Average Order Value
-  const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order.Total_Amount) || 0), 0);
-  const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0';
+  // Average Order Value - ใช้ validOrders เท่านั้น
+  const totalRevenue = validOrders.reduce((sum, order) => sum + (parseFloat(order.Total_Amount) || 0), 0);
+  const avgOrderValue = validOrders.length > 0 ? (totalRevenue / validOrders.length).toFixed(2) : '0';
 
   // Calculate Average Preparation Time (in minutes)
   const ordersWithPrepTime = orders.filter(order => 
@@ -189,22 +248,9 @@ function calculateKPIs(orders: any[], todayStartISO: string, monthStartISO: stri
       return sum + diffMinutes;
     }, 0);
     avgPreparationTime = Math.round(totalPrepTime / ordersWithPrepTime.length);
-  }
-
-  // Calculate Average Fulfillment Time (from order time to completion)
-  const completedOrders = orders.filter(order => 
-    order.Status === 'Completed' && order.completed_time && order.Order_Time
-  );
-  
-  let avgFulfillmentTime = 0;
-  if (completedOrders.length > 0) {
-    const totalFulfillmentTime = completedOrders.reduce((sum, order) => {
-      const orderTime = new Date(order.Order_Time);
-      const completedTime = new Date(order.completed_time);
-      const diffMinutes = (completedTime.getTime() - orderTime.getTime()) / (1000 * 60); // Convert to minutes
-      return sum + Math.max(diffMinutes, 0); // Ensure positive values only
-    }, 0);
-    avgFulfillmentTime = Math.round(totalFulfillmentTime / completedOrders.length);
+    console.log('⏱️ Avg Preparation Time:', avgPreparationTime, 'minutes from', ordersWithPrepTime.length, 'orders');
+  } else {
+    console.log('⚠️ No orders with preparation time data');
   }
 
   return {
@@ -215,22 +261,43 @@ function calculateKPIs(orders: any[], todayStartISO: string, monthStartISO: stri
     revenueMTD: revenueMTD.toFixed(2),
     avgOrderValue,
     cancelRate,
-    avgPreparationTime,
-    avgFulfillmentTime
+    avgPreparationTime
   };
 }
 
-function calculateCharts(orders: any[], shops: any[], menus: any[]) {
-  // Hourly heatmap
+function calculateCharts(orders: any[], payments: any[], shops: any[], menus: any[]) {
+  console.log('📊 Calculate Charts - Total Orders:', orders.length);
+  console.log('📊 Calculate Charts - Total Payments:', payments.length);
+  
+  // สร้าง Payment Map สำหรับ O(1) lookup
+  const paymentMap = new Map<string, any>();
+  payments.forEach(payment => {
+    if (payment.Order_ID) {
+      paymentMap.set(payment.Order_ID, payment);
+    }
+  });
+  
+  // กรอง validOrders สำหรับ revenue/sales - ต้องมี Payment.status = "Success" และไม่เป็น Canceled
+  const validOrders = orders.filter(order => {
+    if (order.Status === 'Canceled') return false;
+    const payment = paymentMap.get(order.id);
+    return payment && payment.status === 'Success';
+  });
+  
+  console.log('📊 Valid Orders (Paid & Not Canceled):', validOrders.length);
+  
+  // Hourly heatmap - ใช้ orders ทั้งหมดเพื่อดูภาพรวมการสั่งอาหาร
   const hourlyData = Array(24).fill(0);
   orders.forEach(order => {
     const hour = new Date(order.created).getHours();
     hourlyData[hour]++;
   });
 
-  // Top 5 Restaurants by orders
+  // Top 5 Restaurants by orders - ใช้ validOrders เท่านั้น (นับเฉพาะที่จ่ายเงินแล้ว)
   const shopOrderCounts: { [key: string]: number } = {};
-  orders.forEach(order => {
+  
+  // นับ Orders ของแต่ละร้าน (เฉพาะที่จ่ายแล้ว)
+  validOrders.forEach(order => {
     const shopId = order.Shop_ID;
     const shop = shops.find(s => s.id === shopId);
     if (shop) {
@@ -238,15 +305,23 @@ function calculateCharts(orders: any[], shops: any[], menus: any[]) {
     }
   });
   
+  // เพิ่มร้านที่ยังไม่มี Orders เข้าไปด้วย (count = 0)
+  shops.forEach(shop => {
+    if (!shopOrderCounts[shop.name] && shop.name) {
+      shopOrderCounts[shop.name] = 0;
+    }
+  });
+  
+  // เรียงและเอา Top 5
   const topRestaurants = Object.entries(shopOrderCounts)
     .sort(([,a], [,b]) => b - a)
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
 
-  // Top 5 Dishes by sales (best seller from each restaurant)
+  // Top 5 Dishes by sales (best seller from each restaurant) - ใช้ validOrders เท่านั้น
   const shopMenuSales: { [key: string]: { [key: string]: { name: string; shopName: string; sales: number; revenue: number } } } = {};
   
-  orders.forEach(order => {
+  validOrders.forEach(order => {
     if (order.Menu_ID && Array.isArray(order.Menu_ID) && order.Shop_ID) {
       const shop = shops.find(s => s.id === order.Shop_ID);
       const shopName = shop?.name || 'Unknown Shop';
@@ -325,8 +400,7 @@ function getMockKPIs() {
     revenueMTD: "234560.75",
     avgOrderValue: "342.50",
     cancelRate: "5.2",
-    avgPreparationTime: 0, // Will show 0 until real data is available
-    avgFulfillmentTime: 0  // Will show 0 until real data is available
+    avgPreparationTime: 0 // Will show 0 until real data is available
   };
 }
 

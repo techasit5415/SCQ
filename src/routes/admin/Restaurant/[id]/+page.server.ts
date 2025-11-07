@@ -50,10 +50,16 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
       let shops: any[] = [];
       try {
         console.log('Fetching all shops for sidebar...');
-        shops = await pb.collection('Shop').getFullList({
+        const allShops = await pb.collection('Shop').getFullList({
           sort: '-created'
         });
-        console.log('Shops for sidebar:', shops);
+        
+        // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน SCQ
+        shops = allShops.filter((shop: any) => {
+          return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]') && !shop.name?.startsWith('[SYSTEM]');
+        });
+        
+        console.log('Shops for sidebar:', shops.length, '(filtered from', allShops.length, 'total)');
       } catch (shopError) {
         console.log('Error fetching shops:', shopError);
       }
@@ -88,12 +94,12 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
       try {
         console.log('Fetching payments for restaurant:', restaurantId);
         payments = await pb.collection('Payment').getFullList({
-          filter: `Shop_ID = "${restaurantId}" && status = "Sus"`,
+          filter: `Shop_ID = "${restaurantId}" && status = "Success"`,
           expand: 'Order_ID,User_ID'
         });
         
         totalSales = payments.reduce((sum, payment) => sum + (payment.Total_Amount || 0), 0);
-        console.log('Total sales:', totalSales);
+        console.log('Total sales (Success payments only):', totalSales);
       } catch (paymentError) {
         console.log('Error fetching payments:', paymentError);
       }
@@ -111,17 +117,39 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
         });
         console.log('Menus fetched:', menus);
 
-        // คำนวณเมนูยอดนิยมจาก Order data
+        // คำนวณเมนูยอดนิยมจาก Order data (เฉพาะที่จ่ายเงินแล้ว)
         const menuPopularity: any = {};
+        
+        // ดึง orders ที่ไม่ถูกยกเลิก
         const orders = await pb.collection('Order').getFullList({
-          filter: `Shop_ID = "${restaurantId}" && Status = "Completed"`,
+          filter: `Shop_ID = "${restaurantId}" && Status != "Canceled"`,
           expand: 'Menu_ID'
         });
+        
+        // ดึง payments ทั้งหมดของร้านนี้
+        const allPayments = await pb.collection('Payment').getFullList({
+          filter: `Shop_ID = "${restaurantId}"`
+        });
+        
+        // สร้าง payment map
+        const paymentMap = new Map<string, any>();
+        allPayments.forEach(payment => {
+          if (payment.Order_ID) {
+            paymentMap.set(payment.Order_ID, payment);
+          }
+        });
+        
+        // กรองเอาเฉพาะ orders ที่จ่ายเงินสำเร็จ
+        const validOrders = orders.filter(order => {
+          const payment = paymentMap.get(order.id);
+          return payment && payment.status === 'Success';
+        });
 
-        console.log('Orders for popular menus:', orders);
+        console.log('Total orders:', orders.length);
+        console.log('Valid orders (paid):', validOrders.length);
         console.log('Menus available:', menus);
 
-        orders.forEach((order: any) => {
+        validOrders.forEach((order: any) => {
           if (order.Menu_ID && Array.isArray(order.Menu_ID)) {
             order.Menu_ID.forEach((menuId: string) => {
               if (!menuPopularity[menuId]) {

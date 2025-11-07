@@ -29,16 +29,37 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
   };
 
   try {
-    // 1. ดึงข้อมูล Total Sales (ยอดขายรวมทั้งหมด - เฉพาะร้านนี้)
+    // 1. ดึงข้อมูล Total Sales (ยอดขายรวมทั้งหมด - เฉพาะร้านนี้ที่จ่ายแล้ว)
     console.log('Fetching total sales for shop:', shopId);
-    const allCompletedOrders = await pb.collection('Order').getFullList({
-      filter: `Status = "Completed" && Shop_ID = "${shopId}"`
+    const allOrdersForSales = await pb.collection('Order').getFullList({
+      filter: `Status != "Canceled" && Shop_ID = "${shopId}"`
     });
     
-    reports.totalSales = allCompletedOrders.reduce((sum, order) => {
+    // ดึง payments
+    const paymentsForSales = await pb.collection('Payment').getFullList({
+      filter: `Shop_ID = "${shopId}"`
+    });
+    
+    const paymentMap = new Map<string, any>();
+    paymentsForSales.forEach((payment: any) => {
+      if (payment.Order_ID) {
+        paymentMap.set(payment.Order_ID, payment);
+      }
+    });
+    
+    // กรองเอาเฉพาะ orders ที่จ่ายแล้ว
+    const validOrders = allOrdersForSales.filter((order: any) => {
+      const payment = paymentMap.get(order.id);
+      return payment && payment.status === 'Success';
+    });
+    
+    console.log('Total orders:', allOrdersForSales.length);
+    console.log('Valid orders (paid):', validOrders.length);
+    
+    reports.totalSales = validOrders.reduce((sum: any, order: any) => {
       return sum + (order.Total_Amount || 0);
     }, 0);
-    console.log('Total sales:', reports.totalSales);
+    console.log('Total sales (paid only):', reports.totalSales);
 
     // 2. ดึงข้อมูล Total Orders (จำนวนออร์เดอร์ทั้งหมด - เฉพาะร้านนี้)
     console.log('Fetching total orders for shop:', shopId);
@@ -67,7 +88,7 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
     reports.totalCustomers = uniqueCustomers.size;
     console.log('Total customers:', reports.totalCustomers);
 
-    // 5. ดึงข้อมูล Monthly Revenue (รายได้ 6 เดือนย้อนหลัง - เฉพาะร้านนี้)
+    // 5. ดึงข้อมูล Monthly Revenue (รายได้ 6 เดือนย้อนหลัง - เฉพาะร้านนี้ที่จ่ายแล้ว)
     console.log('Fetching monthly revenue for shop:', shopId);
     const monthlyRevenue = [];
     const today = new Date();
@@ -77,15 +98,33 @@ export const load: PageServerLoad = async ({ locals, cookies, params }) => {
       const nextMonthDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
       
       const monthOrders = await pb.collection('Order').getFullList({
-        filter: `Status = "Completed" && Shop_ID = "${shopId}" && created >= "${monthDate.toISOString()}" && created < "${nextMonthDate.toISOString()}"`
+        filter: `Status != "Canceled" && Shop_ID = "${shopId}" && created >= "${monthDate.toISOString()}" && created < "${nextMonthDate.toISOString()}"`
       });
       
-      const revenue = monthOrders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0);
+      // ดึง payments ของเดือนนี้
+      const monthPayments = await pb.collection('Payment').getFullList({
+        filter: `Shop_ID = "${shopId}" && created >= "${monthDate.toISOString()}" && created < "${nextMonthDate.toISOString()}"`
+      });
+      
+      const monthPaymentMap = new Map<string, any>();
+      monthPayments.forEach((payment: any) => {
+        if (payment.Order_ID) {
+          monthPaymentMap.set(payment.Order_ID, payment);
+        }
+      });
+      
+      // กรองเอาเฉพาะ orders ที่จ่ายแล้ว
+      const validMonthOrders = monthOrders.filter((order: any) => {
+        const payment = monthPaymentMap.get(order.id);
+        return payment && payment.status === 'Success';
+      });
+      
+      const revenue = validMonthOrders.reduce((sum: any, order: any) => sum + (order.Total_Amount || 0), 0);
       
       monthlyRevenue.push({
         month: monthDate.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }),
         revenue: revenue,
-        orders: monthOrders.length
+        orders: validMonthOrders.length
       });
     }
     reports.monthlyRevenue = monthlyRevenue;

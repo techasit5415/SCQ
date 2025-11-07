@@ -24,7 +24,7 @@
                     break;
                 case "manageRestaurant":
                 case "addRestaurant":
-                    goto('/admin/restaurant');
+                    goto('/admin/Restaurant');
                     break;
                 case "reports":
                     goto('/admin/reports');
@@ -43,7 +43,7 @@
     
     function handleViewRestaurant(event) {
         const restaurantId = event.detail;
-        goto(`/admin/restaurant/${restaurantId}`);
+        goto(`/admin/Restaurant/${restaurantId}`);
     }
     
     async function handleLogout() {
@@ -215,18 +215,6 @@
                     <div class="kpi-content">
                         <div class="kpi-value">{kpis.avgPreparationTime || 0}</div>
                         <div class="kpi-label">Avg Prep Time</div>
-                        <div class="kpi-sublabel">นาที</div>
-                    </div>
-                </div>
-
-                <!-- Avg Fulfillment Time -->
-                <div class="kpi-card">
-                    <div class="kpi-icon">
-                        <span class="material-icons">schedule</span>
-                    </div>
-                    <div class="kpi-content">
-                        <div class="kpi-value">{kpis.avgFulfillmentTime || 0}</div>
-                        <div class="kpi-label">Avg Fulfillment</div>
                         <div class="kpi-sublabel">นาที</div>
                     </div>
                 </div>

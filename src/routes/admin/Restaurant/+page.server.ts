@@ -60,7 +60,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     try {
       console.log('Fetching queue counts...');
       const orders = await pb.collection('Order').getFullList({
-        filter: 'Status = "In-progress"',
+        filter: 'Status = "Pending" || Status = "In-progress"',
         fields: 'Shop_ID'
       });
       

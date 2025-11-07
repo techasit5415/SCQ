@@ -23,8 +23,13 @@ export const load: PageServerLoad = async ({ cookies }: { cookies: any }) => {
         });
 
         // Get all shops for dropdown/filter (Note: collection name is 'Shop' not 'shops')
-        const shops = await pb.collection('Shop').getFullList({
+        const allShops = await pb.collection('Shop').getFullList({
             sort: 'name'
+        });
+        
+        // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน SCQ (ใช้สำหรับ Top-up)
+        const shops = allShops.filter((shop: any) => {
+            return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]') && !shop.name?.startsWith('[SYSTEM]');
         });
 
         // Get all packages for dropdown/filter

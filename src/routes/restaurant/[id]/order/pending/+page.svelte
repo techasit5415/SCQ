@@ -22,6 +22,8 @@
     $: menuItems = selectedOrder?.expand?.Menu_ID || [];
     $: totalAmount = selectedOrder?.Total_Amount || 0;
     $: orderDate = selectedOrder?.created ? formatDateTime(selectedOrder.created) : "";
+    $: paymentMethod = selectedOrder?.payment?.Method_Payment || "ไม่ระบุ";
+    $: paymentStatus = selectedOrder?.payment?.status || "ไม่ทราบ";
 
     function formatDateTime(dateString) {
         const date = new Date(dateString);
@@ -48,11 +50,102 @@
         if (!selectedOrder) return;
         
         try {
+            // 1. อัปเดตสถานะ Order
             await pb.collection("Order").update(selectedOrder.id, {
                 Status: "In-progress",
                 preparation_start_time: new Date().toISOString()
             });
             
+            console.log('✅ Order accepted, creating receipt...');
+            
+            // 2. สร้าง Receipt record
+            try {
+                console.log('📝 Starting receipt creation...');
+                console.log('Selected Order:', {
+                    id: selectedOrder.id,
+                    userId: selectedOrder.User_ID,
+                    shopId: shopId,
+                    totalAmount: selectedOrder.Total_Amount
+                });
+                
+                // ดึงข้อมูล Payment ของ Order นี้
+                let paymentId = null;
+                try {
+                    const payments = await pb.collection("Payment").getFullList({
+                        filter: `Order_ID = "${selectedOrder.id}"`,
+                        sort: '-created',
+                        limit: 1
+                    });
+                    
+                    if (payments.length > 0) {
+                        paymentId = payments[0].id;
+                        console.log('💳 Payment ID found:', paymentId);
+                    }
+                } catch (paymentError) {
+                    console.warn('⚠️ Could not find payment:', paymentError);
+                }
+                
+                // ดึงข้อมูล Note ของ Order นี้ (ถ้ามี)
+                let noteIds = [];
+                try {
+                    const notes = await pb.collection("Note").getFullList({
+                        filter: `Order_ID = "${selectedOrder.id}"`,
+                        sort: '-created'
+                    });
+                    
+                    if (notes.length > 0) {
+                        noteIds = notes.map(note => note.id);
+                        console.log('📝 Note IDs found:', noteIds);
+                    }
+                } catch (noteError) {
+                    console.warn('⚠️ Could not find notes:', noteError);
+                }
+                
+                const receiptData = {
+                    Order_ID: selectedOrder.id,
+                    User_ID: selectedOrder.User_ID,
+                    Shop_ID: shopId,
+                    Total_Amount: selectedOrder.Total_Amount || 0,
+                    Note: noteIds // ส่ง array ของ Note IDs
+                };
+                
+                // เพิ่ม Payment_ID ถ้ามี
+                if (paymentId) {
+                    receiptData.Payment_ID = paymentId;
+                }
+                
+                console.log('📋 Receipt Data to be created:', receiptData);
+                
+                const receiptRecord = await pb.collection("Receipt").create(receiptData);
+                console.log('✅ Receipt created successfully:', receiptRecord);
+                
+            } catch (receiptError) {
+                console.error('❌ Failed to create receipt:', receiptError);
+                console.error('❌ Receipt error details:', {
+                    message: receiptError?.message,
+                    response: receiptError?.response,
+                    data: receiptError?.data,
+                    status: receiptError?.status
+                });
+                
+                // แสดง error data แบบละเอียด
+                if (receiptError?.data) {
+                    console.error('📋 Detailed error data:', JSON.stringify(receiptError.data, null, 2));
+                }
+                
+                // แสดง error ให้เห็น
+                const errorMsg = receiptError?.data?.message || receiptError?.message || 'ไม่ทราบสาเหตุ';
+                const errorData = receiptError?.data ? JSON.stringify(receiptError.data) : '';
+                toast.error(`ไม่สามารถสร้างใบเสร็จได้: ${errorMsg}\n${errorData}`);
+                
+                // รอ 5 วินาทีเพื่อดู error
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            
+            toast.success("รับออร์เดอร์สำเร็จ เริ่มจับเวลาการทำอาหาร");
+            
+            // รอ 1 วินาทีก่อน reload เพื่อให้เห็น log
+            await new Promise(resolve => setTimeout(resolve, 1000));
             window.location.reload();
         } catch (error) {
             console.error("Error accepting order:", error);
@@ -63,17 +156,173 @@
     async function handleCancelOrder() {
         if (!selectedOrder) return;
         
-        if (!confirm("ต้องการยกเลิกออร์เดอร์นี้ใช่หรือไม่?")) return;
+        if (!confirm('ยืนยันการยกเลิกออร์เดอร์นี้ใช่หรือไม่?')) return;
         
         try {
-            await pb.collection("Order").update(selectedOrder.id, {
-                Status: "Canceled"
+            // ดึงข้อมูล Order อีกครั้งเพื่อให้แน่ใจว่ามีข้อมูล User_ID
+            const orderRecord = await pb.collection("Order").getOne(selectedOrder.id, {
+                expand: 'User_ID'
             });
             
-            window.location.reload();
+            let userId = orderRecord.User_ID;
+            console.log('👤 User ID from Order:', userId);
+            
+            // ดึงข้อมูล Payment ของ Order นี้
+            const payments = await pb.collection("Payment").getFullList({
+                filter: `Order_ID = "${selectedOrder.id}"`,
+                sort: '-created'
+            });
+            
+            let refundAmount = 0;
+            let paymentMethod = 'Unknown';
+            let shouldRefund = false;
+            
+            if (payments.length > 0) {
+                const payment = payments[0];
+                refundAmount = parseFloat(payment.Total_Amount) || 0;
+                paymentMethod = payment.Method_Payment || 'Unknown';
+                
+                console.log('💳 Payment record details:', {
+                    id: payment.id,
+                    allFields: Object.keys(payment),
+                    status: payment.status,
+                    Status: payment.Status,
+                    method: payment.Method_Payment,
+                    amount: payment.Total_Amount
+                });
+                
+                // อัปเดต userId จาก Payment ถ้ามี (เพื่อความแน่ใจ)
+                if (payment.User_ID) {
+                    userId = payment.User_ID;
+                }
+                
+                // ตรวจสอบว่าต้องคืนเงินหรือไม่
+                // คืนเฉพาะ QR Code และ Point ที่ status = Success
+                // ไม่คืนเงินสดเพราะลูกค้ายังไม่ได้จ่าย
+                if (payment.status === 'Success' && paymentMethod !== 'Cash') {
+                    shouldRefund = true;
+                }
+            }
+            
+            // ตรวจสอบว่ามี userId หรือไม่
+            if (!userId) {
+                toast.error("ไม่พบข้อมูลผู้ใช้ในออร์เดอร์นี้");
+                throw new Error("ไม่พบข้อมูลผู้ใช้ในออร์เดอร์นี้");
+            }
+            
+            console.log('📋 Order cancellation:', {
+                orderId: selectedOrder.id,
+                userId: userId,
+                paymentMethod,
+                refundAmount,
+                shouldRefund
+            });
+            
+            // อัปเดตสถานะ Order เป็น Canceled
+            try {
+                console.log('🔄 Updating order status to Canceled...');
+                const updatedOrder = await pb.collection("Order").update(selectedOrder.id, {
+                    Status: "Canceled"
+                });
+                console.log("✅ Order status updated to Canceled:", updatedOrder);
+            } catch (updateError) {
+                console.error("❌ Failed to update Order status:", updateError);
+                console.error("❌ Update error details:", {
+                    orderId: selectedOrder.id,
+                    error: updateError?.message,
+                    data: updateError?.data
+                });
+                throw updateError; // Re-throw เพื่อให้ไป catch block ด้านนอก
+            }
+            
+            // ถ้าต้องคืนเงิน
+            if (shouldRefund) {
+                console.log(`💰 Processing refund of ${refundAmount} to user ${userId}`);
+                
+                // ดึงข้อมูล Point ปัจจุบันของลูกค้า
+                const userPointRecords = await pb.collection("Point").getFullList({
+                    filter: `User_ID = "${userId}"`,
+                    sort: '-created'
+                });
+                
+                let currentPoints = 0;
+                if (userPointRecords.length > 0) {
+                    currentPoints = userPointRecords[0].Point || 0;
+                    
+                    // คืน Point
+                    const newPointBalance = currentPoints + refundAmount;
+                    await pb.collection("Point").update(userPointRecords[0].id, {
+                        Point: newPointBalance
+                    });
+                    
+                    console.log(`✅ Points refunded: ${currentPoints} + ${refundAmount} = ${newPointBalance}`);
+                } else {
+                    // ถ้าไม่มี Point record ให้สร้างใหม่
+                    await pb.collection("Point").create({
+                        User_ID: userId,
+                        Point: refundAmount
+                    });
+                    
+                    console.log(`✅ Points refunded (new record): ${refundAmount}`);
+                }
+                
+                // อัปเดตสถานะ Payment เป็น Refunded
+                try {
+                    console.log('🔄 Updating payment status to Refunded...');
+                    console.log('Payment record:', {
+                        id: payments[0].id,
+                        currentStatus: payments[0].status,
+                        method: payments[0].Method_Payment
+                    });
+                    
+                    const updatedPayment = await pb.collection("Payment").update(payments[0].id, {
+                        status: "Refunded"
+                    });
+                    console.log("✅ Payment status updated to Refunded:", updatedPayment);
+                } catch (paymentError) {
+                    console.error("❌ Failed to update Payment status:", paymentError);
+                    console.error("❌ Payment error details:", {
+                        paymentId: payments[0].id,
+                        error: paymentError?.message,
+                        data: paymentError?.data
+                    });
+                    // ไม่ throw error เพราะ Point คืนสำเร็จแล้ว
+                    // แค่แจ้งเตือนว่า Payment status ไม่ได้อัปเดต
+                    console.warn("⚠️ Payment status not updated, but refund completed");
+                }
+                
+                toast.success(`ยกเลิกออร์เดอร์สำเร็จ\nคืน ${refundAmount} Point ให้ลูกค้าแล้ว`);
+            } else {
+                // ไม่คืนเงิน (กรณีเงินสดหรือยังไม่ได้จ่าย)
+                console.log("⚠️ No refund needed (Cash payment or payment not successful)");
+                toast.success("ยกเลิกออร์เดอร์สำเร็จ");
+            }
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+            
         } catch (error) {
-            console.error("Error canceling order:", error);
-            toast.error("เกิดข้อผิดพลาดในการยกเลิกออร์เดอร์");
+            console.error("❌ Error canceling order:", error);
+            console.error("❌ Error details:", {
+                message: error?.message,
+                response: error?.response,
+                data: error?.data,
+                status: error?.status
+            });
+            
+            // แสดง error message ที่เฉพาะเจาะจง
+            let errorMessage = "เกิดข้อผิดพลาดในการยกเลิกออร์เดอร์";
+            if (error instanceof Error) {
+                errorMessage = error.message || errorMessage;
+            }
+            
+            // ถ้า error มี response หรือ data ให้แสดงด้วย
+            if (error?.data?.message) {
+                errorMessage = error.data.message;
+            }
+            
+            toast.error(errorMessage);
         }
     }
 
@@ -205,10 +454,18 @@
                                 </div>
                             {/if}
                             <div class="summary-row">
-                                <span>วิธีการชำระเงิน: QR Code</span>
+                                <span>วิธีการชำระเงิน: {paymentMethod}</span>
                             </div>
                             <div class="summary-row">
-                                <span>สถานะการชำระเงิน: <span class="status-paid">ชำระเงินแล้ว</span></span>
+                                <span>สถานะการชำระเงิน: 
+                                    {#if paymentStatus === 'Success'}
+                                        <span class="status-paid">ชำระเงินแล้ว ✓</span>
+                                    {:else if paymentStatus === 'Pending'}
+                                        <span class="status-pending">รอการชำระเงิน</span>
+                                    {:else}
+                                        <span class="status-unknown">{paymentStatus}</span>
+                                    {/if}
+                                </span>
                             </div>
                             <div class="summary-row total">
                                 <span>ราคารวม</span>
@@ -556,6 +813,16 @@
 
     .status-paid {
         color: #4caf50;
+        font-weight: 600;
+    }
+
+    .status-pending {
+        color: #ff9800;
+        font-weight: 600;
+    }
+
+    .status-unknown {
+        color: #999;
         font-weight: 600;
     }
 

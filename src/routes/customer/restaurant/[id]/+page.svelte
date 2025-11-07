@@ -16,6 +16,14 @@
 	// เช็คสถานะเปิด-ปิดร้าน
 	$: isRestaurantOpen = restaurant?.is_open ?? true;
 	
+	// เช็คว่าตะกร้ามีสินค้าจากร้านอื่นหรือไม่
+	$: hasItemsFromOtherRestaurant = $cart.items.length > 0 && 
+									 $cart.items[0].restaurantId !== restaurant.id;
+	
+	$: currentCartRestaurant = hasItemsFromOtherRestaurant 
+		? $cart.items[0].restaurantName 
+		: null;
+	
 	let isFavorite = data.isFavorite || false;
 	let isTogglingFavorite = false;
 	
@@ -221,6 +229,27 @@
 		</button>
 	</div>
 </div>
+
+<!-- Warning Banner for items from other restaurant -->
+{#if hasItemsFromOtherRestaurant}
+	<div class="warning-banner">
+		<div class="warning-content">
+			<span class="warning-icon">⚠️</span>
+			<div class="warning-text">
+				<strong>ตะกร้าของคุณมีสินค้าจาก "{currentCartRestaurant}"</strong>
+				<p>ไม่สามารถสั่งอาหารจากหลายร้านพร้อมกันได้ กรุณาชำระเงินหรือล้างตะกร้าก่อน</p>
+			</div>
+			<button class="btn-clear-cart" on:click={() => {
+				if (confirm(`ต้องการล้างสินค้าจาก "${currentCartRestaurant}" และสั่งจากร้านนี้ใช่หรือไม่?`)) {
+					cart.clear();
+					toast.success('ล้างตะกร้าแล้ว ตอนนี้คุณสามารถสั่งอาหารจากร้านนี้ได้');
+				}
+			}}>
+				ล้างตะกร้า
+			</button>
+		</div>
+	</div>
+{/if}
 
 <!-- Search Section -->
 <div class="search-section">
@@ -519,6 +548,94 @@
 	.clickable-rating:hover {
 		color: #ff6b35;
 		background: #f8f9fa;
+	}
+
+	/* Warning Banner Styles */
+	.warning-banner {
+		margin: 16px;
+		background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+		border-left: 4px solid #ff9800;
+		border-radius: 12px;
+		box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+		animation: slideDown 0.4s ease-out;
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.warning-content {
+		padding: 16px;
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.warning-icon {
+		font-size: 24px;
+		flex-shrink: 0;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.1);
+		}
+	}
+
+	.warning-text {
+		flex: 1;
+		font-family: 'Noto Sans Thai', sans-serif;
+	}
+
+	.warning-text strong {
+		display: block;
+		color: #d68910;
+		font-size: 1rem;
+		margin-bottom: 4px;
+		font-weight: 600;
+	}
+
+	.warning-text p {
+		margin: 0;
+		color: #856404;
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+
+	.btn-clear-cart {
+		background: #ff9800;
+		color: white;
+		border: none;
+		padding: 8px 16px;
+		border-radius: 8px;
+		font-weight: 600;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		white-space: nowrap;
+		font-family: 'Noto Sans Thai', sans-serif;
+		box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+	}
+
+	.btn-clear-cart:hover {
+		background: #f57c00;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+	}
+
+	.btn-clear-cart:active {
+		transform: translateY(0);
 	}
 	
 	.rating {

@@ -30,10 +30,10 @@
                 goto('/admin/manageUser');
                 break;
             case "manageRestaurant":
-                goto('/admin/restaurant');
+                goto('/admin/Restaurant');
                 break;
             case "addRestaurant":
-                goto('/admin/restaurant/AddRestaurant');
+                goto('/admin/Restaurant/AddRestaurant');
                 break;
             case "advertise":
                 goto('/admin/advertise');
@@ -64,7 +64,7 @@
     
     function handleViewRestaurant(id) {
         // Navigate to specific restaurant page
-        goto(`/admin/restaurant/${id}`);
+        goto(`/admin/Restaurant/${id}`);
     }
 </script>
 

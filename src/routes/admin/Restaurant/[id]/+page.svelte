@@ -42,197 +42,568 @@
     }
 
     function handlePrintReport() {
-        // Create a printable version of the restaurant report
+        // Create a professional printable version of the restaurant report
         const printWindow = window.open('', '_blank');
         const restaurant = data.restaurant;
         const totalSales = data.totalSales || 0;
         const analytics = data.analytics || {};
         const recentOrders = data.recentOrders || [];
         const popularMenus = data.popularMenus || [];
+        const menus = data.menus || [];
+        
+        // คำนวณข้อมูลเพิ่มเติม
+        const completedOrders = recentOrders.filter(o => o.Status === 'Completed').length;
+        const pendingOrders = recentOrders.filter(o => o.Status === 'Pending').length;
+        const canceledOrders = recentOrders.filter(o => o.Status === 'Canceled').length;
+        const avgOrderValue = completedOrders > 0 ? (totalSales / completedOrders) : 0;
+        
+        // วันที่ออกรายงาน
+        const reportDate = new Date();
+        const thaiDate = reportDate.toLocaleDateString('th-TH', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        const thaiTime = reportDate.toLocaleTimeString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
         
         const printContent = `
             <!DOCTYPE html>
-            <html>
+            <html lang="th">
             <head>
-                <title>Restaurant Report - ${restaurant.name}</title>
+                <title>รายงานข้อมูลร้านอาหาร - ${restaurant.name}</title>
                 <meta charset="UTF-8">
                 <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+                    
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
                     body { 
-                        font-family: 'Noto Sans Thai', Arial, sans-serif; 
-                        margin: 20px; 
+                        font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif; 
+                        line-height: 1.6;
                         color: #333;
+                        background: white;
                     }
-                    .header { 
-                        text-align: center; 
-                        border-bottom: 2px solid #FF8C00; 
-                        padding-bottom: 20px; 
+                    
+                    .page {
+                        max-width: 210mm;
+                        margin: 0 auto;
+                        padding: 20mm;
+                    }
+                    
+                    /* Header Styles */
+                    .report-header {
+                        text-align: center;
+                        padding-bottom: 20px;
                         margin-bottom: 30px;
+                        border-bottom: 3px solid #f97316;
                     }
-                    .restaurant-name { 
-                        color: #FF8C00; 
-                        font-size: 28px; 
-                        font-weight: bold; 
+                    
+                    .system-title {
+                        font-size: 14px;
+                        color: #666;
+                        font-weight: 400;
+                        margin-bottom: 5px;
                     }
+                    
+                    .report-title { 
+                        color: #f97316; 
+                        font-size: 32px; 
+                        font-weight: 700; 
+                        margin: 10px 0;
+                        letter-spacing: -0.5px;
+                    }
+                    
+                    .restaurant-name-header {
+                        font-size: 24px;
+                        color: #2d3748;
+                        font-weight: 600;
+                        margin-top: 10px;
+                    }
+                    
+                    .report-meta {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 15px;
+                        padding-top: 15px;
+                        border-top: 1px solid #e2e8f0;
+                        font-size: 13px;
+                        color: #718096;
+                    }
+                    
+                    /* Section Styles */
                     .section { 
-                        margin-bottom: 30px; 
+                        margin-bottom: 35px; 
                         page-break-inside: avoid;
+                        background: #fff7ed;
+                        padding: 20px;
+                        border-radius: 8px;
+                        border-left: 4px solid #f97316;
                     }
-                    .section h3 { 
-                        color: #FF8C00; 
-                        border-bottom: 1px solid #ddd; 
-                        padding-bottom: 5px;
+                    
+                    .section-title { 
+                        color: #2d3748; 
+                        font-size: 20px;
+                        font-weight: 600;
+                        margin-bottom: 20px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
                     }
+                    
+                    .section-icon {
+                        width: 32px;
+                        height: 32px;
+                        background: #f97316;
+                        color: white;
+                        border-radius: 6px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 18px;
+                    }
+                    
+                    /* Info Grid */
                     .info-grid { 
                         display: grid; 
-                        grid-template-columns: 1fr 1fr; 
+                        grid-template-columns: repeat(2, 1fr); 
                         gap: 20px; 
-                        margin-bottom: 20px;
+                        background: white;
+                        padding: 20px;
+                        border-radius: 6px;
                     }
+                    
                     .info-item { 
-                        margin-bottom: 10px; 
+                        padding: 12px 0;
+                        border-bottom: 1px solid #e2e8f0;
                     }
+                    
+                    .info-item:last-child {
+                        border-bottom: none;
+                    }
+                    
                     .info-label { 
-                        font-weight: bold; 
-                        color: #666; 
+                        font-weight: 600; 
+                        color: #4a5568;
+                        display: block;
+                        margin-bottom: 5px;
+                        font-size: 13px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
                     }
+                    
+                    .info-value {
+                        color: #2d3748;
+                        font-size: 15px;
+                    }
+                    
+                    /* Analytics Cards */
                     .analytics-grid { 
                         display: grid; 
                         grid-template-columns: repeat(4, 1fr); 
                         gap: 15px; 
-                        margin-bottom: 20px;
                     }
+                    
                     .analytics-card { 
-                        border: 1px solid #ddd; 
-                        padding: 15px; 
+                        background: white;
+                        padding: 20px; 
                         text-align: center; 
                         border-radius: 8px;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                     }
+                    
+                    .analytics-label {
+                        font-size: 13px;
+                        color: #718096;
+                        margin-bottom: 10px;
+                        font-weight: 500;
+                    }
+                    
                     .analytics-value { 
-                        font-size: 24px; 
-                        font-weight: bold; 
-                        color: #FF8C00; 
+                        font-size: 28px; 
+                        font-weight: 700; 
+                        color: #f97316;
+                        display: block;
                     }
-                    .order-item, .menu-item { 
-                        border: 1px solid #eee; 
-                        padding: 10px; 
-                        margin-bottom: 10px; 
-                        border-radius: 5px;
+                    
+                    .analytics-subtext {
+                        font-size: 12px;
+                        color: #a0aec0;
+                        margin-top: 5px;
                     }
-                    .print-date { 
-                        text-align: right; 
-                        color: #666; 
-                        font-size: 12px; 
-                        margin-top: 30px;
+                    
+                    /* Table Styles */
+                    .data-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        background: white;
+                        border-radius: 6px;
+                        overflow: hidden;
                     }
+                    
+                    .data-table thead {
+                        background: #f97316;
+                        color: white;
+                    }
+                    
+                    .data-table th {
+                        padding: 12px;
+                        text-align: left;
+                        font-weight: 600;
+                        font-size: 14px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    
+                    .data-table td {
+                        padding: 12px;
+                        border-bottom: 1px solid #e2e8f0;
+                        font-size: 14px;
+                    }
+                    
+                    .data-table tbody tr:hover {
+                        background: #f7fafc;
+                    }
+                    
+                    .data-table tbody tr:last-child td {
+                        border-bottom: none;
+                    }
+                    
+                    /* Status Badge */
+                    .status-badge {
+                        display: inline-block;
+                        padding: 4px 12px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        font-weight: 600;
+                    }
+                    
+                    .status-completed {
+                        background: #c6f6d5;
+                        color: #22543d;
+                    }
+                    
+                    .status-pending {
+                        background: #fed7aa;
+                        color: #9a3412;
+                    }
+                    
+                    .status-canceled {
+                        background: #fed7d7;
+                        color: #742a2a;
+                    }
+                    
+                    /* Menu Item Card */
+                    .menu-list {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 15px;
+                    }
+                    
+                    .menu-card {
+                        background: white;
+                        padding: 15px;
+                        border-radius: 6px;
+                        border: 1px solid #e2e8f0;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    
+                    .menu-info {
+                        flex: 1;
+                    }
+                    
+                    .menu-name {
+                        font-weight: 600;
+                        color: #2d3748;
+                        margin-bottom: 5px;
+                    }
+                    
+                    .menu-details {
+                        font-size: 13px;
+                        color: #718096;
+                    }
+                    
+                    .menu-orders {
+                        background: #f97316;
+                        color: white;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        font-weight: 600;
+                        text-align: center;
+                        min-width: 80px;
+                    }
+                    
+                    /* Footer */
+                    .report-footer {
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #e2e8f0;
+                        text-align: center;
+                    }
+                    
+                    .footer-text {
+                        color: #718096;
+                        font-size: 13px;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .signature-section {
+                        margin-top: 60px;
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 40px;
+                    }
+                    
+                    .signature-box {
+                        text-align: center;
+                    }
+                    
+                    .signature-line {
+                        border-top: 1px solid #2d3748;
+                        margin: 60px auto 10px;
+                        width: 200px;
+                    }
+                    
+                    .signature-label {
+                        font-size: 14px;
+                        color: #4a5568;
+                    }
+                    
+                    /* Print Styles */
                     @media print {
-                        body { margin: 0; }
-                        .section { page-break-inside: avoid; }
+                        body { 
+                            margin: 0;
+                            background: white;
+                        }
+                        .page {
+                            margin: 0;
+                            padding: 15mm;
+                        }
+                        .section { 
+                            page-break-inside: avoid;
+                        }
+                        .analytics-grid {
+                            page-break-inside: avoid;
+                        }
+                    }
+                    
+                    @page {
+                        size: A4;
+                        margin: 0;
                     }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <div class="restaurant-name">${restaurant.name}</div>
-                    <div>Restaurant Detail Report</div>
-                </div>
-
-                <div class="section">
-                    <h3>Basic Information</h3>
-                    <div class="info-grid">
-                        <div>
-                            <div class="info-item">
-                                <span class="info-label">Restaurant ID:</span> ${restaurant.id}
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Type:</span> ${restaurant.Type_Shop || 'N/A'}
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Phone:</span> ${restaurant.Phone || 'N/A'}
-                            </div>
+                <div class="page">
+                    <!-- Report Header -->
+                    <div class="report-header">
+                        <div class="system-title">ระบบจัดการร้านอาหาร SCQ (Student Canteen Queue)</div>
+                        <div class="report-title">รายงานข้อมูลร้านอาหาร</div>
+                        <div class="restaurant-name-header">${restaurant.name}</div>
+                        <div class="report-meta">
+                            <div>รหัสร้าน: ${restaurant.id}</div>
+                            <div>วันที่ออกรายงาน: ${thaiDate} เวลา ${thaiTime} น.</div>
                         </div>
-                        <div>
+                    </div>
+
+                    <!-- Section 1: ข้อมูลพื้นฐาน -->
+                    <div class="section">
+                        <div class="section-title">
+                            <div class="section-icon">📋</div>
+                            <span>ข้อมูลพื้นฐานร้านอาหาร</span>
+                        </div>
+                        <div class="info-grid">
                             <div class="info-item">
-                                <span class="info-label">Address:</span> ${restaurant.Addr || 'N/A'}
+                                <span class="info-label">ชื่อร้าน</span>
+                                <span class="info-value">${restaurant.name}</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">Created:</span> ${new Date(restaurant.created).toLocaleDateString('en-US', { 
+                                <span class="info-label">ประเภทร้าน</span>
+                                <span class="info-value">${restaurant.Type_Shop || 'ไม่ระบุ'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">เบอร์โทรศัพท์</span>
+                                <span class="info-value">${restaurant.Phone || 'ไม่ระบุ'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">วันที่ลงทะเบียน</span>
+                                <span class="info-value">${new Date(restaurant.created).toLocaleDateString('th-TH', { 
+                                    day: 'numeric',
                                     month: 'long', 
-                                    day: 'numeric', 
                                     year: 'numeric'
-                                })}
+                                })}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <span class="info-label">ที่อยู่</span>
+                                <span class="info-value">${restaurant.Addr || 'ไม่ระบุ'}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <span class="info-label">รายละเอียด</span>
+                                <span class="info-value">${restaurant.Details || 'ไม่มีรายละเอียด'}</span>
                             </div>
                         </div>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Description:</span> ${restaurant.Details || 'No description provided'}
-                    </div>
-                </div>
 
-                <div class="section">
-                    <h3>Analytics Overview</h3>
-                    <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <div>Total Sales</div>
-                            <div class="analytics-value">฿${totalSales.toLocaleString()}</div>
+                    <!-- Section 2: สรุปผลการดำเนินงาน -->
+                    <div class="section">
+                        <div class="section-title">
+                            <div class="section-icon">📊</div>
+                            <span>สรุปผลการดำเนินงาน</span>
                         </div>
-                        <div class="analytics-card">
-                            <div>Total Orders</div>
-                            <div class="analytics-value">${analytics.totalOrders || 0}</div>
-                        </div>
-                        <div class="analytics-card">
-                            <div>Completed Orders</div>
-                            <div class="analytics-value">${analytics.completedOrders || 0}</div>
-                        </div>
-                        <div class="analytics-card">
-                            <div>Total Menus</div>
-                            <div class="analytics-value">${data.menus?.length || 0}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h3>Recent Orders</h3>
-                    ${recentOrders.length > 0 ? 
-                        recentOrders.slice(0, 10).map(order => `
-                            <div class="order-item">
-                                <strong>Order #${order.id.slice(-8)}</strong> - 
-                                Status: ${order.Status} - 
-                                Amount: ฿${order.Total_Amount?.toLocaleString() || '0'} - 
-                                Date: ${new Date(order.created).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric', 
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <div class="analytics-label">ยอดขายรวม</div>
+                                <span class="analytics-value">฿${totalSales.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <div class="analytics-subtext">จากคำสั่งซื้อที่ชำระแล้ว</div>
                             </div>
-                        `).join('') : 
-                        '<p>No recent orders</p>'
-                    }
-                </div>
-
-                <div class="section">
-                    <h3>Popular Menus</h3>
-                    ${popularMenus.length > 0 ? 
-                        popularMenus.map(menu => `
-                            <div class="menu-item">
-                                <strong>${menu.menuName}</strong> - 
-                                Orders: ${menu.totalOrdered} - 
-                                ${menu.price ? `Price: ฿${menu.price}` : 'Price: N/A'}
+                            <div class="analytics-card">
+                                <div class="analytics-label">ค่าเฉลี่ยต่อออเดอร์</div>
+                                <span class="analytics-value">฿${avgOrderValue.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <div class="analytics-subtext">Average Order Value</div>
                             </div>
-                        `).join('') : 
-                        '<p>No popular menus data</p>'
-                    }
-                </div>
+                            <div class="analytics-card">
+                                <div class="analytics-label">จำนวนเมนู</div>
+                                <span class="analytics-value">${menus.length}</span>
+                                <div class="analytics-subtext">เมนูทั้งหมดในระบบ</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-label">คำสั่งซื้อสำเร็จ</div>
+                                <span class="analytics-value">${completedOrders}</span>
+                                <div class="analytics-subtext">Completed Orders</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="print-date">
-                    Report generated on: ${new Date().toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}
+                    <!-- Section 3: สถิติคำสั่งซื้อ -->
+                    <div class="section">
+                        <div class="section-title">
+                            <div class="section-icon">📈</div>
+                            <span>สถิติคำสั่งซื้อ</span>
+                        </div>
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <div class="analytics-label">รอดำเนินการ</div>
+                                <span class="analytics-value" style="color: #f59e0b;">${pendingOrders}</span>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-label">สำเร็จแล้ว</div>
+                                <span class="analytics-value" style="color: #10b981;">${completedOrders}</span>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-label">ยกเลิก</div>
+                                <span class="analytics-value" style="color: #ef4444;">${canceledOrders}</span>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-label">ทั้งหมด</div>
+                                <span class="analytics-value">${recentOrders.length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: เมนูยอดนิยม -->
+                    <div class="section">
+                        <div class="section-title">
+                            <div class="section-icon">⭐</div>
+                            <span>เมนูยอดนิยม (Top 10)</span>
+                        </div>
+                        ${popularMenus.length > 0 ? `
+                            <div class="menu-list">
+                                ${popularMenus.slice(0, 10).map((menu, index) => `
+                                    <div class="menu-card">
+                                        <div class="menu-info">
+                                            <div class="menu-name">${index + 1}. ${menu.menuName}</div>
+                                            <div class="menu-details">
+                                                ราคา: ฿${menu.price ? menu.price.toLocaleString('th-TH') : 'N/A'}
+                                            </div>
+                                        </div>
+                                        <div class="menu-orders">
+                                            <div style="font-size: 11px; opacity: 0.9;">สั่งซื้อ</div>
+                                            <div style="font-size: 20px;">${menu.totalOrdered}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p style="text-align: center; color: #718096;">ยังไม่มีข้อมูลเมนูยอดนิยม</p>'}
+                    </div>
+
+                    <!-- Section 5: รายการคำสั่งซื้อล่าสุด -->
+                    <div class="section">
+                        <div class="section-title">
+                            <div class="section-icon">🛒</div>
+                            <span>รายการคำสั่งซื้อล่าสุด (10 รายการ)</span>
+                        </div>
+                        ${recentOrders.length > 0 ? `
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>รหัสออเดอร์</th>
+                                        <th>วันที่</th>
+                                        <th>สถานะ</th>
+                                        <th style="text-align: right;">ยอดเงิน</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${recentOrders.slice(0, 10).map(order => `
+                                        <tr>
+                                            <td><strong>#${order.id.slice(-8)}</strong></td>
+                                            <td>${new Date(order.created).toLocaleDateString('th-TH', { 
+                                                day: 'numeric',
+                                                month: 'short', 
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}</td>
+                                            <td>
+                                                <span class="status-badge status-${order.Status.toLowerCase()}">
+                                                    ${order.Status === 'Completed' ? 'สำเร็จ' : 
+                                                      order.Status === 'Pending' ? 'รอดำเนินการ' : 
+                                                      order.Status === 'Canceled' ? 'ยกเลิก' : order.Status}
+                                                </span>
+                                            </td>
+                                            <td style="text-align: right; font-weight: 600;">
+                                                ฿${(order.Total_Amount || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        ` : '<p style="text-align: center; color: #718096;">ยังไม่มีรายการคำสั่งซื้อ</p>'}
+                    </div>
+
+                    <!-- Report Footer -->
+                    <div class="report-footer">
+                        <div class="footer-text">
+                            รายงานนี้ออกโดยระบบ SCQ (Student Canteen Queue) เพื่อใช้เป็นข้อมูลในการวิเคราะห์และพัฒนาธุรกิจ
+                        </div>
+                        <div class="footer-text">
+                            หากพบข้อผิดพลาดหรือมีข้อสงสัย กรุณาติดต่อฝ่ายบริหารระบบ
+                        </div>
+                        
+                        <div class="signature-section">
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">ผู้จัดทำรายงาน</div>
+                                <div class="signature-label" style="font-size: 12px; color: #a0aec0; margin-top: 5px;">
+                                    (ระบบ SCQ)
+                                </div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">ผู้รับรายงาน / เจ้าของร้าน</div>
+                                <div class="signature-label" style="font-size: 12px; color: #a0aec0; margin-top: 5px;">
+                                    (ลงชื่อ)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </body>
             </html>
@@ -289,7 +660,7 @@
                             <p class="restaurant-type">{data.restaurant.Type_Shop}</p>
                         </div>
                         <div class="detail-actions">
-                            <button class="btn-edit" on:click={() => goto(`/admin/restaurant/${data.restaurant.id}/edit`)}>
+                            <button class="btn-edit" on:click={() => goto(`/admin/Restaurant/${data.restaurant.id}/edit`)}>
                                 <span class="material-symbols-outlined">edit</span>
                                 Edit
                             </button>
@@ -480,7 +851,7 @@
                 <!-- Action Buttons - Separate Card -->
                 <div class="detail-card">
                     <div class="detail-footer">
-                        <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
+                        <button class="btn-back" on:click={() => goto('/admin/Restaurant/')}>
                             <span class="material-symbols-outlined">arrow_back</span>
                             Back to Restaurants
                         </button>
@@ -512,7 +883,7 @@
                     <h3>Restaurant Not Found</h3>
                     <p>The restaurant you're looking for doesn't exist or has been removed.</p>
                     
-                    <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
+                    <button class="btn-back" on:click={() => goto('/admin/Restaurant/')}>
                         <span class="material-symbols-outlined">arrow_back</span>
                         Back to Restaurants
                     </button>

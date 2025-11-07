@@ -27,8 +27,13 @@ export const load: PageServerLoad = async ({ cookies }) => {
         });
 
         // Get shops list for reference
-        const shops = await pb.collection('Shop').getFullList({
+        const allShops = await pb.collection('Shop').getFullList({
             sort: 'name'
+        });
+        
+        // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน SCQ
+        const shops = allShops.filter((shop: any) => {
+            return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]') && !shop.name?.startsWith('[SYSTEM]');
         });
 
         // Calculate statistics (using correct field name 'status')

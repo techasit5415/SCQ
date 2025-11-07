@@ -35,7 +35,8 @@
 			return;
 		}
 		
-		cart.addItem({
+		// เพิ่มสินค้าลงตะกร้าและรับ result
+		const result = cart.addItem({
 			id: menuItem.id,
 			name: menuItem.name,
 			price: actualPrice,
@@ -46,8 +47,15 @@
 			restaurantName
 		});
 		
-		// Show feedback
-		toast.success(`เพิ่ม ${menuItem.name} ลงตะกร้าแล้ว`);
+		// แสดง feedback ตาม result
+		if (result.success) {
+			toast.success(result.message);
+		} else {
+			toast.error(result.message, {
+				duration: 5000,
+				description: 'ต้องการล้างตะกร้าและสั่งจากร้านนี้ใช่หรือไม่?'
+			});
+		}
 	}
 </script>
 
