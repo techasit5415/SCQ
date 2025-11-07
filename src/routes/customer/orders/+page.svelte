@@ -705,18 +705,22 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		width: 100%;
-		padding: 10px;
+		max-width: 100%;
+		padding: 8px 12px;
 		background: linear-gradient(135deg, #ffd700, #ff8c00);
 		color: white;
 		border: none;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		font-weight: 600;
 		cursor: pointer;
 		font-family: 'Noto Sans Thai', sans-serif;
 		transition: all 0.2s ease;
 		margin-top: 8px;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	
 	.review-btn:hover {
