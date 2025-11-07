@@ -5,12 +5,16 @@
 	import MenuCard from '$lib/Components/customer/MenuCard.svelte';
 	import { cart } from '$lib/stores/cart';
 	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
 	
 	export let data;
 	export let form;
 	
 	const pbUrl = PUBLIC_POCKETBASE_URL;
 	const { restaurant, menuItems, reviews, averageRating, totalReviews } = data;
+	
+	// เช็คสถานะเปิด-ปิดร้าน
+	$: isRestaurantOpen = restaurant?.is_open ?? true;
 	
 	let isFavorite = data.isFavorite || false;
 	let isTogglingFavorite = false;
@@ -29,7 +33,7 @@
 		if (isTogglingFavorite) return;
 		
 		isTogglingFavorite = true;
-		console.log('Toggling favorite...');
+		console.log('Toggling favorite... Current state:', isFavorite);
 		
 		try {
 			const formData = new FormData();
@@ -39,19 +43,72 @@
 			});
 			
 			const result = await response.json();
-			console.log('Toggle result:', result);
+			console.log('Toggle result:', JSON.stringify(result, null, 2));
 			
-			if (result.type === 'success' && result.data?.success) {
-				isFavorite = result.data.isFavorite;
-				alert(result.data.message || (isFavorite ? 'เพิ่มเข้ารายการโปรดแล้ว' : 'ลบออกจากรายการโปรดแล้ว'));
+			// เช็คทั้ง success และ failure
+			if (result.type === 'success') {
+				console.log('✅ Success response data:', result.data);
+				
+				// Parse data ถ้าเป็น string
+				let data = result.data;
+				if (typeof data === 'string') {
+					try {
+						data = JSON.parse(data);
+						console.log('📦 Parsed data:', data);
+					} catch (e) {
+						console.error('Failed to parse data:', e);
+					}
+				}
+				
+				// data อาจเป็น array format: [{success, isFavorite, message}, actualSuccess, actualIsFavorite, actualMessage]
+				let actualData = data;
+				if (Array.isArray(data) && data.length > 0) {
+					// ถ้า element แรกเป็น object ให้ใช้มัน
+					if (typeof data[0] === 'object' && data[0] !== null) {
+						actualData = data[0];
+					}
+					// หา boolean ที่แทน isFavorite state
+					// เมื่อเพิ่ม: data = [{...}, true, "message"] -> ใช้ data[1]
+					// เมื่อลบ: data = [{...}, true, false, "message"] -> ใช้ data[2]
+					let newFavoriteState = null;
+					for (let i = 1; i < data.length; i++) {
+						if (typeof data[i] === 'boolean') {
+							// เก็บ boolean ตัวสุดท้ายที่เจอ (เพราะตอน unfavorite มี 2 ตัว)
+							newFavoriteState = data[i];
+							console.log(`🔍 Found boolean at index ${i}:`, data[i]);
+						}
+					}
+					
+					if (newFavoriteState !== null) {
+						console.log('🔄 Using boolean as isFavorite:', newFavoriteState);
+						isFavorite = newFavoriteState;
+						console.log('✅ Updated to:', isFavorite);
+						return; // Exit early
+					}
+				}
+				
+				// Fallback: ลองใช้ค่าจาก object
+				if (actualData?.success !== undefined && actualData?.isFavorite !== undefined) {
+					const newState = actualData.isFavorite;
+					console.log('🔄 Updating isFavorite from', isFavorite, 'to', newState);
+					isFavorite = newState;
+					console.log('✅ Favorite toggled:', actualData.message, '| New state:', isFavorite);
+				} else {
+					console.warn('⚠️ Could not find isFavorite in data:', actualData);
+				}
+			} else if (result.type === 'failure') {
+				console.error('❌ Failure:', result.data?.error);
+				toast.error(result.data?.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
 			} else {
-				alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+				console.error('❌ Unknown result type:', result.type);
+				toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
 			}
 		} catch (error) {
-			console.error('Error toggling favorite:', error);
-			alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+			console.error('❌ Error toggling favorite:', error);
+			toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
 		} finally {
 			isTogglingFavorite = false;
+			console.log('🏁 Toggle complete. Final state:', isFavorite);
 		}
 	}
 	
@@ -128,7 +185,13 @@
 </div>
 
 <!-- Restaurant Info Card -->
-<div class="restaurant-info-card">
+<div class="restaurant-info-card" class:closed={!isRestaurantOpen}>
+	{#if !isRestaurantOpen}
+		<div class="closed-overlay">
+			<span class="closed-icon">🔒</span>
+			<span class="closed-text">ร้านปิดทำการ</span>
+		</div>
+	{/if}
 	<h1>{restaurant.name}</h1>
 	<div class="rating-info">
 		<div class="stars">
@@ -182,6 +245,7 @@
 					{menuItem} 
 					restaurantId={restaurant.id}
 					restaurantName={restaurant.name}
+					isRestaurantOpen={isRestaurantOpen}
 				/>
 			{/each}
 		</div>
@@ -351,6 +415,37 @@
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 		position: relative;
 		z-index: 5;
+	}
+	
+	.restaurant-info-card.closed {
+		filter: grayscale(100%);
+		opacity: 0.8;
+	}
+	
+	.closed-overlay {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background: rgba(0, 0, 0, 0.85);
+		color: white;
+		padding: 8px 16px;
+		border-radius: 20px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 14px;
+		font-weight: 600;
+		z-index: 10;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	}
+	
+	.closed-icon {
+		font-size: 16px;
+	}
+	
+	.closed-text {
+		font-size: 13px;
+		letter-spacing: 0.5px;
 	}
 	
 	.restaurant-info-card h1 {

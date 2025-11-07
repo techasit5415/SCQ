@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types';
 import PocketBase from 'pocketbase';
-
-const PB_URL = 'http://10.1.1.113:8080';
+import { env } from '$env/dynamic/public';
 
 export const load: PageServerLoad = async ({ locals }) => {
     try {
@@ -33,7 +32,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             for (let i = 0; i < favoriteShops.length; i++) {
                 try {
                     // สร้าง PocketBase instance ใหม่สำหรับแต่ละ request
-                    const queuePb = new PocketBase(PB_URL);
+                    const queuePb = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
                     
                     // นับ Order ที่มี Status = "Pending" หรือ "In-progress" สำหรับร้านนี้
                     const queueCount = await queuePb.collection('Order').getList(1, 1, {

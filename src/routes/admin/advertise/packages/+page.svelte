@@ -55,7 +55,7 @@
     
     function handleViewRestaurant(event) {
         const restaurantId = event.detail;
-        goto(`/admin/Restaurant/${restaurantId}`);
+        goto(`/admin/restaurant/${restaurantId}`);
     }
     
     async function handleLogout() {

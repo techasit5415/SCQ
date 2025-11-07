@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import { cart } from '$lib/stores/cart';
+	import { toast } from 'svelte-sonner';
 
 	export let menuItem: {
 		id: string;
@@ -9,10 +10,15 @@
 		Photo?: string;
 		Details?: string;
 		category?: string;
+		Available?: boolean;
 	};
 
 	export let restaurantId: string;
 	export let restaurantName: string;
+	export let isRestaurantOpen: boolean = true;
+
+	// เช็คว่าเมนูพร้อมขายหรือไม่
+	$: isAvailable = (menuItem.Available ?? true) && isRestaurantOpen;
 
 	// ใช้ reactive statement เพื่อให้ URL อัปเดตเมื่อ menuItem เปลี่ยน
 	$: imageUrl = menuItem.Photo 
@@ -20,6 +26,11 @@
 		: '/Photo/Icon.png';
 
 	function handleAddToCart() {
+		if (!isAvailable) {
+			toast.warning(isRestaurantOpen ? 'เมนูนี้ไม่พร้อมขายในขณะนี้' : 'ร้านปิดทำการ');
+			return;
+		}
+		
 		cart.addItem({
 			id: menuItem.id,
 			name: menuItem.name,
@@ -32,12 +43,18 @@
 		});
 		
 		// Show feedback
-		console.log('เพิ่ม', menuItem.name, 'ลงตะกร้าแล้ว');
+		toast.success(`เพิ่ม ${menuItem.name} ลงตะกร้าแล้ว`);
 	}
 </script>
 
-<div class="menu-card">
-	<div class="menu-image">
+<div class="menu-card" class:unavailable={!isAvailable}>
+	{#if !isAvailable}
+		<div class="unavailable-overlay">
+			<span class="unavailable-icon">🚫</span>
+			<span class="unavailable-text">{isRestaurantOpen ? 'ไม่พร้อมขาย' : 'ร้านปิด'}</span>
+		</div>
+	{/if}
+	<div class="menu-image" class:grayscale={!isAvailable}>
 		<img src={imageUrl} alt={menuItem.name || 'เมนูอาหาร'} loading="lazy" />
 	</div>
 	<div class="menu-content">
@@ -53,9 +70,10 @@
 			<button 
 				class="add-btn"
 				on:click={handleAddToCart}
+				disabled={!isAvailable}
 				aria-label="เพิ่ม {menuItem.name} ลงตะกร้า"
 			>
-				เพิ่ม
+				{isAvailable ? 'เพิ่ม' : 'ไม่พร้อมขาย'}
 			</button>
 		</div>
 	</div>
@@ -71,11 +89,43 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		cursor: pointer;
 		transition: all 0.3s ease;
+		position: relative;
 	}
 
-	.menu-card:hover {
+	.menu-card.unavailable {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.menu-card:not(.unavailable):hover {
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 		transform: translateY(-2px);
+	}
+
+	.unavailable-overlay {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		background: rgba(0, 0, 0, 0.85);
+		color: white;
+		padding: 4px 10px;
+		border-radius: 12px;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11px;
+		font-weight: 600;
+		z-index: 10;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	}
+
+	.unavailable-icon {
+		font-size: 12px;
+	}
+
+	.unavailable-text {
+		font-size: 10px;
+		letter-spacing: 0.3px;
 	}
 
 	.menu-image {
@@ -87,6 +137,11 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
+		transition: filter 0.3s ease;
+	}
+
+	.menu-image.grayscale {
+		filter: grayscale(100%);
 	}
 
 	.menu-image img {
@@ -159,13 +214,19 @@
 		transition: all 0.2s ease;
 	}
 
-	.add-btn:hover {
+	.add-btn:hover:not(:disabled) {
 		background: #e55a2b;
 		transform: scale(1.02);
 	}
 
-	.add-btn:active {
+	.add-btn:active:not(:disabled) {
 		transform: scale(0.98);
+	}
+
+	.add-btn:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+		opacity: 0.6;
 	}
 
 	/* Keyboard accessibility */

@@ -1,6 +1,7 @@
 <script>
 	import '../app.css';
 	import ToastContainer from '$lib/Components/ToastContainer.svelte';
+	import { Toaster } from 'svelte-sonner';
 	import { onMount, onDestroy } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { startNotificationPolling, stopNotificationPolling } from '$lib/stores/notifications';
@@ -36,6 +37,7 @@
 </script>
 
 <ToastContainer />
+<Toaster position="top-center" richColors />
 <slot />
 
 <style>

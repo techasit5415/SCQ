@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import PocketBase from "pocketbase";
   import { PUBLIC_POCKETBASE_URL, PUBLIC_POCKETBASE_OAUTH_URL } from "$env/static/public";
+  import { toast } from 'svelte-sonner';
   import type { PageData } from './$types';
   
   export let data: PageData;
@@ -18,7 +19,7 @@
   let isOAuthLoading = false;
 
   $: if (form?.error) {
-    alert(form.error);
+    toast.error(form.error);
     isSubmitting = false;
   }
 
@@ -103,7 +104,7 @@
       
     } catch (error) {
       console.error('❌ OAuth login failed:', error);
-      alert('เข้าสู่ระบบด้วย OAuth ไม่สำเร็จ');
+      toast.error('เข้าสู่ระบบด้วย OAuth ไม่สำเร็จ');
       isOAuthLoading = false;
     }
   }

@@ -4,6 +4,7 @@
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
     import PocketBase from "pocketbase";
     import { PUBLIC_POCKETBASE_URL } from "$env/static/public";
+    import { toast } from 'svelte-sonner';
 
     export let data;
 
@@ -54,7 +55,7 @@
             window.location.reload();
         } catch (error) {
             console.error("Error completing order:", error);
-            alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+            toast.error("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
         }
     }
 
@@ -71,7 +72,7 @@
             window.location.reload();
         } catch (error) {
             console.error("Error canceling order:", error);
-            alert("เกิดข้อผิดพลาดในการยกเลิกออร์เดอร์");
+            toast.error("เกิดข้อผิดพลาดในการยกเลิกออร์เดอร์");
         }
     }
 

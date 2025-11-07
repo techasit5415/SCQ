@@ -7,7 +7,7 @@
     import RestaurantSidebar from "$lib/Components/restaurant/RestaurantSidebar.svelte";
     import PocketBase from "pocketbase";
 
-    const pb = new PocketBase("http://10.1.1.113:8080");
+    const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
     const pbUrl = PUBLIC_POCKETBASE_URL;
 
     export let data;

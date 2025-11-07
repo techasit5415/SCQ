@@ -33,15 +33,41 @@ export const load: PageServerLoad = async ({ cookies }) => {
                 
                 console.log(`  ✅ ${restaurant.Name}: ${queueOrders.length} orders in queue`);
                 
+                // ดึงรีวิวของร้านนี้
+                let reviews: any[] = [];
+                let averageRating = 0;
+                let totalReviews = 0;
+                
+                try {
+                    const pbReview = new PocketBase(env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080');
+                    reviews = await pbReview.collection('Review').getFullList({
+                        filter: `Shop_ID = "${restaurant.id}"`,
+                        $autoCancel: false
+                    });
+                    
+                    if (reviews.length > 0) {
+                        const totalStars = reviews.reduce((sum, review) => sum + (review.Star || 0), 0);
+                        averageRating = Math.round((totalStars / reviews.length) * 10) / 10;
+                        totalReviews = reviews.length;
+                        console.log(`  ⭐ ${restaurant.Name}: ${averageRating} stars from ${totalReviews} reviews`);
+                    }
+                } catch (reviewError) {
+                    console.error(`  ❌ Error loading reviews for ${restaurant.Name}:`, reviewError);
+                }
+                
                 restaurantsWithQueue.push({
                     ...restaurant,
-                    queueCount: queueOrders.length
+                    queueCount: queueOrders.length,
+                    rating: averageRating || 0,
+                    review_count: totalReviews
                 });
             } catch (queueError: any) {
                 console.error(`  ❌ Error counting queue for ${restaurant.Name}:`, queueError?.message);
                 restaurantsWithQueue.push({
                     ...restaurant,
-                    queueCount: 0
+                    queueCount: 0,
+                    rating: 0,
+                    review_count: 0
                 });
             }
         }

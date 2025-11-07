@@ -44,7 +44,8 @@
 		"it": "^1.1.1",
 		"mariadb": "^3.4.4",
 		"mysql2": "^3.14.2",
-		"pocketbase": "^0.26.2"
+		"pocketbase": "^0.26.2",
+		"svelte-sonner": "^1.0.5"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^6.0.0",

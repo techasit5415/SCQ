@@ -289,7 +289,7 @@
                             <p class="restaurant-type">{data.restaurant.Type_Shop}</p>
                         </div>
                         <div class="detail-actions">
-                            <button class="btn-edit" on:click={() => goto(`/admin/Restaurant/${data.restaurant.id}/edit`)}>
+                            <button class="btn-edit" on:click={() => goto(`/admin/restaurant/${data.restaurant.id}/edit`)}>
                                 <span class="material-symbols-outlined">edit</span>
                                 Edit
                             </button>
@@ -480,7 +480,7 @@
                 <!-- Action Buttons - Separate Card -->
                 <div class="detail-card">
                     <div class="detail-footer">
-                        <button class="btn-back" on:click={() => goto('/admin/Restaurant/')}>
+                        <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
                             <span class="material-symbols-outlined">arrow_back</span>
                             Back to Restaurants
                         </button>
@@ -512,7 +512,7 @@
                     <h3>Restaurant Not Found</h3>
                     <p>The restaurant you're looking for doesn't exist or has been removed.</p>
                     
-                    <button class="btn-back" on:click={() => goto('/admin/Restaurant/')}>
+                    <button class="btn-back" on:click={() => goto('/admin/restaurant/')}>
                         <span class="material-symbols-outlined">arrow_back</span>
                         Back to Restaurants
                     </button>

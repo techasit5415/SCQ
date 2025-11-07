@@ -4,6 +4,7 @@
 	import { cart } from '$lib/stores/cart';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { toast } from 'svelte-sonner';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -192,14 +193,14 @@
 				return async ({ result }) => {
 					console.log('📝 Form result:', result);
 					if (result.type === 'success') {
-						alert('สั่งอาหารเรียบร้อยแล้ว!');
+						toast.success('สั่งอาหารเรียบร้อยแล้ว!');
 						cart.clear();
 						goto('/customer');
 					} else {
 						console.error('❌ Form error:', result);
 						console.error('❌ Error details:', result.data?.details);
 						const errorMsg = result.data?.details || result.data?.error || 'ไม่สามารถสร้างคำสั่งซื้อได้';
-						alert('เกิดข้อผิดพลาด: ' + errorMsg);
+						toast.error('เกิดข้อผิดพลาด: ' + errorMsg);
 					}
 					isSubmitting = false;
 				};

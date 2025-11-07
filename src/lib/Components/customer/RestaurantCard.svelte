@@ -70,16 +70,19 @@
     }
     
     // Calculate rating display
-    $: rating = restaurant.rating || 3.5; // Default rating
-    $: reviewCount = restaurant.review_count || Math.floor(Math.random() * 200) + 50; // Mock review count
-    $: deliveryTime = restaurant.delivery_time || '15-30';
+    $: rating = restaurant.rating ?? 0;
+    $: reviewCount = restaurant.review_count ?? 0;
+    // $: deliveryTime = restaurant.delivery_time || '15-30';
     // ใช้จำนวนคิวจริงจาก restaurant.queueCount (ถ้ามี) หรือ 0
     $: QueueM = restaurant.queueCount ?? 0;
+    
+    // เช็คสถานะเปิด-ปิดร้าน (ใช้ field is_open จาก Shop collection)
+    $: isOpen = restaurant.is_open ?? true;
     
     // Debug queue count
     $: if (restaurant.Name || restaurant.name) {
         const shopName = restaurant.Name || restaurant.name;
-        console.log(`🏪 ${shopName}: queueCount = ${restaurant.queueCount}, QueueM = ${QueueM}`);
+        console.log(`🏪 ${shopName}: queueCount = ${restaurant.queueCount}, QueueM = ${QueueM}, isOpen = ${isOpen}`);
     }
     
     // Get restaurant image with proper URL handling
@@ -193,7 +196,7 @@
     }
 </script>
 
-<div class="restaurant-card" class:promoted={isPromoted} role="button" tabindex="0" on:click={handleRestaurantClick} on:keypress={handleKeyPress}>
+<div class="restaurant-card" class:promoted={isPromoted} class:closed={!isOpen} role="button" tabindex="0" on:click={handleRestaurantClick} on:keypress={handleKeyPress}>
     {#if isPromoted}
         <div class="promoted-badge">
             <span class="badge-icon">⭐</span>
@@ -201,7 +204,14 @@
         </div>
     {/if}
     
-    <div class="restaurant-image">
+    {#if !isOpen}
+        <div class="closed-badge">
+            <span class="closed-icon">🔒</span>
+            <span class="closed-text">ปิดทำการ</span>
+        </div>
+    {/if}
+    
+    <div class="restaurant-image" class:grayscale={!isOpen}>
         <div class="image-container">
             <!-- Always show placeholder first -->
             <div class="placeholder-image" class:hidden={imageLoaded}>
@@ -229,9 +239,9 @@
             />
         </div>
         
-        <div class="delivery-badge">
+        <!-- <div class="delivery-badge">
             {deliveryTime} นาที
-        </div>
+        </div> -->
     </div>
     
     <div class="restaurant-info">
@@ -242,8 +252,12 @@
         
         <div class="restaurant-details">
             <div class="rating">
-                <span class="star">⭐</span>
-                <span class="rating-text">{rating.toFixed(1)} ({reviewCount})</span>
+                {#if reviewCount > 0}
+                    <span class="star">⭐</span>
+                    <span class="rating-text">{rating.toFixed(1)} ({reviewCount})</span>
+                {:else}
+                    <span class="rating-text no-reviews">ยังไม่มีรีวิว</span>
+                {/if}
                 <span class="category">{restaurant.Type_Shop || ''}</span>
             </div>
             
@@ -324,6 +338,43 @@
         letter-spacing: 0.5px;
     }
     
+    .closed-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        white-space: nowrap;
+    }
+    
+    .closed-icon {
+        font-size: 12px;
+    }
+    
+    .closed-text {
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    
+    .restaurant-card.closed {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .restaurant-card.closed:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
     .restaurant-image {
         position: relative;
         width: 120px;
@@ -331,6 +382,11 @@
         flex-shrink: 0;
         overflow: hidden;
         background: #f5f5f5;
+        transition: filter 0.3s ease;
+    }
+    
+    .restaurant-image.grayscale {
+        filter: grayscale(100%);
     }
     
     .image-container {
@@ -407,7 +463,7 @@
         100% { transform: rotate(360deg); }
     }
     
-    .delivery-badge {
+    /* .delivery-badge {
         position: absolute;
         top: 8px;
         right: 8px;
@@ -417,7 +473,7 @@
         border-radius: 12px;
         font-size: 10px;
         font-weight: 600;
-    }
+    } */
     
     .restaurant-info {
         flex: 1;
@@ -472,6 +528,11 @@
         font-size: 12px;
         color: #666;
         font-weight: 500;
+    }
+    
+    .rating-text.no-reviews {
+        color: #999;
+        font-style: italic;
     }
     
     .category {
@@ -560,10 +621,10 @@
             font-size: 11px;
         }
         
-        .delivery-fee {
+        /* .delivery-fee {
             font-size: 10px;
             padding: 3px 6px;
-        }
+        } */
         
         .restaurant-description {
             font-size: 11px;
