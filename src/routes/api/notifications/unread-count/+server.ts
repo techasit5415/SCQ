@@ -22,21 +22,23 @@ export const GET: RequestHandler = async ({ locals }) => {
 		console.log('🔍 Checking notifications for user:', userId);
 		console.log('🕐 Since:', filterTime);
 		
-		const orderCount = await pb.collection('Order').getList(1, 1, {
-			filter: `User_ID = "${userId}" && created > "${filterTime}"`,
+		// นับ Order ที่เปลี่ยนสถานะเป็น Completed ใน 1 ชั่วโมงล่าสุด
+		const completedOrderCount = await pb.collection('Order').getList(1, 1, {
+			filter: `User_ID = "${userId}" && Status = "Completed" && updated > "${filterTime}"`,
 			$autoCancel: false
 		});
 		
-		console.log('📦 Orders found:', orderCount.totalItems);
+		console.log('📦 Completed orders found:', completedOrderCount.totalItems);
 		
+		// นับ Payment ที่สำเร็จใหม่
 		const paymentCount = await pb.collection('Payment').getList(1, 1, {
-			filter: `User_ID = "${userId}" && created > "${filterTime}"`,
+			filter: `User_ID = "${userId}" && status = "Success" && created > "${filterTime}"`,
 			$autoCancel: false
 		});
 		
 		console.log('💳 Payments found:', paymentCount.totalItems);
 		
-		const totalUnread = orderCount.totalItems + paymentCount.totalItems;
+		const totalUnread = completedOrderCount.totalItems + paymentCount.totalItems;
 		
 		console.log('🔔 Total unread:', totalUnread);
 		

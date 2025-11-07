@@ -26,60 +26,26 @@ export const load: PageServerLoad = async ({ params, locals, depends }) => {
       $autoCancel: false
     });
 
-    console.log('Total Pending Orders (before payment filter):', pendingOrders.length);
+    console.log('Pending Orders:', pendingOrders.length);
+    console.log('Sample orders:', pendingOrders.slice(0, 3).map(o => ({ id: o.id, status: o.Status })));
 
-    // ดึงข้อมูล Payment สำหรับ Orders ที่ Pending
+    // ดึงข้อมูล Notes สำหรับแต่ละ Order
     const orderIds = pendingOrders.map(order => order.id);
-    let payments: any[] = [];
-    
-    if (orderIds.length > 0) {
-      const paymentFilter = orderIds.map(id => `Order_ID="${id}"`).join(' || ');
-      payments = await pb.collection('Payment').getFullList({
-        filter: paymentFilter,
-        $autoCancel: false
-      });
-      console.log('Payments found:', payments.length);
-    }
-
-    // สร้าง Set ของ Order IDs ที่ชำระเงินสำเร็จแล้ว
-    const paidOrderIds = new Set(
-      payments
-        .filter(payment => payment.status === 'Success')
-        .map(payment => payment.Order_ID)
-    );
-
-    console.log('Orders with successful payment:', paidOrderIds.size);
-
-    // กรองเอาเฉพาะ Orders ที่ชำระเงินสำเร็จแล้ว
-    const paidPendingOrders = pendingOrders.filter(order => paidOrderIds.has(order.id));
-
-    console.log('Pending Orders (after payment filter):', paidPendingOrders.length);
-    console.log('Sample orders:', paidPendingOrders.slice(0, 3).map(o => ({ 
-      id: o.id, 
-      status: o.Status,
-      hasPaidPayment: paidOrderIds.has(o.id)
-    })));
-
-    // ดึงข้อมูล Notes สำหรับแต่ละ Order ที่ผ่านการกรอง
-    const filteredOrderIds = paidPendingOrders.map(order => order.id);
     let notes: any[] = [];
-    
-    if (filteredOrderIds.length > 0) {
-      const noteFilter = filteredOrderIds.map(id => `Order_ID="${id}"`).join(' || ');
+    if (orderIds.length > 0) {
+      const noteFilter = orderIds.map(id => `Order_ID="${id}"`).join(' || ');
       notes = await pb.collection('Note').getFullList({
         filter: noteFilter,
         $autoCancel: false
       });
     }
 
-    // เพิ่ม notes และ payment info เข้าไปใน orders
-    const ordersWithNotes = paidPendingOrders.map(order => {
+    // เพิ่ม notes เข้าไปใน orders
+    const ordersWithNotes = pendingOrders.map(order => {
       const orderNotes = notes.filter(note => note.Order_ID === order.id);
-      const orderPayment = payments.find(payment => payment.Order_ID === order.id);
       return {
         ...order,
-        notes: orderNotes,
-        payment: orderPayment
+        notes: orderNotes
       };
     });
 

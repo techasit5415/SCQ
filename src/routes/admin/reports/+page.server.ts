@@ -179,30 +179,11 @@ export const load: PageServerLoad = async ({ cookies }) => {
         expand: 'field'
       });
       
-      // ดึง payments เพื่อกรอง
-      const allPayments = await pb.collection('Payment').getFullList();
-      const paymentMap = new Map<string, any>();
-      allPayments.forEach(payment => {
-        if (payment.Order_ID) {
-          paymentMap.set(payment.Order_ID, payment);
-        }
-      });
-      
-      // กรองเอาเฉพาะ orders ที่จ่ายแล้ว และไม่ถูกยกเลิก
-      const validOrders = orders.filter(order => {
-        if (order.Status === 'Canceled') return false;
-        const payment = paymentMap.get(order.id);
-        return payment && payment.status === 'Success';
-      });
-      
-      console.log('Total orders:', orders.length);
-      console.log('Valid orders (paid & not canceled):', validOrders.length);
-      
       // คำนวณเมนูยอดนิยมจาก Order.Menu_ID (array relation)
       const menuPopularity = {} as any;
       
-      validOrders.forEach(order => {
-        if (order.Menu_ID && Array.isArray(order.Menu_ID)) {
+      orders.forEach(order => {
+        if (order.Menu_ID && Array.isArray(order.Menu_ID) && order.Status === 'Completed') {
           order.Menu_ID.forEach(menuId => {
             if (!menuPopularity[menuId]) {
               const menu = menus.find(m => m.id === menuId);

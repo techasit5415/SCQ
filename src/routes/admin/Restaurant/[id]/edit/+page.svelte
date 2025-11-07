@@ -3,12 +3,9 @@
     import TopBar from '$lib/Components/Topbar.svelte';
     import AdminSidebar from '$lib/Components/sidebar.svelte';
     import { enhance } from '$app/forms';
-    import { env } from '$env/dynamic/public';
 
     export let data;
     export let form;
-
-    const PUBLIC_POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'http://localhost:8080';
 
     let activeMenu = "manageRestaurant";
     
@@ -33,7 +30,7 @@
     }
 
     function handleCancel() {
-        goto('/admin/Restaurant');
+        goto('/admin/restaurant');
     }
 </script>
 
@@ -48,50 +45,46 @@
 <AdminSidebar activeMenu="manageRestaurant" />
 
 <!-- Main Content -->
-<main class="main-content">
-    <!-- Header Section -->
-    <div class="header-section">
-        <h1>แก้ไขข้อมูลร้านอาหาร</h1>
-        <p>ร้าน: {data.restaurant?.name || 'ไม่ระบุชื่อร้าน'}</p>
-    </div>
-
-    <!-- Content Container -->
-    <div class="content-wrapper">
-        {#if form?.error}
-            <div class="alert alert-error">
-                <span class="material-symbols-outlined">error</span>
-                <span>{form.error}</span>
+    <main class="main-content">
+        <!-- Breadcrumb and Title -->
+        <div class="header-section">
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Home / </span>
+                <span class="breadcrumb-item">Manage Restaurant / </span>
+                <span class="breadcrumb-item current">Edit Restaurant</span>
             </div>
-        {/if}
-
-        {#if form?.success}
-            <div class="alert alert-success">
-                <span class="material-symbols-outlined">check_circle</span>
-                <span>{form.message || 'แก้ไขข้อมูลร้านอาหารสำเร็จ!'}</span>
+            <div class="page-title">
+                <h1>Edit Restaurant</h1>
+                <p>แก้ไขข้อมูลร้านค้า: {data.restaurant?.name || 'ไม่ระบุชื่อร้าน'}</p>
             </div>
-        {/if}
+        </div>
 
-        <!-- Edit Form Card -->
-        <div class="form-card">
-            <form 
-                method="POST" 
-                action="?/updateRestaurant" 
-                enctype="multipart/form-data"
-                use:enhance={() => {
-                    console.log('Form submitting...');
-                    return async ({ result, update }) => {
-                        console.log('Form result:', result);
+        <!-- Restaurant Content -->
+        <div class="restaurant-container">
+            {#if form?.error}
+                <div class="error-message">
+                    <span class="material-symbols-outlined">error</span>
+                    {form.error}
+                </div>
+            {/if}
+
+            {#if form?.success}
+                <div class="success-message">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    {form.message || 'แก้ไขข้อมูลร้านอาหารสำเร็จ!'}
+                </div>
+            {/if}
+
+            <div class="edit-restaurant-form">
+                <form method="POST" action="?/updateRestaurant" use:enhance={{
+                    result: ({ result }) => {
                         if (result.type === 'success') {
-                            await update();
                             setTimeout(() => {
-                                goto('/admin/Restaurant');
+                                goto('/admin/restaurant');
                             }, 1500);
-                        } else {
-                            await update();
                         }
-                    };
-                }}
-            >
+                    }
+                }}>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="restaurantName">Restaurant Name</label>
@@ -165,34 +158,6 @@
                         ></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label for="image">Restaurant Image (Optional)</label>
-                        <input 
-                            type="file" 
-                            id="image" 
-                            name="image"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
-                        />
-                        <small style="color: #666; display: block; margin-top: 4px;">
-                            JPG, PNG หรือ WebP (ไม่เกิน 5MB)
-                        </small>
-                        {#if data.restaurant?.Pic_Shop}
-                            <div style="margin-top: 12px;">
-                                <p style="font-size: 14px; color: #666;">รูปภาพปัจจุบัน:</p>
-                                <img 
-                                    src={`${PUBLIC_POCKETBASE_URL}/api/files/Shop/${data.restaurant.id}/${data.restaurant.Pic_Shop}`}
-                                    alt="Current restaurant"
-                                    style="max-width: 200px; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd;"
-                                    on:error={(e) => {
-                                        if (e.target) {
-                                            e.target.style.display = 'none';
-                                        }
-                                    }}
-                                />
-                            </div>
-                        {/if}
-                    </div>
-
                     <div class="form-actions">
                         <button type="button" class="btn-cancel" on:click={handleCancel}>
                             Cancel
@@ -204,105 +169,108 @@
                 </form>
             </div>
         </div>
-</main>
+    </main>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
     :global(body) {
         background: #f5f7fa !important;
         margin: 0;
         padding: 0;
-        overflow: hidden !important;
+        overflow-x: hidden;
     }
 
     .main-content {
         margin-left: 250px;
         margin-top: 60px;
-        height: calc(100vh - 60px);
+        padding: 24px;
+        min-height: calc(100vh - 60px);
         overflow-y: auto;
-        overflow-x: hidden;
-        background: #f5f7fa;
+        background: #f5f7fa !important;
         font-family: 'Noto Sans Thai', sans-serif;
     }
 
     .header-section {
+        width: calc(100% + 48px);
+        padding: 20px 24px;
         background: white;
-        padding: 32px 40px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        margin-bottom: 24px;
+        border-bottom: 1px #B4B5B7 solid;
+        margin: -24px -24px 24px -24px;
+        position: relative;
+        box-sizing: border-box;
     }
 
-    .header-section h1 {
-        margin: 0 0 8px 0;
-        font-size: 28px;
-        font-weight: 600;
-        color: #1f2937;
+    .breadcrumb {
+        margin-bottom: 10px;
     }
 
-    .header-section p {
+    .breadcrumb-item {
+        color: #95969A;
+        font-size: 13px;
+        font-weight: 400;
+    }
+
+    .breadcrumb-item.current {
+        color: #333438;
+    }
+
+    .page-title h1 {
+        color: #333438;
+        font-size: 20px;
+        font-weight: 400;
+        margin: 0 0 5px 0;
+    }
+
+    .page-title p {
+        color: #68696E;
+        font-size: 14px;
         margin: 0;
-        font-size: 16px;
-        color: #6b7280;
     }
 
-    .content-wrapper {
-        padding: 32px 40px;
-        max-width: 1200px;
-        margin: 0 auto;
+    .restaurant-container {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        max-height: calc(100vh - 140px);
     }
 
-    .alert {
+    .error-message, .success-message {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 16px 20px;
-        margin-bottom: 24px;
-        border-radius: 12px;
-        font-size: 15px;
+        gap: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        font-size: 14px;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        animation: slideIn 0.3s ease-out;
     }
 
-    @keyframes slideIn {
-        from {
-            transform: translateY(-10px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+    .error-message {
+        background-color: #fdeaea;
+        color: #d32f2f;
+        border: 1px solid #ffcccb;
     }
 
-    .alert-error {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-        color: white;
+    .success-message {
+        background-color: #e7f5e7;
+        color: #2d5a2d;
+        border: 1px solid #b8e6b8;
     }
 
-    .alert-success {
-        background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
-        color: white;
-    }
-
-    .alert .material-symbols-outlined {
-        font-size: 24px;
-    }
-
-    .form-card {
+    .edit-restaurant-form {
         background: white;
-        border-radius: 16px;
-        padding: 40px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        margin-bottom: 24px;
+        gap: 20px;
+        margin-bottom: 20px;
     }
 
     .form-group {
@@ -311,137 +279,72 @@
     }
 
     .form-group label {
-        font-weight: 600;
-        margin-bottom: 10px;
-        color: #2c3e50;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: #333;
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
-        padding: 14px 16px;
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        font-size: 15px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
         font-family: 'Noto Sans Thai', sans-serif;
-        transition: all 0.3s ease;
-        background: #fafafa;
     }
 
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #667eea;
-        background: white;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-    }
-
-    .form-group input[type="file"] {
-        padding: 12px;
-        border: 2px dashed #c7d2fe;
-        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
-        cursor: pointer;
-        border-radius: 10px;
-    }
-
-    .form-group input[type="file"]:hover {
-        border-color: #667eea;
-        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-    }
-
-    .form-group textarea {
-        resize: vertical;
-        min-height: 100px;
-    }
-
-    .form-group small {
-        margin-top: 6px;
-        font-size: 13px;
-        color: #6b7280;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
 
     .form-actions {
         display: flex;
-        gap: 16px;
+        gap: 12px;
         justify-content: flex-end;
-        margin-top: 40px;
-        padding-top: 30px;
-        border-top: 2px solid #f0f0f0;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
     }
 
     .btn-cancel,
     .btn-submit {
-        padding: 14px 32px;
+        padding: 12px 24px;
         border: none;
-        border-radius: 10px;
-        font-size: 15px;
-        font-weight: 600;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.2s;
         font-family: 'Noto Sans Thai', sans-serif;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
     }
 
     .btn-cancel {
-        background: #f3f4f6;
-        color: #6b7280;
-        border: 2px solid #e5e7eb;
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
     }
 
     .btn-cancel:hover {
-        background: #e5e7eb;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background: #e9ecef;
     }
 
     .btn-submit {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #007bff;
         color: white;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .btn-submit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-submit:active,
-    .btn-cancel:active {
-        transform: translateY(0);
+        background: #0056b3;
     }
 
     @media (max-width: 768px) {
-        .main-content {
-            margin-left: 0;
-            margin-top: 60px;
-        }
-
-        .content-wrapper {
-            padding: 20px;
-        }
-
-        .form-card {
-            padding: 24px;
-        }
-
         .form-row {
             grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        .header-section {
-            padding: 24px 20px;
-        }
-
-        .page-title h1 {
-            font-size: 24px;
         }
     }
 </style>

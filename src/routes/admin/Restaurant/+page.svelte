@@ -58,15 +58,15 @@
     }
     
     function handleViewRestaurant(shopId) {
-        goto(`/admin/Restaurant/${shopId}`);
+        goto(`/admin/restaurant/${shopId}`);
     }
     
     function handleEditRestaurant(shopId) {
-        goto(`/admin/Restaurant/${shopId}/edit`);
+        goto(`/admin/restaurant/${shopId}/edit`);
     }
     
     function handleAddRestaurant() {
-        goto('/admin/Restaurant/AddRestaurant');
+        goto('/admin/restaurant/AddRestaurant');
     }
     
     function getRestaurantTypeIcon(type) {

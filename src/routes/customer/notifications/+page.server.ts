@@ -36,39 +36,15 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 		for (const order of orderRecords) {
 			// ใช้ Order_ID ถ้ามี ไม่งั้นใช้ record id
 			const displayOrderId = order.Order_ID || order.id;
-			
-			// กำหนดสถานะตาม Order Status
-			let notificationStatus = 'pending';
-			let statusIcon = '⏳';
-			let statusText = 'รอดำเนินการ';
-			
-			if (order.Status === 'Completed') {
-				notificationStatus = 'success';
-				statusIcon = '✅';
-				statusText = 'เสร็จสิ้น';
-			} else if (order.Status === 'In-progress') {
-				notificationStatus = 'pending';
-				statusIcon = '🍳';
-				statusText = 'กำลังดำเนินการ';
-			} else if (order.Status === 'Canceled') {
-				notificationStatus = 'error';
-				statusIcon = '❌';
-				statusText = 'ยกเลิก';
-			} else if (order.Status === 'Pending') {
-				notificationStatus = 'pending';
-				statusIcon = '⏳';
-				statusText = 'รอดำเนินการ';
-			}
-			
 			notifications.push({
 				id: order.id,
 				type: 'order',
 				title: 'การสั่งซื้อของคุณ',
-				message: `คำสั่งซื้อ #${displayOrderId} สถานะ: ${statusText}`,
-				status: notificationStatus,
+				message: `คำสั่งซื้อ #${displayOrderId} ${order.Status ? `สถานะ: ${order.Status}` : 'รอดำเนินการ'}`,
+				status: order.Status === 'Completed' ? 'success' : 'pending',
 				amount: order.Total_Amount || 0,
 				time: order.created,
-				icon: statusIcon,
+				icon: order.Status === 'Completed' ? '✅' : order.Status === 'In-progress' ? '🍳' : '⏳',
 				read: false,
 				orderId: displayOrderId // เพิ่ม field สำหรับแสดง Order ID ที่ถูกต้อง
 			});

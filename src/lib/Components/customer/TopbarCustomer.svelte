@@ -65,7 +65,7 @@
                     aria-label="คำสั่งซื้อ"
                     title="ประวัติคำสั่งซื้อ"
                 >
-                    <span class="material-symbols-outlined">bookmark</span>
+                    <span class="material-symbols-outlined">history</span>
                 </button>
             {/if}
             

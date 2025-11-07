@@ -185,28 +185,6 @@ export const actions: Actions = {
 				}
 			}
 			
-			// สร้าง Payment record สำหรับเงินสด (status: Success - ไว้ใจว่าจะจ่ายตอนรับของ)
-			if (orderData.paymentMethod === 'cash') {
-				try {
-					const paymentData = {
-						User_ID: userId,
-						Shop_ID: shopId,
-						Order_ID: orderRecord.id,
-						Method_Payment: 'Cash',
-						Total_Amount: orderData.total,
-						status: 'Success' // สถานะสำเร็จเพื่อให้ร้านรับ Order ได้
-					};
-					
-					const paymentRecord = await pb.collection('Payment').create(paymentData);
-					console.log('💵 Cash Payment record created:', paymentRecord.id, '(Auto Success)');
-				} catch (error: any) {
-					console.error('❌ Error creating Cash Payment record:', error);
-					// ถ้าสร้าง Payment ไม่สำเร็จ ต้องลบ Order ที่สร้างไว้
-					await pb.collection('Order').delete(orderRecord.id);
-					throw error;
-				}
-			}
-			
 			// เพิ่ม Note หลังจากสร้าง Order เสร็จแล้ว
 			if (orderData.note && orderData.note.trim()) {
 				try {

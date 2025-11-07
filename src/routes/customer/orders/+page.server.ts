@@ -38,22 +38,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const ordersWithQueuePosition = await Promise.all(filteredOrders.map(async (order: any) => {
 			let queuePosition = null;
 			
-			// คำนวณเฉพาะ order ที่มีสถานะ Pending หรือ In-progress
-			// if (order.Status === 'Pending' || order.Status === 'In-progress') {
-				if (order.Status === 'In-progress') {
+			// คำนวณเฉพาะ order ที่มีสถานะ In-progress
+			if (order.Status === 'In-progress') {
 				try {
 					// ดึง order ทั้งหมดของร้านเดียวกันที่สร้างก่อนหน้านี้และยังไม่เสร็จ
 					const queueOrders = await pb.collection('Order').getFullList({
-						// filter: `Shop_ID = "${order.Shop_ID}" && created <= "${order.created}" && (Status = "Pending" || Status = "In-progress")`,
 						filter: `Shop_ID = "${order.Shop_ID}" && created <= "${order.created}" && (Status = "In-progress")`,
-
-						sort: 'created'
+						sort: 'created',
+						$autoCancel: false  // ป้องกัน autocancellation
 					});
 					
 					// หาตำแหน่งของ order นี้ในคิว (เริ่มนับจาก 1)
 					queuePosition = queueOrders.findIndex((qOrder: any) => qOrder.id === order.id) + 1;
 					
-					console.log(`🎯 Order ${order.id.slice(-8)} at ${order.expand?.Shop_ID?.name}: position ${queuePosition}/${queueOrders.length}`);
+					// console.log(`🎯 Order ${order.id.slice(-8)} at ${order.expand?.Shop_ID?.name}: position ${queuePosition}/${queueOrders.length}`);
 				} catch (queueError) {
 					console.error('Error calculating queue position:', queueError);
 				}
@@ -82,7 +80,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 				filter: `User_ID = "${userId}"`,
 				fields: 'Order'
 			});
-			console.log('📝 Found reviews:', reviews.length);
+			// console.log('📝 Found reviews:', reviews.length);
 		} catch (reviewError) {
 			console.error('Error loading reviews:', reviewError);
 		}

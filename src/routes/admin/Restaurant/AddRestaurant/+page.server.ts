@@ -2,9 +2,12 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
+import { env as privateEnv } from '$env/dynamic/private';
 
-export const load: PageServerLoad = async ({ cookies, locals }) => {
-  const pb = locals.pb || new PocketBase(env.PUBLIC_POCKETBASE_URL);
+// ใช้ URL จาก environment variable
+const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
+
+export const load: PageServerLoad = async ({ cookies }) => {
   const session = cookies.get('session');
   console.log('Session cookie in add restaurant:', session);
 
@@ -20,8 +23,21 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
   try {
     console.log('Attempting to connect to PocketBase...');
 
+    // Try to authenticate as admin first
+    try {
+      const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+      console.log('Attempting admin login with:', adminEmail);
+      
+      await pb.admins.authWithPassword(adminEmail, adminPassword);
+      console.log('Admin authenticated successfully');
+    } catch (authError) {
+      console.log('Admin auth failed:', authError);
+      console.log('Trying without auth...');
+    }
+
     // ดึงรายชื่อ Role สำหรับตรวจสอบ
-    let roles: any[] = [];
+    let roles = [];
     try {
       console.log('Fetching roles...');
       roles = await pb.collection('Role').getFullList();
@@ -45,7 +61,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
     console.log('Restaurant role found:', restaurantRole);
     
     // ดึงเฉพาะ Users ที่เป็น Restaurant role สำหรับเลือกเป็น Owner
-    let restaurantOwners: any[] = [];
+    let restaurantOwners = [];
     try {
       console.log('Fetching restaurant owners...');
       if (restaurantRole) {
@@ -81,19 +97,13 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
     }
 
     // ดึงข้อมูล Shops สำหรับแสดงในตาราง
-    let shops: any[] = [];
+    let shops = [];
     try {
       console.log('Fetching shops...');
-      const allShops = await pb.collection('Shop').getFullList({
+      shops = await pb.collection('Shop').getFullList({
         expand: 'User_Owner_ID'
       });
-      
-      // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน SCQ
-      shops = allShops.filter((shop: any) => {
-        return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]') && !shop.name?.startsWith('[SYSTEM]');
-      });
-      
-      console.log('Shops result:', shops.length, '(filtered from', allShops.length, 'total)');
+      console.log('Shops result:', shops);
     } catch (error) {
       console.log('Error fetching shops:', error);
     }
@@ -126,11 +136,8 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 };
 
 export const actions: Actions = {
-  addRestaurant: async ({ request, locals }) => {
-    const pb = locals.pb || new PocketBase(env.PUBLIC_POCKETBASE_URL);
+  addRestaurant: async ({ request }) => {
     const formData = await request.formData();
-    
-    console.log('=== Add Restaurant Action Start ===');
     
     // Get the image file
     const imageFile = formData.get('image') as File;
@@ -141,67 +148,21 @@ export const actions: Actions = {
       type: imageFile?.type
     });
     
-    const name = formData.get('name') as string;
-    const type = formData.get('type') as string;
-    const ownerId = formData.get('ownerId') as string;
-    const phone = formData.get('phone') as string;
-    const address = formData.get('address') as string;
-    const description = formData.get('description') as string;
-    
     const restaurantData = {
-      name,
-      Type_Shop: type,
-      User_Owner_ID: ownerId,
-      Phone: phone,
-      Addr: address,
-      Details: description
+      name: formData.get('name') as string,
+      Type_Shop: formData.get('type') as string,
+      User_Owner_ID: formData.get('ownerId') as string,
+      Phone: formData.get('phone') as string,
+      Addr: formData.get('address') as string,
+      Details: formData.get('description') as string
+      // Don't set field here since it's for image
     };
 
-    console.log('Restaurant data:', restaurantData);
-
-    // Validate required fields
-    if (!name || !type || !phone || !address) {
-      console.log('Missing required fields:', {
-        name: !!name,
-        type: !!type,
-        phone: !!phone,
-        address: !!address
-      });
-      
-      return fail(400, {
-        error: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-        formData: restaurantData
-      });
-    }
-
-    // Validate User_Owner_ID exists if provided
-    if (ownerId) {
-      try {
-        await pb.collection('users').getOne(ownerId);
-        console.log('Owner validated:', ownerId);
-      } catch (userError) {
-        console.log('Invalid User_Owner_ID:', ownerId);
-        return fail(400, {
-          error: 'เจ้าของร้านไม่ถูกต้อง กรุณาเลือกเจ้าของร้านใหม่',
-          formData: restaurantData
-        });
-      }
-    }
-
-    // Create FormData for PocketBase
-    const pbFormData = new FormData();
-    pbFormData.append('name', name);
-    pbFormData.append('Type_Shop', type);
-    pbFormData.append('Phone', phone);
-    pbFormData.append('Addr', address);
-    pbFormData.append('field', ''); // Required field in schema
-    pbFormData.append('Details', description || '-'); // Required field, use '-' if empty
-    pbFormData.append('category', JSON.stringify(['ทั่วไป'])); // Required field - JSON array with default category
-    
-    // Add optional fields
-    if (ownerId) {
-      pbFormData.append('User_Owner_ID', ownerId);
-    }
+    // Add image to formData if provided
+    const createFormData = new FormData();
+    Object.entries(restaurantData).forEach(([key, value]) => {
+      createFormData.append(key, value);
+    });
 
     // Add image file if provided
     if (imageFile && imageFile.size > 0) {
@@ -224,25 +185,66 @@ export const actions: Actions = {
         });
       }
 
-      pbFormData.append('Pic_Shop', imageFile);
+      // Use the correct field name from PocketBase schema
+      createFormData.append('Pic_Shop', imageFile);
       console.log('Image added to form data with field name: Pic_Shop');
     } else {
       console.log('No image file provided or file size is 0');
     }
 
     console.log('Form data contents:');
-    for (let [key, value] of pbFormData.entries()) {
+    for (let [key, value] of createFormData.entries()) {
       console.log(key, ':', value instanceof File ? `File: ${value.name}` : value);
     }
 
+    console.log('Attempting to create restaurant with data:', restaurantData);
+
     try {
-      // Create restaurant in database using locals.pb (authenticated session)
-      console.log('=== Creating Restaurant ===');
-      console.log('PB Instance:', pb ? 'OK' : 'NULL');
-      console.log('Auth Store:', pb?.authStore?.isValid ? 'Valid' : 'Invalid');
+      // Authenticate as admin first
+      try {
+        const adminEmail = privateEnv.POCKETBASE_ADMIN_EMAIL || '66050193@kmitl.ac.th';
+        const adminPassword = privateEnv.POCKETBASE_ADMIN_PASSWORD || 'admin123';
+        await pb.admins.authWithPassword(adminEmail, adminPassword);
+        console.log('Admin authenticated for create action');
+      } catch (authError) {
+        console.log('Admin auth failed for create action:', authError);
+        return fail(500, {
+          error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้',
+          formData: restaurantData
+        });
+      }
+
+      // Validate required fields
+      if (!restaurantData.name || !restaurantData.Type_Shop || !restaurantData.Phone || !restaurantData.Addr) {
+        console.log('Missing required fields:', {
+          name: !!restaurantData.name,
+          type: !!restaurantData.Type_Shop,
+          phone: !!restaurantData.Phone,
+          address: !!restaurantData.Addr
+        });
+        
+        return fail(400, {
+          error: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+          formData: restaurantData
+        });
+      }
+
+      // Validate User_Owner_ID exists
+      if (restaurantData.User_Owner_ID) {
+        try {
+          await pb.collection('users').getOne(restaurantData.User_Owner_ID);
+        } catch (userError) {
+          console.log('Invalid User_Owner_ID:', restaurantData.User_Owner_ID);
+          return fail(400, {
+            error: 'เจ้าของร้านไม่ถูกต้อง กรุณาเลือกเจ้าของร้านใหม่',
+            formData: restaurantData
+          });
+        }
+      }
+
+      // Create restaurant in database
       console.log('Sending request to PocketBase...');
-      
-      const record = await pb.collection('Shop').create(pbFormData);
+      const record = await pb.collection('Shop').create(createFormData);
       
       console.log('Restaurant created successfully:', record);
       

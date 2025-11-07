@@ -50,7 +50,7 @@
                 goto('/admin/manageUser');
                 break;
             case "manageRestaurant":
-                goto('/admin/Restaurant');
+                goto('/admin/restaurant');
                 break;
             case "reports":
                 // Already on reports page

@@ -141,51 +141,27 @@ export const load = async ({ locals, params }: any) => {
       
       console.log('Completed orders for today:', todayOrders.length, 'found');
       
-      // ดึง In-progress และ Pending orders ด้วย (ไม่เอา Canceled)
+      // ดึง In-progress orders ด้วย
       const inProgressOrders = await pb.collection('Order').getFullList({
         filter: `Shop_ID="${shopId}" && Status="In-progress" && created>="${startStr}" && created<"${endStr}"`
       });
       
-      const pendingOrders = await pb.collection('Order').getFullList({
-        filter: `Shop_ID="${shopId}" && Status="Pending" && created>="${startStr}" && created<"${endStr}"`
-      });
-      
       console.log('In-progress orders for today:', inProgressOrders.length, 'found');
-      console.log('Pending orders for today:', pendingOrders.length, 'found');
       
-      const allTodayOrders = [...todayOrders, ...inProgressOrders, ...pendingOrders];
+      const allTodayOrders = [...todayOrders, ...inProgressOrders];
       
-      // ดึง payments เพื่อกรอง
-      const todayPayments = await pb.collection('Payment').getFullList({
-        filter: `Shop_ID="${shopId}" && created>="${startStr}" && created<"${endStr}"`
-      });
-      
-      const paymentMap = new Map<string, any>();
-      todayPayments.forEach(payment => {
-        if (payment.Order_ID) {
-          paymentMap.set(payment.Order_ID, payment);
-        }
-      });
-      
-      // กรองเอาเฉพาะ orders ที่จ่ายเงินสำเร็จ
-      const validTodayOrders = allTodayOrders.filter(order => {
-        const payment = paymentMap.get(order.id);
-        return payment && payment.status === 'Success';
-      });
-      
-      console.log('Total today orders:', allTodayOrders.length);
-      console.log('Valid today orders (paid):', validTodayOrders.length);
-      console.log('Sample orders:', validTodayOrders.slice(0, 3).map(o => ({ 
+      console.log('Total today orders for sales:', allTodayOrders.length, 'orders found');
+      console.log('Sample orders:', allTodayOrders.slice(0, 3).map(o => ({ 
         id: o.id, 
         status: o.Status, 
         amount: o.Total_Amount, 
         created: o.created 
       })));
       
-      restaurant.todaySale = validTodayOrders.reduce((sum, order) => {
+      restaurant.todaySale = allTodayOrders.reduce((sum, order) => {
         return sum + (order.Total_Amount || 0)
       }, 0);
-      console.log('Total today sale (Paid orders only):', restaurant.todaySale);
+      console.log('Total today sale (Completed + In-progress):', restaurant.todaySale);
     } catch (error) {
       console.log('Error fetching today sales:', error);
     }
@@ -211,31 +187,13 @@ export const load = async ({ locals, params }: any) => {
         const endStr = dayEndUTC.toISOString().replace('T', ' ').replace('Z', '.999Z');
         
         const dayOrders = await pb.collection('Order').getFullList({
-          filter: `Shop_ID="${shopId}" && Status!="Canceled" && created>="${startStr}" && created<"${endStr}"`
-        });
-        
-        // ดึง payments ของวันนี้
-        const dayPayments = await pb.collection('Payment').getFullList({
           filter: `Shop_ID="${shopId}" && created>="${startStr}" && created<"${endStr}"`
-        });
-        
-        const dayPaymentMap = new Map<string, any>();
-        dayPayments.forEach((payment: any) => {
-          if (payment.Order_ID) {
-            dayPaymentMap.set(payment.Order_ID, payment);
-          }
-        });
-        
-        // กรองเอาเฉพาะ orders ที่จ่ายแล้ว
-        const validDayOrders = dayOrders.filter((order: any) => {
-          const payment = dayPaymentMap.get(order.id);
-          return payment && payment.status === 'Success';
         });
         
         last7Days.push({
           date: dayStartThai.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
-          orders: validDayOrders.length,
-          revenue: validDayOrders.reduce((sum: any, order: any) => sum + (order.Total_Amount || 0), 0)
+          orders: dayOrders.length,
+          revenue: dayOrders.reduce((sum, order) => sum + (order.Total_Amount || 0), 0)
         });
       }
       analytics.dailyOrders = last7Days;
@@ -248,33 +206,12 @@ export const load = async ({ locals, params }: any) => {
     try {
       console.log('Fetching popular menus for shop:', shopId);
       const allOrders = await pb.collection('Order').getFullList({
-        filter: `Shop_ID = "${shopId}" && Status != "Canceled"`,
+        filter: `Shop_ID = "${shopId}"`,
         expand: 'Menu_ID'
       });
       
-      // ดึง payments
-      const allPayments = await pb.collection('Payment').getFullList({
-        filter: `Shop_ID = "${shopId}"`
-      });
-      
-      const paymentMap = new Map<string, any>();
-      allPayments.forEach((payment: any) => {
-        if (payment.Order_ID) {
-          paymentMap.set(payment.Order_ID, payment);
-        }
-      });
-      
-      // กรองเอาเฉพาะ orders ที่จ่ายแล้ว
-      const validOrders = allOrders.filter((order: any) => {
-        const payment = paymentMap.get(order.id);
-        return payment && payment.status === 'Success';
-      });
-      
-      console.log('Total orders:', allOrders.length);
-      console.log('Valid orders (paid):', validOrders.length);
-      
       const menuCount: any = {};
-      validOrders.forEach((order: any) => {
+      allOrders.forEach(order => {
         if (order.expand?.Menu_ID && Array.isArray(order.expand.Menu_ID)) {
           order.expand.Menu_ID.forEach((menu: any) => {
             // ตรวจสอบว่าเมนูเป็นของร้านนี้จริงๆ

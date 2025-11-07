@@ -43,3 +43,8 @@ function createToastStore() {
 }
 
 export const toastStore = createToastStore();
+
+// Helper function for easy access
+export function showToast(message: string, type: ToastNotification['type'] = 'info', duration?: number) {
+	return toastStore[type](message, duration);
+}
