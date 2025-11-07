@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { enhance } from '$app/forms';
     import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-    import { toast } from 'svelte-sonner';
+    import { toastStore } from '$lib/stores/toast';
     import TopBar from '$lib/Components/restaurant/Topbar.svelte';
     import RestaurantSidebar from '$lib/Components/restaurant/RestaurantSidebar.svelte';
 
@@ -37,12 +37,12 @@
     async function handlePayment() {
         // ตรวจสอบว่ามี active ad อยู่หรือไม่
         if (hasActiveAd) {
-            toast.warning('ไม่สามารถซื้อโฆษณาใหม่ได้\nคุณมีโฆษณาที่กำลัง active อยู่แล้ว\nกรุณารอให้โฆษณาปัจจุบันหมดอายุก่อน');
+            toastStore.warning('ไม่สามารถซื้อโฆษณาใหม่ได้\nคุณมีโฆษณาที่กำลัง active อยู่แล้ว\nกรุณารอให้โฆษณาปัจจุบันหมดอายุก่อน');
             return;
         }
         
         if (!selectedPackageId) {
-            toast.warning('กรุณาเลือกแพ็กเกจ');
+            toastStore.warning('กรุณาเลือกแพ็กเกจ');
             return;
         }
         
@@ -52,10 +52,19 @@
             return;
         }
         
+        console.log('🚀 Starting payment process...');
+        console.log('📦 Selected package:', selectedPackageId);
+        
         isSubmitting = true;
         
-        if (formElement) {
-            formElement.requestSubmit();
+        // คลิกปุ่ม submit ที่ซ่อนอยู่ใน form
+        const submitBtn = document.getElementById('hidden-submit-btn');
+        if (submitBtn) {
+            console.log('✅ Clicking hidden submit button...');
+            submitBtn.click();
+        } else {
+            console.error('❌ Submit button not found!');
+            isSubmitting = false;
         }
     }
 
@@ -190,6 +199,33 @@
                         </div>
                     </div>
                     
+                    <!-- Hidden form for server action -->
+                    <form 
+                        bind:this={formElement}
+                        method="POST" 
+                        action="?/createAdvertisement"
+                        use:enhance={() => {
+                            isSubmitting = true;
+                            
+                            return async ({ result }) => {
+                                isSubmitting = false;
+                                
+                                if (result.type === 'redirect') {
+                                    console.log('✅ Redirecting to:', result.location);
+                                    // Force manual redirect ถ้า SvelteKit ไม่ redirect อัตโนมัติ
+                                    if (result.location) {
+                                        goto(result.location);
+                                    }
+                                } else if (result.type === 'failure') {
+                                    toastStore.error(result.data?.error || 'เกิดข้อผิดพลาด');
+                                }
+                            };
+                        }}
+                    >
+                        <input type="hidden" name="packageId" value={selectedPackageId} />
+                        <button type="submit" style="display: none;" id="hidden-submit-btn">Submit</button>
+                    </form>
+                    
                     <button 
                         class="pay-button" 
                         on:click={handlePayment}
@@ -256,15 +292,20 @@
                 method="POST" 
                 action="?/createAdvertisement"
                 use:enhance={() => {
-                    return async ({ result }) => {
-                        if (result.type === 'success') {
-                            toast.success('ชำระเงินสำเร็จ! กำลังโหลดข้อมูลใหม่... 🎉');
+                    return async ({ result, update }) => {
+                        if (result.type === 'redirect') {
+                            // Server ส่ง redirect มา -> ไปหน้า payment
+                            console.log('✅ Redirecting to payment page:', result.location);
+                            goto(result.location);
+                        } else if (result.type === 'success') {
+                            toastStore.success('ชำระเงินสำเร็จ! กำลังโหลดข้อมูลใหม่... 🎉');
                             window.location.reload();
                         } else if (result.type === 'failure') {
                             isSubmitting = false;
-                            toast.error('เกิดข้อผิดพลาด: ' + (result.data?.error || 'กรุณาลองใหม่อีกครั้ง'));
+                            toastStore.error('เกิดข้อผิดพลาด: ' + (result.data?.error || 'กรุณาลองใหม่อีกครั้ง'));
                         } else {
                             isSubmitting = false;
+                            console.log('Unknown result type:', result.type);
                         }
                     };
                 }}

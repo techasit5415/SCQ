@@ -7,6 +7,7 @@
 		id: string;
 		name: string;
 		price?: number;
+		Price?: number;  // PocketBase ใช้ตัวใหญ่
 		Photo?: string;
 		Details?: string;
 		category?: string;
@@ -19,6 +20,9 @@
 
 	// เช็คว่าเมนูพร้อมขายหรือไม่
 	$: isAvailable = (menuItem.Available ?? true) && isRestaurantOpen;
+	
+	// รองรับทั้ง Price (PocketBase) และ price (lowercase)
+	$: actualPrice = menuItem.Price || menuItem.price || 50;
 
 	// ใช้ reactive statement เพื่อให้ URL อัปเดตเมื่อ menuItem เปลี่ยน
 	$: imageUrl = menuItem.Photo 
@@ -34,7 +38,7 @@
 		cart.addItem({
 			id: menuItem.id,
 			name: menuItem.name,
-			price: menuItem.price || 50,
+			price: actualPrice,
 			Photo: menuItem.Photo,
 			Details: menuItem.Details,
 			category: menuItem.category,
@@ -66,7 +70,7 @@
 			<p class="menu-category">หมวด: {menuItem.category}</p>
 		{/if}
 		<div class="menu-footer">
-			<p class="menu-price">฿{menuItem.price || '50'}</p>
+			<p class="menu-price">฿{actualPrice}</p>
 			<button 
 				class="add-btn"
 				on:click={handleAddToCart}
