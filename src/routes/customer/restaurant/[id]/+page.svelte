@@ -153,10 +153,24 @@
 	}
 	
 	function getRestaurantImageUrl(): string {
-		if (restaurant.field) {
-			return `${pbUrl}/api/files/Shop/${restaurant.id}/${restaurant.field}`;
+		const pbUrl = PUBLIC_POCKETBASE_URL;
+		
+		// Field รูปร้านชื่อ Pic_Shop
+		if (restaurant.Pic_Shop && typeof restaurant.Pic_Shop === 'string' && restaurant.Pic_Shop.trim() !== '') {
+			return `${pbUrl}/api/files/${restaurant.collectionName}/${restaurant.id}/${restaurant.Pic_Shop}`;
 		}
-		return '/Photo/Icon.png'; // แก้ path ให้ถูกต้อง
+		
+		// Fallback: ลองหาจาก field อื่นๆ
+		const imageFields = ['image', 'photo', 'picture', 'img', 'field'];
+		for (const fieldName of imageFields) {
+			const imageFile = restaurant[fieldName];
+			if (imageFile && typeof imageFile === 'string' && imageFile.trim() !== '') {
+				return `${pbUrl}/api/files/${restaurant.collectionName}/${restaurant.id}/${imageFile}`;
+			}
+		}
+		
+		// ถ้าไม่เจอ ใช้รูป placeholder
+		return '/restaurant-placeholder.svg';
 	}
 </script>
 
@@ -343,10 +357,11 @@
 <style>
 	.hero-section {
 		position: relative;
-		height: 250px;
+		height: 280px;
 		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;
+		background-color: #f5f5f5;
 	}
 	
 	.hero-overlay {
@@ -355,7 +370,8 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+		background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%);
+		z-index: 1;
 	}
 	
 	.hero-controls {
@@ -365,7 +381,7 @@
 		right: 16px;
 		display: flex;
 		justify-content: space-between;
-		z-index: 100;
+		z-index: 10;
 	}
 	
 	.control-btn {
