@@ -47,8 +47,7 @@
 	}
 
 	function goToCredit() {
-		// TODO: ไปหน้า SCQ Credit (ประวัติการใช้ Point)
-		toastStore.info('ฟีเจอร์กำลังพัฒนา 🚧');
+		goto('/customer/topup');
 	}
 
 	let isEditMode = false;

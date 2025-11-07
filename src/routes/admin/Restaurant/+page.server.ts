@@ -40,11 +40,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
     let shops: any[] = [];
     try {
       console.log('Fetching shops with owner details...');
-      shops = await pb.collection('Shop').getFullList({
+      const allShops = await pb.collection('Shop').getFullList({
         expand: 'User_Owner_ID',
         sort: '-created'
       });
-      console.log('Shops fetched:', shops.length);
+      
+      // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน placeholder สำหรับระบบ
+      shops = allShops.filter((shop: any) => {
+        return shop.id !== '000000000000001' && !shop.name?.startsWith('[SYSTEM]');
+      });
+      
+      console.log('Shops fetched:', shops.length, '(filtered from', allShops.length, 'total)');
     } catch (error) {
       console.error('Error fetching shops:', error);
     }

@@ -10,10 +10,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
         console.log('Loading restaurants from PocketBase...');
         console.log('PocketBase URL:', env.PUBLIC_POCKETBASE_URL);
         
-        // ดึงข้อมูลร้านค้าทั้งหมด (เรียงเองในโค้ด)
-        const restaurants = await pb.collection('Shop').getFullList();
+        // ดึงข้อมูลร้านค้าทั้งหมด (ไม่รวมร้าน placeholder สำหรับ Top-up)
+        const allRestaurants = await pb.collection('Shop').getFullList();
         
-        console.log(`Successfully loaded ${restaurants.length} restaurants`);
+        // กรองเอาเฉพาะร้านจริง ไม่เอาร้าน ID ที่เป็น placeholder
+        const restaurants = allRestaurants.filter((shop: any) => {
+            // ซ่อนร้านที่มี ID เป็น placeholder สำหรับระบบ (เช่น Top-up)
+            // หรือร้านที่มีชื่อพิเศษ
+            return shop.id !== '000000000000001' && !shop.Name?.startsWith('[SYSTEM]');
+        });
+        
+        console.log(`Successfully loaded ${restaurants.length} restaurants (filtered from ${allRestaurants.length} total)`);
         
         // นับจำนวนคิวสำหรับแต่ละร้าน (Order ที่ Pending หรือ In-progress)
         // ใช้ for loop แทน Promise.all เพื่อหลีกเลี่ยง auto-cancellation

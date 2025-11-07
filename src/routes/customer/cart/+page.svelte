@@ -189,19 +189,43 @@
 				console.log('🔍 Cart items:', cartItems);
 				console.log('🔍 Restaurant ID:', cartItems[0]?.restaurantId);
 				console.log('🔍 Menu IDs:', cartItems.map(item => item.id));
+				console.log('🔍 Payment Method:', selectedPayment);
 				
 				return async ({ result }) => {
 					console.log('📝 Form result:', result);
+					
 					if (result.type === 'success') {
-						toast.success('สั่งอาหารเรียบร้อยแล้ว!');
-						cart.clear();
-						goto('/customer');
-					} else {
+						// Check if orderId exists in result.data
+						if (result.data && typeof result.data === 'object' && 'orderId' in result.data && result.data.orderId) {
+							const orderId = result.data.orderId;
+							console.log('✅ Order created successfully! Order ID:', orderId);
+							
+							// ถ้าเลือกชำระด้วย QR Code ให้ไปหน้า Payment
+							if (selectedPayment === 'qr') {
+								console.log('💳 Redirecting to payment page:', `/customer/payment/${orderId}`);
+								toast.success('กรุณาชำระเงินผ่าน QR Code');
+								cart.clear();
+								goto(`/customer/payment/${orderId}`);
+							} else {
+								// ถ้าชำระด้วยวิธีอื่น ให้แจ้งสำเร็จและกลับหน้าหลัก
+								toast.success('สั่งอาหารเรียบร้อยแล้ว!');
+								cart.clear();
+								goto('/customer/orders');
+							}
+						} else {
+							console.error('❌ Order ID missing from response:', result.data);
+							toast.error('เกิดข้อผิดพลาด: ไม่พบหมายเลขคำสั่งซื้อ');
+						}
+					} else if (result.type === 'failure') {
 						console.error('❌ Form error:', result);
 						console.error('❌ Error details:', result.data?.details);
 						const errorMsg = result.data?.details || result.data?.error || 'ไม่สามารถสร้างคำสั่งซื้อได้';
 						toast.error('เกิดข้อผิดพลาด: ' + errorMsg);
+					} else {
+						console.error('❌ Unexpected result type:', result.type);
+						toast.error('เกิดข้อผิดพลาดที่ไม่คาดคิด');
 					}
+					
 					isSubmitting = false;
 				};
 			}}

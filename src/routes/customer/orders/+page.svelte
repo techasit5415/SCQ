@@ -56,6 +56,14 @@
 		});
 	}
 
+	// เช็คว่าหมดเวลาชำระเงินหรือยัง (5 นาที)
+	function isPaymentExpired(orderCreated: string): boolean {
+		const PAYMENT_TIMEOUT = 5 * 60 * 1000; // 5 นาที
+		const createdTime = new Date(orderCreated).getTime();
+		const now = Date.now();
+		return (now - createdTime) > PAYMENT_TIMEOUT;
+	}
+
 	function getMenuImageUrl(menuItem: any): string {
 		if (menuItem.Photo) {
 			return `${PUBLIC_POCKETBASE_URL}/api/files/Menu/${menuItem.id}/${menuItem.Photo}`;
@@ -127,7 +135,9 @@
 					<div class="order-header">
 						<div class="restaurant-info">
 							<h3 class="restaurant-name">
-								{#if order.expand?.Shop_ID}
+								{#if order.Shop_ID === '000000000000001'}
+									💎 เติม SCQ Point
+								{:else if order.expand?.Shop_ID}
 									{order.expand.Shop_ID.name}
 								{:else}
 									ร้านอาหาร
@@ -184,6 +194,39 @@
 							<span class="total-amount">฿{order.Total_Amount}</span>
 						</div>
 						
+					<!-- Payment Button (แสดงเฉพาะ QR Code ที่ Pending และยังไม่หมดเวลา) -->
+					{#if order.payment && order.payment.Method_Payment === 'Qr Code' && order.payment.status === 'Pending'}
+						{#if isPaymentExpired(order.created)}
+							<!-- หมดเวลาชำระเงินแล้ว -->
+							<div class="expired-badge">
+								<span class="material-icons">schedule</span>
+								<span>หมดเวลาชำระ</span>
+							</div>
+						{:else}
+							<!-- ยังไม่หมดเวลา แสดงปุ่มชำระเงิน -->
+							<button 
+								class="payment-btn"
+								on:click={(e) => {
+									e.stopPropagation();
+									goto(`/customer/payment/${order.id}`);
+								}}
+							>
+								<span class="material-icons">payment</span>
+								<span>ชำระเงิน</span>
+							</button>
+						{/if}
+					{:else if order.payment && order.payment.Method_Payment === 'Qr Code' && order.payment.status === 'Success'}
+						<div class="pending-badge">
+							<span class="material-icons">check_circle</span>
+							<span>ชำระแล้ว</span>
+						</div>
+					{:else if order.payment && order.payment.Method_Payment === 'Point'}
+						<div class="pending-badge point-badge">
+							<span class="material-icons">stars</span>
+							<span>Point</span>
+						</div>
+					{/if}
+					
 					<!-- Review Button (เฉพาะ order ที่เสร็จแล้ว และยังไม่ได้รีวิว) -->
 					{#if order.Status === 'Completed'}
 						{#if order.hasReviewed}
@@ -683,6 +726,56 @@
 		font-size: 20px;
 	}
 
+	.payment-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 10px;
+		background: linear-gradient(135deg, #3b82f6, #1e40af);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: 'Noto Sans Thai', sans-serif;
+		transition: all 0.2s ease;
+		margin-top: 8px;
+	}
+	
+	.payment-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+	
+	.payment-btn .material-icons {
+		font-size: 20px;
+	}
+
+	.pending-badge {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 10px;
+		background: #fef3c7;
+		color: #92400e;
+		border: 2px solid #fbbf24;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		font-family: 'Noto Sans Thai', sans-serif;
+		margin-top: 8px;
+	}
+
+	.pending-badge .material-icons {
+		font-size: 20px;
+		color: #f59e0b;
+	}
+
 	.reviewed-badge {
 		display: flex;
 		align-items: center;
@@ -703,6 +796,28 @@
 	.reviewed-badge .material-icons {
 		font-size: 20px;
 		color: #4caf50;
+	}
+
+	.expired-badge {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 10px;
+		background: linear-gradient(135deg, #fee2e2, #fecaca);
+		color: #991b1b;
+		border: 2px solid #f87171;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		font-family: 'Noto Sans Thai', sans-serif;
+		margin-top: 8px;
+	}
+
+	.expired-badge .material-icons {
+		font-size: 20px;
+		color: #dc2626;
 	}
 
 	/* Modal Styles */

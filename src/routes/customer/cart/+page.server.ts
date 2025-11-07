@@ -98,8 +98,8 @@ export const actions: Actions = {
 				User_ID: userId,
 				Shop_ID: shopId,
 				Menu_ID: menuIds,
-				Total_Amount: orderData.total ,
-				Status: "Pending"
+				Total_Amount: orderData.total,
+				Status: 'Pending'
 			};
 			
 			console.log('📝 Final createData (before Note):', JSON.stringify(createData, null, 2));
@@ -107,6 +107,83 @@ export const actions: Actions = {
 			// สร้าง Order record ก่อน
 			const orderRecord = await pb.collection('Order').create(createData);
 			console.log('✅ Order created:', orderRecord.id);
+			
+			// ถ้าเป็น Point Payment - ตัด Point ทันทีและสร้าง Payment record (status: Success)
+			if (orderData.paymentMethod === 'credit') {
+				try {
+					// ดึงข้อมูล Point ปัจจุบันของผู้ใช้
+					const userPointRecords = await pb.collection('Point').getFullList({
+						filter: `User_ID = "${userId}"`,
+						sort: '-created'
+					});
+					
+					let currentPoints = 0;
+					if (userPointRecords.length > 0) {
+						currentPoints = userPointRecords[0].Point || 0;
+					}
+					
+					// ตรวจสอบว่า Point เพียงพอหรือไม่
+					if (currentPoints < orderData.total) {
+						// ลบ Order ที่สร้างไว้
+						await pb.collection('Order').delete(orderRecord.id);
+						throw new Error(`Point ไม่เพียงพอ (มี ${currentPoints} ต้องการ ${orderData.total})`);
+					}
+					
+					// หัก Point
+					const newPointBalance = currentPoints - orderData.total;
+					console.log(`💎 Deducting Points: ${currentPoints} - ${orderData.total} = ${newPointBalance}`);
+					
+					if (userPointRecords.length > 0) {
+						await pb.collection('Point').update(userPointRecords[0].id, {
+							Point: newPointBalance
+						});
+						console.log('✅ Point deducted successfully');
+					}
+					
+					// สร้าง Payment record (status: Success เพราะจ่ายด้วย Point แล้ว)
+					await pb.collection('Payment').create({
+						User_ID: userId,
+						Shop_ID: shopId,
+						Order_ID: orderRecord.id,
+						Method_Payment: 'Point',
+						Total_Amount: orderData.total,
+						status: 'Success' // จ่ายสำเร็จแล้ว
+					});
+					console.log('💳 Point payment completed');
+					
+				} catch (error: any) {
+					console.error('❌ Error processing Point payment:', error);
+					// ลบ Order ที่สร้างไว้
+					try {
+						await pb.collection('Order').delete(orderRecord.id);
+					} catch (deleteError) {
+						console.error('❌ Failed to delete order:', deleteError);
+					}
+					throw error;
+				}
+			}
+			
+			// สร้าง Payment record สำหรับ QR Code (status: Pending - รอการอัพโหลดสลิป)
+			if (orderData.paymentMethod === 'qr') {
+				try {
+					const paymentData = {
+						User_ID: userId,
+						Shop_ID: shopId,
+						Order_ID: orderRecord.id,
+						Method_Payment: 'Qr Code',
+						Total_Amount: orderData.total,
+						status: 'Pending' // รอการอัพโหลดสลิป
+					};
+					
+					const paymentRecord = await pb.collection('Payment').create(paymentData);
+					console.log('💳 QR Payment record created:', paymentRecord.id);
+				} catch (error: any) {
+					console.error('❌ Error creating Payment record:', error);
+					// ถ้าสร้าง Payment ไม่สำเร็จ ต้องลบ Order ที่สร้างไว้
+					await pb.collection('Order').delete(orderRecord.id);
+					throw error;
+				}
+			}
 			
 			// เพิ่ม Note หลังจากสร้าง Order เสร็จแล้ว
 			if (orderData.note && orderData.note.trim()) {
@@ -132,82 +209,10 @@ export const actions: Actions = {
 				}
 			}
 			
-		// สร้าง Payment record ที่เชื่อมโยงกับ Order
-		const paymentData = {
-			User_ID: userId,
-			Shop_ID: shopId,
-			Order_ID: orderRecord.id,
-			Method_Payment: getPaymentMethodName(orderData.paymentMethod),
-			Total_Amount: orderData.total ,
-			status: "Success"
-		};			console.log('💳 Creating payment:', JSON.stringify(paymentData, null, 2));
-			
-			let paymentRecord;
-			try {
-				paymentRecord = await pb.collection('Payment').create(paymentData);
-				console.log('✅ Payment created:', paymentRecord.id);
-			} catch (paymentError) {
-				console.error('❌ Payment creation failed:', paymentError);
-				console.error('💳 Payment data that failed:', JSON.stringify(paymentData, null, 2));
-				throw paymentError;
-			}
-			
-		// 💎 บันทึก Point transaction ถ้าชำระเงินด้วย Point
-		if (orderData.paymentMethod === 'credit') {
-			try {
-				const pointAmount = orderData.total ; // จำนวน Point ที่ใช้
-				
-				// ดึงข้อมูล Point ปัจจุบันของผู้ใช้
-				const userPointRecords = await pb.collection('Point').getFullList({
-					filter: `User_ID = "${userId}"`,
-					sort: '-created'
-				});
-				
-				let currentPoints = 0;
-				if (userPointRecords.length > 0) {
-					currentPoints = userPointRecords[0].Point || 0;
-				}
-				
-				// ตรวจสอบว่า Point เพียงพอหรือไม่
-				if (currentPoints < pointAmount) {
-					throw new Error(`Point ไม่เพียงพอ (มี ${currentPoints} ต้องการ ${pointAmount})`);
-				}
-				
-				// บันทึกการใช้ Point (อัพเดท Point ให้เป็นค่าใหม่หลังหัก)
-				const newPointBalance = currentPoints - pointAmount;
-				
-				console.log(`💎 Updating Point: ${currentPoints} - ${pointAmount} = ${newPointBalance}`);
-				
-				// อัพเดท Point record ที่มีอยู่
-				if (userPointRecords.length > 0) {
-					const existingPointId = userPointRecords[0].id;
-					const pointRecord = await pb.collection('Point').update(existingPointId, {
-						Point: newPointBalance
-					});
-					console.log('✅ Point updated:', JSON.stringify(pointRecord, null, 2));
-				} else {
-					// ถ้าไม่มี record ให้สร้างใหม่
-					const pointRecord = await pb.collection('Point').create({
-						User_ID: userId,
-						Point: newPointBalance
-					});
-					console.log('✅ Point record created:', JSON.stringify(pointRecord, null, 2));
-				}
-			} catch (pointError: any) {
-				console.error('❌ Point transaction failed:', pointError);
-				// ลบ Payment และ Order ที่สร้างไปแล้ว (rollback)
-				try {
-					await pb.collection('Payment').delete(paymentRecord.id);
-					await pb.collection('Order').delete(orderRecord.id);
-				} catch (rollbackError) {
-					console.error('❌ Rollback failed:', rollbackError);
-				}
-				throw new Error(`ไม่สามารถใช้ Point ได้: ${pointError.message}`);
-			}
-		}			return {
+			// Redirect ไปหน้าที่เหมาะสม (ส่ง orderId กลับไปด้วย)
+			return {
 				success: true,
-				orderId: orderRecord.id,
-				paymentId: paymentRecord.id
+				orderId: orderRecord.id
 			};
 			
 		} catch (error: any) {

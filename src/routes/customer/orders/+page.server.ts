@@ -27,8 +27,15 @@ export const load: PageServerLoad = async ({ locals }) => {
 			expand: 'Shop_ID,Menu_ID,Note' // ขยายข้อมูล relation รวม Note
 		});
 		
+		// กรอง Top-up orders ออก (ดูจาก Shop_ID ที่เป็น placeholder)
+		const TOPUP_SHOP_ID = '000000000000001';
+		const filteredOrders = orders.filter((order: any) => {
+			// ซ่อน Order ที่เป็น Top-up (Shop_ID เป็น placeholder ของระบบ)
+			return order.Shop_ID !== TOPUP_SHOP_ID;
+		});
+		
 		// คำนวณลำดับคิวสำหรับแต่ละ order ที่ยังไม่เสร็จ
-		const ordersWithQueuePosition = await Promise.all(orders.map(async (order: any) => {
+		const ordersWithQueuePosition = await Promise.all(filteredOrders.map(async (order: any) => {
 			let queuePosition = null;
 			
 			// คำนวณเฉพาะ order ที่มีสถานะ Pending หรือ In-progress
