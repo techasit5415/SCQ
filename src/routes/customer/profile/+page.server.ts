@@ -21,43 +21,60 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 		
 		const userId = locals.user.id;
 		console.log('👤 Loading profile for User ID:', userId);
+		console.log('👤 locals.user data:', locals.user);
 		
-		// ดึงข้อมูลผู้ใช้จาก PocketBase users collection
-		let userRecord: any = null;
+		// ดึงข้อมูลผู้ใช้จาก locals.user ที่มาจาก authStore
+		let userRecord: any = locals.user;
 		let userName = 'ผู้ใช้';
 		let userEmail = '';
 		let userAvatar = '';
 		let userRole = '';
 		
 		try {
-			userRecord = await pb.collection('_pb_users_auth_').getOne(userId);
+			// ใช้ข้อมูลจาก locals.user ก่อน
+			if (userRecord) {
+				userRole = userRecord.Role || '';
+				console.log('🔐 User Role:', userRole);
+				
+				// ลองหา field ชื่อต่างๆ
+				const firstName = userRecord.name || userRecord.Name || userRecord.fname || '';
+				const lastName = userRecord.Lastname || userRecord.lastname || userRecord.lname || '';
+				userName = `${firstName} ${lastName}`.trim() || userRecord.username || userRecord.email?.split('@')[0] || 'ผู้ใช้';
+				userEmail = userRecord.email || '';
+				userAvatar = userRecord.avatar || '';
+				
+				console.log('✅ User data from locals:', { firstName, lastName, userName, userEmail, userAvatar });
+				console.log('📸 Avatar:', userAvatar);
+			}
 			
-			// เช็ค Role ว่าเป็น user หรือไม่
-			userRole = userRecord.Role || '';
-			console.log('🔐 User Role:', userRole);
-			
-			// เช็ค Role (ตอนนี้ skip ไปก่อน เพราะยังไม่มี session management)
-			// Role ที่อนุญาต: 000000000000001 (user), 000000000000002 (user)
-			// Role ที่ไม่อนุญาต: 000000000000003 (shop owner)  
-			console.log('ℹ️ Skipping role check for testing')
-			
-			// รวมชื่อและนามสกุล
-			const firstName = userRecord.name || '';
-			const lastName = userRecord.Lastname || '';
-			userName = `${firstName} ${lastName}`.trim() || userRecord.username || 'ผู้ใช้';
-			userEmail = userRecord.email || '';
-			userAvatar = userRecord.avatar || '';
-			console.log('✅ User found:', userName, '| Email:', userEmail);
-			console.log('📸 Avatar:', userAvatar);
+			// ถ้าข้อมูลยังไม่ครบ ให้ดึงจาก PocketBase อีกทีเผื่อ
+			if (!userName || userName === 'ผู้ใช้' || !userEmail) {
+				console.log('🔄 Fetching fresh data from PocketBase...');
+				const freshRecord = await pb.collection('users').getOne(userId);
+				console.log('📦 Fresh record:', freshRecord);
+				
+				const firstName = freshRecord.name || freshRecord.Name || freshRecord.fname || '';
+				const lastName = freshRecord.Lastname || freshRecord.lastname || freshRecord.lname || '';
+				userName = `${firstName} ${lastName}`.trim() || freshRecord.username || freshRecord.email?.split('@')[0] || userName;
+				userEmail = freshRecord.email || userEmail;
+				userAvatar = freshRecord.avatar || userAvatar;
+				userRecord = freshRecord;
+				
+				console.log('✅ Updated from fresh data:', { userName, userEmail, userAvatar });
+			}
 		} catch (userError: any) {
 			console.error('⚠️ User fetch error:', userError);
 			console.error('⚠️ Error details:', userError?.message, userError?.status);
 			
-			// ตอนนี้ยังไม่มี login system ใช้ fallback data แทน
-			userName = 'Test User';
-			userEmail = 'test@example.com';
-			userAvatar = '';
-			console.log('⚠️ Using fallback user data for testing');
+			// ใช้ข้อมูลจาก locals.user ตามที่มี
+			if (locals.user) {
+				const firstName = locals.user.name || locals.user.Name || locals.user.fname || '';
+				const lastName = locals.user.Lastname || locals.user.lastname || locals.user.lname || '';
+				userName = `${firstName} ${lastName}`.trim() || locals.user.username || locals.user.email?.split('@')[0] || 'ผู้ใช้';
+				userEmail = locals.user.email || '';
+				userAvatar = locals.user.avatar || '';
+				console.log('⚠️ Using data from locals.user:', { userName, userEmail, userAvatar });
+			}
 		}
 		
 		// ดึงข้อมูล Point คงเหลือจาก PocketBase

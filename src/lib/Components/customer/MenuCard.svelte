@@ -35,6 +35,32 @@
 			return;
 		}
 		
+		// ตรวจสอบว่ามีสินค้าจากร้านอื่นในตะกร้าหรือไม่
+		let currentCart;
+		cart.subscribe(value => currentCart = value)();
+		
+		if (currentCart.items.length > 0) {
+			const firstItemRestaurantId = currentCart.items[0].restaurantId;
+			const firstItemRestaurantName = currentCart.items[0].restaurantName;
+			
+			// ถ้าร้านไม่ตรงกัน ให้แสดงการยืนยัน
+			if (firstItemRestaurantId !== restaurantId) {
+				const confirmed = confirm(
+					`ตะกร้าของคุณมีสินค้าจาก "${firstItemRestaurantName}" อยู่แล้ว\n\n` +
+					`คุณต้องการลบสินค้าเดิมและเริ่มสั่งจาก "${restaurantName}" ใหม่หรือไม่?`
+				);
+				
+				if (!confirmed) {
+					return; // ยกเลิกการเพิ่มสินค้า
+				}
+				
+				// ลบสินค้าเดิมทั้งหมดในตะกร้า
+				cart.clear();
+				toast.info(`ล้างตะกร้าและเริ่มสั่งจาก ${restaurantName}`);
+			}
+		}
+		
+		// เพิ่มสินค้าลงตะกร้า
 		cart.addItem({
 			id: menuItem.id,
 			name: menuItem.name,
