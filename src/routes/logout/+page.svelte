@@ -52,7 +52,7 @@
         window.addEventListener('popstate', function() {
             history.pushState(null, '', location.href);
             toastStore.warning('คุณได้ออกจากระบบแล้ว กรุณาเข้าสู่ระบบใหม่');
-            goto('/login', { replaceState: true });
+            goto('/', { replaceState: true });
         });
         
         // 5. แสดง toast ว่า logout สำเร็จ
@@ -60,7 +60,7 @@
         
         // 6. Redirect ไป login หลังจาก 1 วินาที
         setTimeout(() => {
-            goto('/login', { replaceState: true });
+            goto('/', { replaceState: true });
         }, 1000);
     });
 </script>

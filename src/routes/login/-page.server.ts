@@ -1,4 +1,4 @@
-import type { Actions, PageServerLoad } from './$types.js';
+import type { Actions, PageServerLoad } from '../$types.js';
 import { fail, redirect } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
