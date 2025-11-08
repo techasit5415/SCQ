@@ -2,13 +2,550 @@
     import { goto } from "$app/navigation";
     import TopBar from '$lib/Components/restaurant/Topbar.svelte';
     import RestaurantSidebar from '$lib/Components/restaurant/RestaurantSidebar.svelte';
+    import { onMount } from 'svelte';
 
     export let data;
 
     let activeMenu = "dashboard";
+    let selectedReportDate = '';
+    let showDatePicker = false;
+    let isGeneratingReport = false;
     
     // สี theme สำหรับกราฟ
     const chartColors = ['#FF8C00', '#FFB84D', '#FFA500', '#FF7F00', '#FF6600'];
+
+    // สร้างลิสต์วันที่ย้อนหลัง 7 วัน
+    let availableDates = [];
+    
+    onMount(() => {
+        generateAvailableDates();
+    });
+    
+    function generateAvailableDates() {
+        availableDates = [];
+        for (let i = 0; i < 7; i++) {
+            // ใช้วันที่ในเวลาท้องถิ่น ไม่ใช้ UTC
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            
+            // สร้าง value เป็น YYYY-MM-DD โดยใช้เวลาท้องถิ่น
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateValue = `${year}-${month}-${day}`;
+            
+            availableDates.push({
+                value: dateValue,
+                label: date.toLocaleDateString('th-TH', { 
+                    year: 'numeric',
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'long'
+                })
+            });
+        }
+        if (availableDates.length > 0) {
+            selectedReportDate = availableDates[0].value;
+        }
+    }
+    
+    async function downloadDailyReport() {
+        if (!selectedReportDate) {
+            alert('กรุณาเลือกวันที่');
+            return;
+        }
+        
+        isGeneratingReport = true;
+        try {
+            // ดึงข้อมูลสำหรับวันที่เลือก
+            const reportData = await fetchDailyReportData(selectedReportDate);
+            
+            // สร้างหน้าต่างพิมพ์
+            printDailyReport(reportData);
+            
+            showDatePicker = false;
+        } catch (error) {
+            console.error('Error generating report:', error);
+            alert('เกิดข้อผิดพลาดในการสร้างรายงาน: ' + error.message);
+        } finally {
+            isGeneratingReport = false;
+        }
+    }
+    
+    async function fetchDailyReportData(dateStr) {
+        // ส่ง request ไปยัง API เพื่อดึงข้อมูล
+        const response = await fetch(`/restaurant/${data.shopId}/dashboard/report?date=${dateStr}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch report data');
+        }
+        return await response.json();
+    }
+    
+    function printDailyReport(reportData) {
+        const printWindow = window.open('', '_blank');
+        
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานยอดขายประจำวัน - ${reportData.shopName}</title>
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Sarabun', 'Noto Sans Thai', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+        }
+        
+        .report-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        
+        .report-header {
+            background: linear-gradient(135deg, #ffe5cc 0%, #ffd4a8 100%);
+            color: #333333;
+            padding: 40px 30px;
+            margin: -20px -20px 35px -20px;
+            text-align: center;
+            border-radius: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-bottom: 4px solid #ffb366;
+        }
+        
+        .report-header h1 {
+            font-size: 30px;
+            font-weight: 700;
+            color: #d97700;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .report-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #555555;
+            margin-bottom: 8px;
+        }
+        
+        .report-header p {
+            font-size: 16px;
+            color: #777777;
+        }
+        
+        .summary-section {
+            margin-bottom: 35px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #d97700;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffcc99;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid #ffe0b3;
+            border-radius: 8px;
+            padding: 22px 18px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        
+        .kpi-card:hover {
+            border-color: #ffcc99;
+            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.12);
+            transform: translateY(-2px);
+        }
+        
+        .kpi-label {
+            font-size: 13px;
+            color: #888888;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #d97700;
+        }
+        
+        .kpi-value.success {
+            color: #10b981;
+        }
+        
+        .kpi-value.danger {
+            color: #ef4444;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            background: white;
+            font-size: 14px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        thead {
+            background: #f5a662;
+            color: white;
+        }
+        
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        th:first-child {
+            border-top-left-radius: 12px;
+        }
+        
+        th:last-child {
+            border-top-right-radius: 12px;
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #fffbf5;
+        }
+        
+        tbody tr:hover {
+            background: #fff5eb;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(255, 140, 0, 0.1);
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 12px;
+        }
+        
+        tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 12px;
+        }
+        
+        .rank-badge {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 13px;
+            color: white;
+        }
+        
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #333; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #e5e5e5); color: #333; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #d4af37); color: white; }
+        .rank-other { background: linear-gradient(135deg, #ff8c00, #ffb84d); color: white; }
+        
+        .chart-container {
+            background: #ffffff;
+            border: 1px solid #ffe0b3;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 240px;
+            gap: 10px;
+            margin-top: 25px;
+            padding: 20px 15px;
+            background: #fafafa;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+        }
+        
+        .bar-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bar {
+            width: 100%;
+            max-width: 24px;
+            background: linear-gradient(180deg, #f5a662 0%, #ffc88a 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-height: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .bar:hover {
+            background: linear-gradient(180deg, #ff9d42 0%, #ffb366 100%);
+            transform: scaleY(1.03);
+        }
+        
+        .bar-label {
+            font-size: 11px;
+            color: #888888;
+            font-weight: 500;
+        }
+        
+        .bar-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #d97700;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px;
+            background: #f8f8f8;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #888888;
+            font-size: 12px;
+            margin-left: -20px;
+            margin-right: -20px;
+            margin-bottom: -20px;
+        }
+        
+        .footer p {
+            margin: 5px 0;
+        }
+        
+        .footer p:first-child {
+            font-weight: 600;
+            color: #555555;
+        }
+        
+        .print-button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #f5a662;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(245, 166, 98, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .print-button:hover {
+            background: #ff9d42;
+            box-shadow: 0 4px 12px rgba(245, 166, 98, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .print-button:active {
+            transform: translateY(0);
+        }
+        
+        .info-text {
+            color: #666666;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .info-text strong {
+            color: #d97700;
+        }
+        
+        @media print {
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <button class="print-button no-print" onclick="window.print()">🖨️ พิมพ์รายงาน</button>
+        
+        <div class="report-header">
+            <h1>รายงานยอดขายประจำวัน</h1>
+            <h2>${reportData.shopName}</h2>
+            <p>${reportData.reportDate}</p>
+        </div>
+        
+        <div class="summary-section">
+            <h3 class="section-title">สรุปยอดขาย</h3>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">จำนวนออเดอร์ทั้งหมด</div>
+                    <div class="kpi-value">${reportData.totalOrders}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ออเดอร์ที่เสร็จสิ้น</div>
+                    <div class="kpi-value success">${reportData.completedOrders}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ออเดอร์ที่ยกเลิก</div>
+                    <div class="kpi-value danger">${reportData.canceledOrders}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ยอดขายรวม</div>
+                    <div class="kpi-value">฿${reportData.totalRevenue.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">มูลค่าเฉลี่ยต่อออเดอร์</div>
+                    <div class="kpi-value">฿${reportData.avgOrderValue.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <h3 class="section-title">วิธีการชำระเงิน</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>วิธีชำระเงิน</th>
+                        <th style="text-align: center;">จำนวนออเดอร์</th>
+                        <th style="text-align: right;">ยอดขาย (บาท)</th>
+                        <th style="text-align: right;">สัดส่วน (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.paymentMethods.map(pm => `
+                        <tr>
+                            <td><strong>${pm.method === 'Point' ? 'พอยท์' : pm.method === 'Qr Code' ? 'QR Code' : 'เงินสด'}</strong></td>
+                            <td style="text-align: center;">${pm.count}</td>
+                            <td style="text-align: right;">${pm.revenue.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                            <td style="text-align: right;">${pm.percentage.toFixed(1)}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="summary-section">
+            <h3 class="section-title">เมนูขายดี</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px; text-align: center;">อันดับ</th>
+                        <th>ชื่อเมนู</th>
+                        <th style="text-align: center;">จำนวนที่ขาย</th>
+                        <th style="text-align: right;">รายได้ (บาท)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.popularMenus.length > 0 ? reportData.popularMenus.map((menu, idx) => `
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="rank-badge rank-${idx < 3 ? idx + 1 : 'other'}">${idx + 1}</span>
+                            </td>
+                            <td>${menu.name}</td>
+                            <td style="text-align: center;">${menu.quantity}</td>
+                            <td style="text-align: right;">${menu.revenue.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="4" style="text-align: center; color: #6c757d;">ไม่มีข้อมูล</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="chart-container">
+            <h3 class="section-title">ยอดออเดอร์แยกตามชั่วโมง</h3>
+            <div class="bar-chart">
+                ${reportData.hourlyOrders.filter(h => h.orders > 0).slice(0, 12).map(h => {
+                    const maxOrders = Math.max(...reportData.hourlyOrders.map(x => x.orders), 1);
+                    const height = (h.orders / maxOrders) * 180;
+                    return `
+                        <div class="bar-item">
+                            <div class="bar-value">${h.orders}</div>
+                            <div class="bar" style="height: ${height}px;"></div>
+                            <div class="bar-label">${h.hour}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            ${(() => {
+                const peakHour = reportData.hourlyOrders.reduce((max, h) => h.orders > max.orders ? h : max, reportData.hourlyOrders[0]);
+                return `<p class="info-text">ช่วงเวลาที่มีออเดอร์สูงสุด: ${peakHour.hour} (${peakHour.orders} ออเดอร์)</p>`;
+            })()}
+        </div>
+        
+        <div class="footer">
+            <p><strong>สร้างรายงานเมื่อ:</strong> ${new Date().toLocaleString('th-TH', { 
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</p>
+            <p style="margin-top: 8px;">ระบบจัดการร้านอาหาร SCQ - Student Canteen Queue</p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // รอให้โหลดเสร็จแล้วค่อยเปิดหน้าต่างพิมพ์
+        printWindow.onload = () => {
+            printWindow.focus();
+        };
+    }
 
     function listOrder() {
         var x = document.getElementById("hiddenbar-container");
@@ -214,12 +751,52 @@
                             <div class="no-data">ไม่มีข้อมูล</div>
                         {/each}
                     </div>
-                    <!-- Debug info -->
-                    {#if data.analytics?.dailyOrders}
-                        <div style="font-size: 12px; color: #666; margin-top: 10px;">
-                            Debug: Found {data.analytics.dailyOrders.length} days of data
+                    
+                    <!-- Download Report Section -->
+                    <div class="download-report-section">
+                        <div class="report-header">
+                            <div class="report-icon">
+                                <span class="material-symbols-outlined">description</span>
+                            </div>
+                            <div class="report-text">
+                                <h4>ดาวน์โหลดรายงานประจำวัน</h4>
+                                <p>เลือกวันที่เพื่อดาวน์โหลดรายงานยอดขายแบบละเอียด</p>
+                            </div>
                         </div>
-                    {/if}
+                        
+                        <div class="report-controls">
+                            <div class="date-selector">
+                                <label for="reportDate">
+                                    <span class="material-symbols-outlined">calendar_today</span>
+                                    เลือกวันที่
+                                </label>
+                                <select id="reportDate" bind:value={selectedReportDate} class="date-select">
+                                    {#each availableDates as date}
+                                        <option value={date.value}>{date.label}</option>
+                                    {/each}
+                                </select>
+                            </div>
+                            
+                            <button 
+                                class="download-btn"
+                                on:click={downloadDailyReport}
+                                disabled={isGeneratingReport}
+                            >
+                                {#if isGeneratingReport}
+                                    <span class="spinner"></span>
+                                    <span>กำลังโหลดข้อมูล...</span>
+                                {:else}
+                                    <span class="material-symbols-outlined">print</span>
+                                    <span>พิมพ์รายงาน</span>
+                                {/if}
+                            </button>
+                        </div>
+                        
+                        <div class="report-info">
+                            <span class="material-symbols-outlined">info</span>
+                            <span>รายงานจะแสดงยอดขายรวม, จำนวนออเดอร์, รายการเมนูขายดี, กราฟการขาย และข้อมูลการชำระเงิน พร้อมพิมพ์ได้ทันที</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -232,10 +809,12 @@
                 <div class="chart-content">
                     <div class="line-chart modern-line-chart">
                         {#each data.analytics?.hourlyOrders || [] as hour, index}
+                            {@const maxOrders = Math.max(...(data.analytics?.hourlyOrders || []).map(h => h.orders), 1)}
+                            {@const barHeight = Math.min((hour.orders / maxOrders) * 150, 160)}
                             <div class="hour-item">
                                 <div class="hour-bar-container">
                                     <div class="hour-bar" 
-                                         style="height: {Math.max(hour.orders * 8, 3)}px; 
+                                         style="height: {Math.max(barHeight, 6)}px; 
                                                 background: linear-gradient(180deg, #FF8C00 0%, #FFB84D 100%);
                                                 animation-delay: {index * 0.05}s;">
                                     </div>
@@ -583,6 +1162,7 @@
         align-items: end;
         justify-content: space-around;
         height: 300px;
+        max-height: 300px;
         gap: 20px;
         padding: 24px 16px;
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -616,13 +1196,16 @@
         width: 100%;
         max-width: 60px;
         height: 220px;
+        max-height: 220px;
         display: flex;
         align-items: end;
         justify-content: center;
+        overflow: hidden;
     }
 
     .bar-large {
         width: 100%;
+        max-height: 220px;
         border-radius: 8px 8px 0 0;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         animation: barGrowIn 0.8s ease-out forwards;
@@ -908,6 +1491,164 @@
         animation: bounce 2s infinite;
     }
 
+    /* Download Report Section */
+    .download-report-section {
+        margin-top: 30px;
+        padding: 24px;
+        background: linear-gradient(135deg, #fff5f0 0%, #ffe9dc 100%);
+        border-radius: 12px;
+        border: 2px solid #ff8c00;
+    }
+
+    .report-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .report-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #ff8c00, #ffb84d);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 28px;
+        box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+
+    .report-text h4 {
+        margin: 0 0 4px 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .report-text p {
+        margin: 0;
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .report-controls {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .date-selector {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .date-selector label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .date-selector label .material-symbols-outlined {
+        font-size: 18px;
+        color: #ff8c00;
+    }
+
+    .date-select {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        color: #111827;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .date-select:hover {
+        border-color: #ff8c00;
+    }
+
+    .date-select:focus {
+        outline: none;
+        border-color: #ff8c00;
+        box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+    }
+
+    .download-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        font-size: 15px;
+        font-weight: 600;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+        color: white;
+        background: linear-gradient(135deg, #ff8c00, #ff7f00);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+
+    .download-btn:hover:not(:disabled) {
+        background: linear-gradient(135deg, #ff7f00, #ff6600);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 140, 0, 0.4);
+    }
+
+    .download-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .download-btn .material-symbols-outlined {
+        font-size: 20px;
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .report-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.6;
+    }
+
+    .report-info .material-symbols-outlined {
+        font-size: 18px;
+        color: #3b82f6;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
     @keyframes bounce {
         0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
         40% { transform: translateY(-4px); }
@@ -991,8 +1732,9 @@
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border-radius: 16px;
         height: 240px;
+        max-height: 240px;
         position: relative;
-        overflow: visible;
+        overflow: hidden;
     }
 
     .modern-line-chart::before {
@@ -1020,16 +1762,19 @@
     .hour-bar-container {
         position: relative;
         height: 160px;
+        max-height: 160px;
         width: 100%;
         display: flex;
         align-items: end;
         justify-content: center;
+        overflow: hidden;
     }
 
     .hour-bar {
         width: 80%;
         max-width: 20px;
         min-height: 6px;
+        max-height: 160px;
         border-radius: 8px 8px 0 0;
         position: relative;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);

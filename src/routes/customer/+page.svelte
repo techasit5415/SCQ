@@ -1,14 +1,63 @@
 <script>
     import CustomerHeader from '$lib/Components/customer/TopbarCustomer.svelte';
     import RestaurantList from '$lib/Components/customer/RestaurantList.svelte';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
+    import { startNotificationPolling, stopNotificationPolling, fetchUnreadCount } from '$lib/stores/notifications';
+    import { showToast } from '$lib/stores/toast';
     
     export let data;
     
-
-    
     let isMobile = false;
+    
+    // Notification popup state
+    let showOrderCompletePopup = false;
+    let completedOrderData = null;
+    
+    // Handle order completed notification
+    function handleOrderCompleted(order) {
+        console.log('🎉 Order completed notification:', order);
+        console.log('Setting showOrderCompletePopup to TRUE');
+        
+        completedOrderData = order;
+        showOrderCompletePopup = true;
+        
+        console.log('Popup state:', { showOrderCompletePopup, completedOrderData });
+        
+        // แสดง toast notification
+        showToast(`ออเดอร์จาก ${order.shopName} เสร็จแล้ว! ${order.queueNumber ? `คิวที่ ${order.queueNumber}` : ''}`, 'success');
+        
+        // เล่นเสียงแจ้งเตือน (ถ้ามี)
+        playNotificationSound();
+        
+        // อัปเดต unread count
+        fetchUnreadCount();
+        
+        // ไม่ปิด popup อัตโนมัติ - ให้ user ปิดเองเพื่อยืนยันว่าเห็นแล้ว
+    }
+    
+    function playNotificationSound() {
+        // TODO: Add notification sound file to /static/notification.mp3
+        // Uncomment when sound file is ready:
+        /*
+        try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.log('Cannot play sound:', err));
+        } catch (err) {
+            console.log('Notification sound not available');
+        }
+        */
+    }
+    
+    function closePopup() {
+        showOrderCompletePopup = false;
+    }
+    
+    function viewCompletedOrder() {
+        showOrderCompletePopup = false;
+        goto('/customer/orders');
+    }
     
     // Check if device is mobile
     onMount(() => {
@@ -19,9 +68,17 @@
         checkMobile();
         window.addEventListener('resize', checkMobile);
         
+        // เริ่ม polling notifications และ completed orders
+        startNotificationPolling(handleOrderCompleted);
+        
         return () => {
             window.removeEventListener('resize', checkMobile);
         };
+    });
+    
+    onDestroy(() => {
+        // หยุด polling เมื่อออกจากหน้า
+        stopNotificationPolling();
     });
     
     // Event handlers
@@ -89,6 +146,58 @@
         </div>
     </main>
 </div>
+
+<!-- Order Completed Popup -->
+{#if showOrderCompletePopup && completedOrderData}
+    <div class="popup-overlay" on:click={closePopup}>
+        <div class="popup-content order-complete-popup" on:click|stopPropagation>
+            <button class="popup-close" on:click={closePopup}>
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            
+            <div class="popup-icon success">
+                <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            
+            <h2 class="popup-title">ออเดอร์เสร็จแล้ว!</h2>
+            
+            <div class="popup-body">
+                <p class="shop-name">{completedOrderData.shopName}</p>
+                
+                {#if completedOrderData.queueNumber}
+                    <div class="queue-number">
+                        <span class="label">คิวที่</span>
+                        <span class="number">{completedOrderData.queueNumber}</span>
+                    </div>
+                {/if}
+                
+                <div class="order-details">
+                    <div class="detail-item">
+                        <span class="material-symbols-outlined">restaurant</span>
+                        <span>{completedOrderData.menuCount} รายการ</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="material-symbols-outlined">payments</span>
+                        <span>฿{completedOrderData.totalAmount.toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <p class="popup-message">
+                    สามารถไปรับอาหารได้แล้วค่ะ
+                </p>
+            </div>
+            
+            <div class="popup-actions">
+                <button class="btn-secondary" on:click={closePopup}>
+                    ปิด
+                </button>
+                <button class="btn-primary" on:click={viewCompletedOrder}>
+                    ดูรายละเอียด
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     .customer-layout {
@@ -442,6 +551,222 @@
         .content-card:active {
             transform: scale(0.98);
             transition: transform 0.1s ease;
+        }
+    }
+
+    /* Notification Popup Styles */
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .popup-content {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 90%;
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .order-complete-popup {
+        padding: 30px;
+    }
+
+    .popup-close {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #999;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+
+    .popup-close:hover {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .popup-icon {
+        font-size: 64px;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .popup-icon.success {
+        color: #10b981;
+    }
+
+    .popup-title {
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .popup-body {
+        text-align: center;
+    }
+
+    .shop-name {
+        font-size: 18px;
+        color: #666;
+        margin-bottom: 15px;
+    }
+
+    .queue-number {
+        display: inline-block;
+        background: linear-gradient(135deg, #f5a662 0%, #d97700 100%);
+        color: white;
+        font-size: 32px;
+        font-weight: 700;
+        padding: 15px 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .order-details {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .detail-value {
+        color: #333;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .order-message {
+        color: #10b981;
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 20px;
+    }
+
+    .popup-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: 'Noto Sans Thai', sans-serif;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #f5a662 0%, #d97700 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 166, 98, 0.4);
+    }
+
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #666;
+    }
+
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+
+    /* Mobile responsive for popup */
+    @media (max-width: 480px) {
+        .popup-content {
+            max-width: 90%;
+        }
+
+        .order-complete-popup {
+            padding: 25px 20px;
+        }
+
+        .popup-title {
+            font-size: 20px;
+        }
+
+        .shop-name {
+            font-size: 16px;
+        }
+
+        .queue-number {
+            font-size: 28px;
+            padding: 12px 24px;
+        }
+
+        .popup-actions {
+            flex-direction: column;
+        }
+
+        .btn-primary, .btn-secondary {
+            width: 100%;
         }
     }
 </style>

@@ -287,6 +287,7 @@
         cursor: pointer;
         transition: all 0.3s ease;
         margin-bottom: 16px;
+        min-height: 140px;
     }
     
     .restaurant-card.promoted {
@@ -377,10 +378,11 @@
     
     .restaurant-image {
         position: relative;
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        min-height: 100%;
         flex-shrink: 0;
         overflow: hidden;
+        border-radius: 12px 0 0 12px;
         background: #f5f5f5;
         transition: filter 0.3s ease;
     }
@@ -399,8 +401,10 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center;
         transition: opacity 0.3s ease;
         opacity: 0;
+        display: block;
     }
     
     .restaurant-image img.loaded {

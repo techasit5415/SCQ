@@ -22,24 +22,32 @@
 	function getStatusColor(status: string) {
 		switch (status) {
 			case 'Pending':
-				return '#ff9500'; // สีส้ม
+				return '#ff9500'; // สีส้ม - รอดำเนินการ
+			case 'In-progress':
+			case 'Preparing':
+				return '#007aff'; // สีน้ำเงิน - กำลังเตรียม
 			case 'Completed':
-				return '#34c759'; // สีเขียว
+				return '#34c759'; // สีเขียว - เสร็จสิ้น
 			case 'Cancelled':
-				return '#ff3b30'; // สีแดง
+			case 'Canceled':
+				return '#ff3b30'; // สีแดง - ยกเลิก
 			default:
-				return '#8e8e93'; // สีเทา
+				return '#8e8e93'; // สีเทา - ไม่ทราบสถานะ
 		}
 	}
 
 	function getStatusText(status: string) {
 		switch (status) {
 			case 'Pending':
-				return 'กำลังเตรียม';
+				return '⏳ รอดำเนินการ';
+			case 'In-progress':
+			case 'Preparing':
+				return '🔄 กำลังเตรียม';
 			case 'Completed':
-				return 'เสร็จสิ้น';
+				return '✅ เสร็จสิ้น';
 			case 'Cancelled':
-				return 'ยกเลิก';
+			case 'Canceled':
+				return '❌ ยกเลิก';
 			default:
 				return status;
 		}
@@ -248,8 +256,8 @@
 							<div class="payment-info">
 								<span class="payment-label">ชำระผ่าน:</span>
 								<span class="payment-method">{order.payment.Method_Payment}</span>
-								<span class="payment-status" class:success={order.payment.status === 'success'} class:error={order.payment.status === 'error'}>
-									{order.payment.status === 'success' ? '✅ สำเร็จ' : order.payment.status === 'error' ? '❌ ล้มเหลว' : '⏳ รอดำเนินการ'}
+								<span class="payment-status" class:success={order.payment.status === 'Success'} class:error={order.payment.status === 'Failed'}>
+									{order.payment.status === 'Success' ? '✅ ชำระเงินแล้ว' : order.payment.status === 'Failed' ? '❌ ชำระล้มเหลว' : '⏳ รอชำระเงิน'}
 								</span>
 							</div>
 						{/if}
