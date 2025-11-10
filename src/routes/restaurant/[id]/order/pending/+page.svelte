@@ -63,13 +63,58 @@
     async function handleCancelOrder() {
         if (!selectedOrder) return;
         
-        if (!confirm("ต้องการยกเลิกออร์เดอร์นี้ใช่หรือไม่?")) return;
+        if (!confirm("ต้องการยกเลิกออร์เดอร์นี้ใช่หรือไม่? (จะคืนเป็น Point ให้ลูกค้า)")) return;
         
         try {
+            const userId = selectedOrder.User_ID;
+            const refundAmount = selectedOrder.Total_Amount;
+            
+            console.log(`💰 Refunding ${refundAmount} points to user ${userId} (Order Total: ฿${refundAmount})`);
+            
+            // ดึงข้อมูล Point ของลูกค้า
+            const userPointRecords = await pb.collection('Point').getFullList({
+                filter: `User_ID = "${userId}"`,
+                sort: '-created'
+            });
+            
+            if (userPointRecords.length > 0) {
+                // เพิ่ม Point คืนให้ลูกค้า
+                const currentPoint = userPointRecords[0];
+                const newPointBalance = currentPoint.Point + refundAmount;
+                
+                await pb.collection('Point').update(currentPoint.id, {
+                    Point: newPointBalance
+                });
+                
+                console.log(`✅ Refunded ${refundAmount} points. New balance: ${newPointBalance}`);
+            } else {
+                // สร้าง Point record ใหม่ถ้ายังไม่มี
+                await pb.collection('Point').create({
+                    User_ID: userId,
+                    Point: refundAmount
+                });
+                
+                console.log(`✅ Created new Point record with ${refundAmount} points`);
+            }
+            
+            // อัปเดตสถานะ Payment (ถ้ามี)
+            const payments = await pb.collection("Payment").getFullList({
+                filter: `Order_ID = "${selectedOrder.id}"`,
+                sort: '-created'
+            });
+            
+            if (payments.length > 0) {
+                await pb.collection('Payment').update(payments[0].id, {
+                    status: 'Canceled'
+                });
+            }
+            
+            // ยกเลิกออร์เดอร์
             await pb.collection("Order").update(selectedOrder.id, {
                 Status: "Canceled"
             });
             
+            toast.success(`ยกเลิกออร์เดอร์สำเร็จ และคืน ${refundAmount} แต้มให้ลูกค้าแล้ว`);
             window.location.reload();
         } catch (error) {
             console.error("Error canceling order:", error);
