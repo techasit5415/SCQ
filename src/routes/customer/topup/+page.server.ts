@@ -10,7 +10,7 @@ const TOPUP_MENU_ID = '000000000000001';
 export const load: PageServerLoad = async ({ locals }) => {
 	// ต้อง login ถึงจะเข้าหน้านี้ได้
 	if (!locals.user) {
-		throw redirect(303, '/login');
+		throw redirect(303, '/');
 	}
 
 	const pb = new PocketBase(PUBLIC_POCKETBASE_URL);

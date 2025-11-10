@@ -99,7 +99,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// ต้อง login ถึงจะดูหน้านี้ได้
 	if (!locals.user) {
 		console.log('❌ No user logged in, redirecting to login');
-		throw redirect(303, '/login');
+		throw redirect(303, '/');
 	}
 
 	try {

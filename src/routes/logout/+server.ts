@@ -44,5 +44,5 @@ export const GET: RequestHandler = ({ cookies, setHeaders }) => {
         'Expires': '0'
     });
     
-    throw redirect(303, '/login');
+    throw redirect(303, '/');
 };

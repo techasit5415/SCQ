@@ -6,7 +6,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     if (!locals.user || locals.role !== 'restaurant') {
         // บันทึก URL ปัจจุบันเพื่อ redirect กลับหลัง login
         const redirectTo = url.pathname + url.search;
-        throw redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+        throw redirect(303, `/?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
 
     return {

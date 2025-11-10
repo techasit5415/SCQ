@@ -7,7 +7,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url, getClientAd
     if (!locals.user || locals.role !== 'admin') {
         // บันทึก URL ปัจจุบันเพื่อ redirect กลับหลัง login
         const redirectTo = url.pathname + url.search;
-        throw redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+        throw redirect(303, `/?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
     
     const session = cookies.get('session');

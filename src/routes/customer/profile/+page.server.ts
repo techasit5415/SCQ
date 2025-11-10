@@ -10,13 +10,13 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 		// ตรวจสอบ authentication
 		if (!locals.user || !locals.user.id) {
 			console.error('❌ No authenticated user found');
-			throw redirect(303, '/login');
+			throw redirect(303, '/');
 		}
 		
 		// ตรวจสอบว่าเป็น customer role
 		if (locals.role !== 'customer') {
 			console.error('❌ User is not a customer. Role:', locals.role);
-			throw redirect(303, '/login');
+			throw redirect(303, '/');
 		}
 		
 		const userId = locals.user.id;
@@ -141,7 +141,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 		}
 		
 		// Error อื่นๆ ให้ redirect ไป login
-		throw redirect(303, '/login');
+		throw redirect(303, '/');
 	}
 };
 

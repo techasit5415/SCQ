@@ -3,22 +3,28 @@
     import { goto } from "$app/navigation";
 
     export let activeOrderMenu = "pending";
+    export let shopId = "";  // เพิ่ม shopId prop
     const dispatch = createEventDispatcher();
     let data;
 
-    function handleOrderClick(menu, rest) {
+    function handleOrderClick(menu) {
+        if (!shopId) {
+            console.error("Shop ID is required");
+            return;
+        }
+        
         if (menu !== activeOrderMenu) {
             activeOrderMenu = menu;
             dispatch("menuChange", { menu });
             switch (menu) {
                 case "pending":
-                    goto(`/restaurant/${rest}/order/pending`);
+                    goto(`/restaurant/${shopId}/order/pending`);
                     break;
                 case "active":
-                    goto(`/restaurant/${rest}/order/active`);
+                    goto(`/restaurant/${shopId}/order/active`);
                     break;
                 case "history":
-                    goto(`/restaurant/${rest}/order/history`);
+                    goto(`/restaurant/${shopId}/order/history`);
                     break;
             }
         }
