@@ -23,7 +23,7 @@
                     break;
                 case "manageRestaurant":
                 case "addRestaurant":
-                    goto('/admin/restaurant');
+                    goto('/admin/Restaurant');
                     break;
                 case "reports":
                     goto('/admin/reports');
@@ -42,7 +42,7 @@
     
     function handleViewRestaurant(event) {
         const restaurantId = event.detail;
-        goto(`/admin/restaurant/${restaurantId}`);
+        goto(`/admin/Restaurant/${restaurantId}`);
     }
     
     async function handleLogout() {

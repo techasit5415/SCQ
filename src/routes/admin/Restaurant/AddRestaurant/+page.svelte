@@ -295,7 +295,7 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="btn-cancel" on:click={() => goto('/admin/restaurant')}>
+                        <button type="button" class="btn-cancel" on:click={() => goto('/admin/Restaurant')}>
                             <span class="material-symbols-outlined">cancel</span>
                             ยกเลิก
                         </button>

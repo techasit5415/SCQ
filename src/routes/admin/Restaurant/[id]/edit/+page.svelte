@@ -30,7 +30,7 @@
     }
 
     function handleCancel() {
-        goto('/admin/restaurant');
+        goto('/admin/Restaurant');
     }
 </script>
 
@@ -80,7 +80,7 @@
                     result: ({ result }) => {
                         if (result.type === 'success') {
                             setTimeout(() => {
-                                goto('/admin/restaurant');
+                                goto('/admin/Restaurant');
                             }, 1500);
                         }
                     }
