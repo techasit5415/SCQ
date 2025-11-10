@@ -1,7 +1,7 @@
 <script>
     import { goto } from '$app/navigation';
     import { enhance } from '$app/forms';
-    import TopBar from '$lib/Components/Topbar.svelte';
+    import TopBar from '$lib/Components/TopBar.svelte';
     import AdminSidebar from '$lib/Components/sidebar.svelte';
 
     export let data;

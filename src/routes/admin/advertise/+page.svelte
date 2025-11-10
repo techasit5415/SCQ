@@ -1,6 +1,6 @@
 <script>
     import { goto } from '$app/navigation';
-    import TopBar from '$lib/Components/Topbar.svelte';
+    import TopBar from '$lib/Components/TopBar.svelte';
     import AdminSidebar from '$lib/Components/sidebar.svelte';
     import { onMount } from 'svelte';
     

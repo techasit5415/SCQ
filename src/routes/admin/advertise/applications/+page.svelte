@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-    import Topbar from '$lib/Components/Topbar.svelte';
+    import Topbar from '$lib/Components/TopBar.svelte';
     import Sidebar from '$lib/Components/sidebar.svelte';
     
     export let data;
